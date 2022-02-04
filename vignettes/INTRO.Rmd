@@ -1,0 +1,36 @@
+---
+title: "INTRO"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{INTRO}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(findata)
+```
+
+# FMP CLOUD DATA
+
+```{r}
+# define fmp cloud object
+fmp = FMP$new()
+print(fmp$api_key)
+
+# # get all database of earning announcements
+# ea = fmp$get_earning_announcements()
+```
+
+# ```{r}
+# # define Investingcom object
+# ic = InvestingCom$new()
+# ic$update_investingcom_earnings()
+# ```
