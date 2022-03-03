@@ -8,6 +8,10 @@
 #' @import stringr
 #' @import AzureStor
 #' @import readr
+#' @import QuantTools
+#' @import pins
+#' @import stringr
 #' @importFrom jsonlite fromJSON
+#' @importFrom zip zipr
 "_PACKAGE"
 

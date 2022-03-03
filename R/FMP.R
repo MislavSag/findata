@@ -232,50 +232,235 @@ FMP = R6::R6Class(
       return(result)
     },
 
+    #' @description get daily data from FMP cloud for all stocks
+    #'
+    #' @return Scrap all daily data
     get_daily_batch = function() {
 
-      # date sequence()
+      # date sequence
       seq_date <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 1)
 
-      # check blob
-      cont <- storage_container(private$azure_storage_endpoint, "fmpcloud-daily")
-      blob_files <- list_blobs(cont)
-      if (nrow(blob_files) == 0) {
+      # create board for saving files
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "fmpcloud-daily"),
+        path = "",
+        n_processes = 6L,
+        versioned = FALSE,
+        cache = FALSE
+      )
+
+      # # list pins
+      blob_files <- pin_list(board)
+      if (length(blob_files) == 0) {
         print("scrap for the first time!")
       } else {
-        seq_date <- as.Date(setdiff(seq_date, as.Date(gsub(".csv", "", blob_files$name))), origin = "1970-01-01")
+        seq_date <- as.Date(setdiff(seq_date, as.Date(blob_files)), origin = "1970-01-01")
       }
 
       # get daily with batch and save to azure blob
       url_base <- "https://financialmodelingprep.com/api/v4/batch-request-end-of-day-prices"
       lapply(seq_date, function(x) {
-        p <- RETRY("GET", url_base, query = list(date = x, apikey = api_key), times = 4L) # ADD SELF HERE
+        p <- RETRY("GET", url_base, query = list(date = x, apikey = api_key), times = 5L) # ADD SELF HERE
         data_ <- content(p)
-        storage_write_csv(data_, cont, paste0(x, ".csv"))
+        pin_write(board, data_, type = "csv", name = as.character(x), versioned = FALSE)
         return(NULL)
       })
 
-      # merge all files and upload to blob
-      cont_daily <- storage_container(private$azure_storage_endpoint, "fmpcloud")
+      # # merge all files and upload to blob
+      # cont_daily <- storage_container(private$azure_storage_endpoint, "fmpcloud")
+      #
+      # # save to azure by stocks
+      # tmp_file <- tempfile()
+      # new_files <- paste0(seq_date, ".csv")
+      # lapply(new_files, function(x) {
+      #   # x <- blob_files$name[3]
+      #   print(x)
+      #   date_data <- suppressMessages(storage_read_csv(cont, paste0(x)))
+      #   if (nrow(date_data) == 0) return(NULL)
+      #   file_name <- paste0(tmp_file, ".csv")
+      #   fwrite(date_data, file_name)
+      #   if (!(blob_exists(cont_daily, "prices.csv"))) {
+      #     suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob"))
+      #   } else {
+      #     suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob", append = TRUE))
+      #   }
+      #   return(NULL)
+      # })
+    },
 
-      # save to azure by stocks
-      tmp_file <- tempfile()
-      new_files <- paste0(seq_date, ".csv")
-      lapply(new_files, function(x) {
-        # x <- blob_files$name[3]
-        print(x)
-        date_data <- suppressMessages(storage_read_csv(cont, paste0(x)))
-        if (nrow(date_data) == 0) return(NULL)
-        file_name <- paste0(tmp_file, ".csv")
-        fwrite(date_data, file_name)
-        if (!(blob_exists(cont_daily, "prices.csv"))) {
-          suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob"))
+    #' @description retrieving intraday market data from FMP cloud.
+    #'
+    #' @param symbol Symbol of the stock.
+    #' @param multiply multiplier.Start date.
+    #' @param time Size of the time. (minute, hour, day, week, month, quarter, year)
+    #' @param from Start date,
+    #' @param to End date.
+    #'
+    #' @return Data frame with ohlcv data.
+    get_intraday_equities = function(symbol,
+                                     multiply = 1,
+                                     time = 'minute',
+                                     from = as.character(Sys.Date() - 3),
+                                     to = as.character(Sys.Date())) {
+
+      # initial GET request. Don't use RETRY here yet.
+      x <- tryCatch({
+        GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
+                   symbol, '/', multiply, '/', time, '/', from, '/', to),
+            query = list(apikey = self$api_key),
+            timeout(100))
+      }, error = function(e) NA)
+
+      # control error
+      tries <- 0
+      while (all(is.na(x)) & tries < 20) {
+        print("There is an error in scraping market data. Sleep and try again!")
+        Sys.sleep(60L)
+        x <- tryCatch({
+          GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
+                     symbol, '/', multiply, '/', time, '/', from, '/', to),
+              query = list(apikey = self$api_key),
+              timeout(100))
+        }, error = function(e) NA)
+        tries <- tries + 1
+      }
+
+      # check if status is ok. If not, try to download again
+      if (x$status_code == 404) {
+        print("There is an 404 error!")
+        return(NULL)
+      } else if (x$status_code == 200) {
+        x <- content(x)
+        return(rbindlist(x$results))
+      } else {
+        x <- RETRY("GET",
+                   paste0('https://financialmodelingprep.com/api/v4/historical-price/',
+                          symbol, '/', multiply, '/', time, '/', from, '/', to),
+                   query = list(apikey = self$api_key),
+                   times = 5,
+                   timeout(100))
+        if (x$status_code == 200) {
+          x <- content(x)
+          return(rbindlist(x$results))
         } else {
-          suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob", append = TRUE))
+          stop('Error in reposne. Status not 200 and not 404')
         }
-        return(NULL)
-      })
+      }
+    },
+
+    #' @description Get hour data for all history from fmp cloud.
+    #'
+    #' @param symbols Symbol of the stock.
+    #' @param freq frequency (hour or minute)
+    #'
+    #' @return Data saved to Azure blob.
+    get_intraday_equities_batch = function(symbols, freq = c("houe", "minute")) {
+
+      # loop over all symbols
+      for (symbol in symbols) {
+
+        # DEBUG
+        print(symbol)
+
+        # define start_dates
+        start_dates <- seq.Date(as.Date('2004-01-01'), Sys.Date() - 1, by = 1)
+        start_dates <- start_dates[isBusinessDay(start_dates)]
+
+        # get trading days from daily data
+        print("get daily data")
+        daily_data <- self$get_intraday_equities(symbol,
+                                                 multiply = 1,
+                                                 time = 'day',
+                                                 from = as.Date('2004-01-01'),
+                                                 to = Sys.Date() - 1)
+        if (is.null(daily_data)) next()
+        start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
+
+        # define board
+        board <- board_azure(
+          container = storage_container(private$azure_storage_endpoint, "equity-usa-hour-trades-fmplcoud"),
+          path = "",
+          n_processes = 10,
+          versioned = FALSE,
+          cache = FALSE
+        )
+
+        # read old data
+        if (pin_exists(board, tolower(symbol))) {
+          data_history <- pin_read(board, tolower(symbol))
+          if (length(data_history) == 0) next()
+          data_history <- as.data.table(data_history)
+          data_history <- unique(data_history, by = "formated")
+          setorder(data_history, t)
+          data_history_date <- as.Date(data_history$formated)
+          start_dates <- as.Date(setdiff(start_dates, as.Date(data_history$formated)), origin = "1970-01-01")
+        }
+
+        # create sequence of dates for GET requests
+        end_dates <- start_dates + 1
+        # if (all(start_dates >= Sys.Date())) {
+        #   next()
+        # } else if (freq == "hour") {
+        #   end_dates <- start_dates + 1
+        # } else if (freq == "minute") {
+        #   end_dates <- start_dates + 1
+        # }
+
+        # get data
+        data_slice <- list()
+        for (i in seq_along(start_dates)) {
+          data_slice[[i]] <- self$get_intraday_equities(symbol,
+                                                        multiply = 1,
+                                                        time = freq,
+                                                        from = start_dates[i],
+                                                        to = end_dates[i])
+        }
+        data_by_symbol <- rbindlist(data_slice)
+
+        # if there is no data next
+        if (nrow(data_by_symbol) == 0) {
+          print(paste0("No data for symbol ", symbol))
+          next()
+        }
+
+        # convert to numeric (not sure why I put these, but it have sense I believe).
+        data_by_symbol[, 1:5] <- lapply(data_by_symbol[, 1:5],
+                                        as.numeric)
+
+        # add to old data if there is an old data
+        if (pin_exists(board, tolower(symbol))) {
+          data_by_symbol <- rbind(data_history, data_by_symbol)
+        }
+
+        # clean data
+        data_by_symbol <- unique(data_by_symbol, by = c("formated"))
+        setorder(data_by_symbol, "t")
+
+        # save locally
+        pin_write(board, data_by_symbol, name = tolower(symbol), type = "csv", versioned = FALSE)
+      }
+    },
+
+    #' @description Get SP500 symbols from fmp cloud.
+    #'
+    #' @return Vector of SP500 symbols.
+    get_sp500_symbols = function() {
+      # get SP 500 stocks from FMP LCOUD
+      SP500 <- content(GET(paste0('https://financialmodelingprep.com/api/v3/sp500_constituent?apikey=', self$api_key)))
+      SP500 <- rbindlist(SP500)
+      SP500_DELISTED <- GET(paste0('https://financialmodelingprep.com/api/v3/historical/sp500_constituent?apikey=', self$api_key))
+      SP500_DELISTED <- rbindlist(content(SP500_DELISTED))
+      SP500_SYMBOLS <- unique(c(SP500$symbol, SP500_DELISTED$symbol))
+
+      # get symbol changes
+      utils_changes <- UtilsData$new()
+      SP500_CHANGES <- lapply(SP500_SYMBOLS, utils_changes$get_ticker_data)
+      SP500_CHANGES <- rbindlist(SP500_CHANGES)
+      SP500_SYMBOLS <- unique(c(SP500_SYMBOLS, SP500_CHANGES$ticker_change))
+
+      return(SP500_SYMBOLS)
     }
+
   ),
   private = list(
     ea_file_name = "EarningAnnouncements.csv",
@@ -298,6 +483,3 @@ FMP = R6::R6Class(
     }
   )
 )
-
-
-

@@ -21,7 +21,10 @@ Imports:
     stringr,
     jsonlite,
     rlang,
-    readr
+    readr,
+    QuantTools,
+    pins,
+    stringr
 Suggests: 
     rmarkdown,
     knitr
