@@ -15,22 +15,18 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(findata)
+# library(findata)
 ```
 
 # FMP CLOUD DATA
 
 ```{r}
 # define fmp cloud object
-fmp = FMP$new()
-print(fmp$api_key)
+# fmp = FMP$new()
+# print(fmp$api_key)
 
 # # get all database of earning announcements
 # ea = fmp$get_earning_announcements()
 ```
 
-# ```{r}
-# # define Investingcom object
-# ic = InvestingCom$new()
-# ic$update_investingcom_earnings()
-# ```
+
