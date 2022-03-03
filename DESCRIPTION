@@ -1,11 +1,11 @@
 Package: findata
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Collect data fro trading and financial ML
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Author: Mislav Sagovac
+Maintainer: The package maintainer <mislav.sagoavac@contentio.biz>
+Description: Collect data fro trading and financial ML.
+    Data sources are FMP Cloud, Investing.com, Finam.
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.1.2
@@ -20,7 +20,6 @@ Imports:
     stringr,
     jsonlite,
     rlang,
-    readr,
     QuantTools,
     pins,
     zip

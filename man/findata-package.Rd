@@ -4,7 +4,7 @@
 \name{findata-package}
 \alias{findata}
 \alias{findata-package}
-\title{findata: What the Package Does (Title Case)}
+\title{findata: Collect data fro trading and financial ML}
 \description{
-More about what it does (maybe more than one line) Use four spaces when indenting paragraphs within the Description.
+Collect data fro trading and financial ML. Data sources are FMP Cloud, Investing.com, Finam.
 }
