@@ -8,7 +8,6 @@ Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.1.2
 Imports:
     R6,
@@ -24,7 +23,7 @@ Imports:
     readr,
     QuantTools,
     pins,
-    stringr
+    zip
 Suggests: 
     rmarkdown,
     knitr
