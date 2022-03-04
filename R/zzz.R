@@ -10,7 +10,7 @@
 #' @import pins
 #' @import stringr
 #' @importFrom jsonlite fromJSON
-#' @importFrom httr GET POST RETRY
+#' @importFrom httr GET POST RETRY content
 #' @importFrom zip zipr
 "_PACKAGE"
 
