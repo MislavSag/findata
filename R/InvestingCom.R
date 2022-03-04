@@ -84,6 +84,7 @@ InvestingCom = R6::R6Class(
       . <- NULL
 
       # make POST request to invest.com earings calendar
+      print("POST request to investing.com")
       p <- POST(
         url = "https://www.investing.com/earnings-calendar/Service/getCalendarFilteredData",
         body = list(
@@ -103,6 +104,7 @@ InvestingCom = R6::R6Class(
       )
 
       # parse content
+      print("PArse content.")
       json <- content(p, type = "application/json")
       adjusted_html <- paste0("<table>", json$data, "<table>")
       edata <- rvest::read_html(adjusted_html)
@@ -116,12 +118,14 @@ InvestingCom = R6::R6Class(
       }
 
       # extract releasing time
+      print("Extract time")
       right_time <- edata %>%
         html_elements("td[class*='right time']") %>%
         html_element("span") %>%
         html_attr("class")
 
       # extract table
+      print("Extract table")
       tbl <- edata %>%
         html_element("table") %>%
         html_table()
@@ -178,6 +182,7 @@ InvestingCom = R6::R6Class(
       setorder(results, "datetime")
 
       # save file to Azure blob if blob_file is not NA
+      print(paste0("Data saved to blob file ", private$ea_file_name))
       super$save_blob_files(results, file_name = private$ea_file_name, container = "investingcom")
       print(paste0("Data saved to blob file ", private$ea_file_name))
 

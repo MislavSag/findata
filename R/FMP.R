@@ -260,7 +260,7 @@ FMP = R6::R6Class(
       # get daily with batch and save to azure blob
       url_base <- "https://financialmodelingprep.com/api/v4/batch-request-end-of-day-prices"
       lapply(seq_date, function(x) {
-        p <- RETRY("GET", url_base, query = list(date = x, apikey = api_key), times = 5L) # ADD SELF HERE
+        p <- RETRY("GET", url_base, query = list(date = x, apikey = self$api_key), times = 5L) # ADD SELF HERE
         data_ <- content(p)
         pin_write(board, data_, type = "csv", name = as.character(x), versioned = FALSE)
         return(NULL)
