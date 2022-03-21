@@ -13,4 +13,3 @@
 #' @importFrom httr GET POST RETRY content timeout
 #' @importFrom zip zipr
 "_PACKAGE"
-

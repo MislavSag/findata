@@ -246,7 +246,7 @@ FMP = R6::R6Class(
         path = "",
         n_processes = 6L,
         versioned = FALSE,
-        cache = FALSE
+        cache = NULL
       )
 
       # # list pins
@@ -299,7 +299,7 @@ FMP = R6::R6Class(
     #' @return Data frame with ohlcv data.
     get_intraday_equities = function(symbol,
                                      multiply = 1,
-                                     time = 'minute',
+                                     time = 'hour',
                                      from = as.character(Sys.Date() - 3),
                                      to = as.character(Sys.Date())) {
 
@@ -354,7 +354,7 @@ FMP = R6::R6Class(
     #' @param freq frequency (hour or minute)
     #'
     #' @return Data saved to Azure blob.
-    get_intraday_equities_batch = function(symbols, freq = c("houe", "minute")) {
+    get_intraday_equities_batch = function(symbols, freq = c("hour", "minute")) {
 
       # loop over all symbols
       for (symbol in symbols) {
@@ -377,12 +377,13 @@ FMP = R6::R6Class(
         start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
 
         # define board
+        storage_name <- paste0("equity-usa-", freq, "-trades-fmplcoud")
         board <- board_azure(
-          container = storage_container(private$azure_storage_endpoint, "equity-usa-hour-trades-fmplcoud"),
+          container = storage_container(private$azure_storage_endpoint, storage_name), # HERE CHANGE WHEN MINUTE DATA !!!
           path = "",
           n_processes = 10,
           versioned = FALSE,
-          cache = FALSE
+          cache = NULL
         )
 
         # read old data
@@ -420,7 +421,7 @@ FMP = R6::R6Class(
         # if there is no data next
         if (nrow(data_by_symbol) == 0) {
           print(paste0("No data for symbol ", symbol))
-          next()
+          next
         }
 
         # convert to numeric (not sure why I put these, but it have sense I believe).

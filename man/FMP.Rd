@@ -177,7 +177,7 @@ retrieving intraday market data from FMP cloud.
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities(
   symbol,
   multiply = 1,
-  time = "minute",
+  time = "hour",
   from = as.character(Sys.Date() - 3),
   to = as.character(Sys.Date())
 )}\if{html}{\out{</div>}}
@@ -208,7 +208,7 @@ Data frame with ohlcv data.
 \subsection{Method \code{get_intraday_equities_batch()}}{
 Get hour data for all history from fmp cloud.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(symbols, freq = c("houe", "minute"))}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(symbols, freq = c("hour", "minute"))}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

@@ -36,6 +36,6 @@ DataAbstract = R6::R6Class(
     }
   ),
   private = list(
-    azure_storage_endpoint = storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
+    azure_storage_endpoint = AzureStor::storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
   )
 )
