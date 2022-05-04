@@ -37,14 +37,26 @@ FMP = R6::R6Class(
     #' @return Earning announcements data.
     get_earning_announcements = function(days_history = 10) {
 
+      # define board
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "fmpcloud"),
+        path = "",
+        n_processes = 6L,
+        versioned = FALSE,
+        cache = NULL
+      )
+
       # define container
-      cont <- storage_container(private$azure_storage_endpoint, "fmpcloud")
-      blob_files <- list_blobs(cont)
-      file_exists_on_blob <- private$ea_file_name %in% blob_files$name # file_exists_on_blob <- "EarningAnnouncements.csv" %in% blob_files$name
+      # cont <- storage_container(private$azure_storage_endpoint, "fmpcloud")
+      blob_files <- pin_list(board)
+      file_exists_on_blob <- private$ea_file_name %in% blob_files
       if (file_exists_on_blob) {
-        old_data <- storage_read_csv(cont, private$ea_file_name) # old_data <- storage_read_csv(cont, "EarningAnnouncements.csv")
-        old_data$date <- as.Date(old_data$date)
+        old_data <- pin_read(board, private$ea_file_name)
         old_data <- as.data.table(old_data)
+        cols <- c("symbol", "date", "time", "updatedFromDate", "fiscalDateEnding")
+        old_data[, (cols) := lapply(.SD, as.character), .SDcols = cols]
+        cols <- "date"
+        old_data[, (cols) := lapply(.SD, as.Date), .SDcols = cols]
         start_date <- max(old_data$date, Sys.Date()) - days_history
       } else {
         start_date <- as.Date("2010-01-01")
@@ -64,7 +76,6 @@ FMP = R6::R6Class(
       # get data
       ea <- lapply(seq_along(dates_from), function(i) {
         private$fmpv_path("earning_calendar", from = dates_from[i], to = dates_to[i], apikey = self$api_key)
-        # fmpv_path("earning_calendar", from = dates_from[i], to = dates_to[i], apikey = Sys.getenv("APIKEY-FMPCLOUD"))
       })
       new_data <- rbindlist(ea, fill = TRUE)
 
@@ -85,7 +96,7 @@ FMP = R6::R6Class(
       }
 
       # save file to Azure blob if blob_file is not NA
-      super$save_blob_files(results, file_name = private$ea_file_name)
+      pin_write(board, results, type = "csv", name = private$ea_file_name, versioned = FALSE)
       print(paste0("Data saved to blob file ", private$ea_file_name))
 
       return(results)
@@ -265,27 +276,6 @@ FMP = R6::R6Class(
         pin_write(board, data_, type = "csv", name = as.character(x), versioned = FALSE)
         return(NULL)
       })
-
-      # # merge all files and upload to blob
-      # cont_daily <- storage_container(private$azure_storage_endpoint, "fmpcloud")
-      #
-      # # save to azure by stocks
-      # tmp_file <- tempfile()
-      # new_files <- paste0(seq_date, ".csv")
-      # lapply(new_files, function(x) {
-      #   # x <- blob_files$name[3]
-      #   print(x)
-      #   date_data <- suppressMessages(storage_read_csv(cont, paste0(x)))
-      #   if (nrow(date_data) == 0) return(NULL)
-      #   file_name <- paste0(tmp_file, ".csv")
-      #   fwrite(date_data, file_name)
-      #   if (!(blob_exists(cont_daily, "prices.csv"))) {
-      #     suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob"))
-      #   } else {
-      #     suppressMessages(storage_upload(cont_daily, src=file_name, dest="prices.csv", type="AppendBlob", append = TRUE))
-      #   }
-      #   return(NULL)
-      # })
     },
 
     #' @description retrieving intraday market data from FMP cloud.
@@ -371,8 +361,8 @@ FMP = R6::R6Class(
         daily_data <- self$get_intraday_equities(symbol,
                                                  multiply = 1,
                                                  time = 'day',
-                                                 from = as.Date('2004-01-01'),
-                                                 to = Sys.Date() - 1)
+                                                 from = as.character(as.Date('2004-01-01')),
+                                                 to = as.character(Sys.Date() - 1))
         if (is.null(daily_data)) next()
         start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
 
@@ -460,11 +450,201 @@ FMP = R6::R6Class(
       SP500_SYMBOLS <- unique(c(SP500_SYMBOLS, SP500_CHANGES$ticker_change))
 
       return(SP500_SYMBOLS)
-    }
+    },
 
+    #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
+    #'
+    #' @return Factor files saved to "factor-file" blob.
+    get_factor_file = function() {
+
+      # define board
+      storage_name <- paste0("equity-usa-hour-trades-fmplcoud")
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, storage_name),
+        path = "",
+        n_processes = 10,
+        versioned = FALSE,
+        cache = NULL
+      )
+      board_files <- pin_list(board)
+
+      # define board for factor files
+      board_factors <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "factor-file"),
+        path = "",
+        n_processes = 10,
+        versioned = FALSE,
+        cache = NULL
+      )
+
+      # main loop
+      for (f in board_files) {
+
+        # DEBUG
+        print(f)
+
+        # get data from blob
+        market_data_hour <- pin_read(board, f)
+        if (length(market_data_hour) == 0) next()
+        market_data_hour <- as.data.table(market_data_hour)
+        market_data_hour[, formated := as.POSIXct(formated, tz = "America/New_York")]
+        market_data_hour <- market_data_hour[format.POSIXct(formated, format = "%H:%D:%M") %between% c("09:30:00", "16:01:00")]
+        market_data_daily <- market_data_hour[, .SD[.N], by = .(date = as.Date(formated))]
+        market_data_daily[,symbol := toupper(f)]
+        setnames(market_data_daily, c("date", "open", "high", "close", "low", "volume", "t", "symbol"))
+        df <- market_data_daily[, .(date, close)] # take needed columns
+
+        # splits
+        utils <- UtilsData$new()
+        splits <- utils$get_split_factor(f)
+        splits <- as.data.table(splits)
+        if (all(is.na(splits))) {
+          df[, `:=`(split_factor, NA)]
+        } else {
+          df <- splits[df, on = "date"]
+          df$ratio <- NULL
+        }
+
+        # dividends
+        url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
+        dividends <- RETRY("GET", url = paste0(url, toupper(f)), query = list(apikey = self$api_key), times = 5L)
+        dividends <- content(dividends)
+        dividends <- rbindlist(dividends$historical, fill = TRUE)
+        # dividends <- fmpc_security_dividends(symbol, startDate = "2004-01-01")
+        # dividends <- as.data.table(dividends)
+        if (all(is.na(dividends))) {
+          df[, `:=`(dividend, NA)]
+        } else {
+          dividends[, date := as.Date(date)]
+          dividends <- dividends[date > as.Date("2004-01-01")]
+          if (!("dividend" %in% names(dividends))) {
+            dividends[, `:=`(dividend, adjDividend)]
+          }
+          dividends <- dividends[, `:=`(dividend, ifelse(is.na(dividend) &
+                                                           adjDividend > 0, adjDividend, dividend))]
+          dividends <- dividends[, .(date, dividend)]
+          df <- dividends[df, on = "date"]
+        }
+
+        # if not div and splits return factor file
+        if (length(dividends) == 0 & nrow(splits) == 0) {
+          factor_file <- data.table(date = c("20040102",
+                                             "20500101"), price_factor = c(1, 1), split_factor = c(1,
+                                                                                                   1), lag_close = c(df$close[1], 0))
+          # save factor file to blob
+          pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
+
+          next()
+        }
+
+        # else if there are no dividends or splits after 20040102
+        df[, `:=`(lag_close = shift(close), date = shift(date))]
+        df <- df[!is.na(date)]
+        factor_file <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
+                          .(date, dividend, split_factor, lag_close)]
+        if (nrow(factor_file) == 0) {
+          factor_file <- data.table(date = c("20040102",
+                                             "20500101"), price_factor = c(1, 1), split_factor = c(1,
+                                                                                                   1), lag_close = c(df$close[1], 0))
+          # save factor file to blob
+          pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
+
+          next()
+        }
+
+        # else create factor file
+        factor_file <- unique(factor_file)
+        factor_file[, `:=`(split_factor, na.locf(split_factor,
+                                                 fromLast = TRUE, na.rm = FALSE))]
+        factor_file <- factor_file[is.na(split_factor), `:=`(split_factor, 1)]
+        factor_file <- rbind(factor_file, data.table(date = as.Date("2050-01-01"),
+                                                     dividend = NA, lag_close = 0, split_factor = 1))
+        price_factor <- vector("numeric", nrow(factor_file))
+        lag_close <- factor_file$lag_close
+        split_factor <- factor_file$split_factor
+        dividend <- factor_file$dividend
+        for (i in nrow(factor_file):1) {
+          if (i == nrow(factor_file)) {
+            price_factor[i] <- (lag_close[i - 1] - dividend[i -
+                                                              1])/lag_close[i - 1] * 1
+          }
+          else if (i == 1) {
+            price_factor[i] <- NA
+          }
+          else if (is.na(dividend[i - 1])) {
+            price_factor[i] <- price_factor[i + 1]
+          }
+          else {
+            price_factor[i] <- ((lag_close[i - 1] - dividend[i -
+                                                               1])/lag_close[i - 1]) * price_factor[i + 1]
+          }
+        }
+        price_factor <- c(price_factor[-1], NA)
+        price_factor[is.na(price_factor)] <- 1
+        factor_file[, `:=`(price_factor, price_factor)]
+        factor_file[, `:=`(date, format.Date(date, "%Y%m%d"))]
+        factor_file <- factor_file[, .(date, price_factor, split_factor,
+                                       lag_close)]
+
+        # save factor file to blob
+        pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
+      }
+      },
+
+      #' @description Get IPO date from fmp cloud
+      #'
+      #' @param ticker Stock ticker
+      #'
+      #' @return Stock IPO date.
+      get_ipo_date = function(ticker) {
+        url <- paste0("https://financialmodelingprep.com/api/v4/company-outlook")
+        p <- content(GET(url, query = list(symbol = ticker, apikey = self$api_key)))
+        if ("error" %in% names(p)) {
+          return("2004-01-01")
+        } else {
+          return(p$profile$ipoDate)
+        }
+      },
+
+      #' @description Get FI data.
+      #'
+      #' @param symbol Stock symbol.
+      #' @param statement Stock statement.
+      #' @param period Stock period.
+      #'
+      #' @return data.table of financial reports.
+      get_fi_statement = function(symbol,
+                                       statement = c("income-statement", "balance-sheet-statement", "cash-flow-statement"),
+                                       period = c("annual", "quarter")) {
+        url <- "https://financialmodelingprep.com/api/v3"
+        url <- paste(url, statement, symbol, sep = "/")
+        p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
+        res <- content(p)
+        res <- rbindlist(res)
+        return(res)
+      },
+
+      #' @description Get financial ratios, company key metrics.
+      #'
+      #' @param symbol Stock symbol.
+      #' @param type Type of fundamental analysis.
+      #' @param period Stock period.
+      #'
+      #' @return data.table of financial reports.
+      get_financial_metrics = function(symbol,
+                                       type = c("ratios", "key-metrics", "financial-growth"),
+                                       period = c("annual", "quarter")) {
+        url <- "https://financialmodelingprep.com/api/v3"
+        url <- paste(url, type, symbol, sep = "/")
+        p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
+        res <- content(p)
+        res <- rbindlist(res, fill = TRUE)
+        return(res)
+      }
   ),
+
   private = list(
-    ea_file_name = "EarningAnnouncements.csv",
+    ea_file_name = "EarningAnnouncements",
     transcripts_file_name = "earnings-calendar.rds",
     prices_file_name = "prices.csv",
 

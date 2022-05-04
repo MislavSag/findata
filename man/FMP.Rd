@@ -28,6 +28,10 @@ Get data data from FMP Cloud.
 \item \href{#method-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
 \item \href{#method-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
 \item \href{#method-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
+\item \href{#method-get_factor_file}{\code{FMP$get_factor_file()}}
+\item \href{#method-get_ipo_date}{\code{FMP$get_ipo_date()}}
+\item \href{#method-get_fi_statement}{\code{FMP$get_fi_statement()}}
+\item \href{#method-get_financial_metrics}{\code{FMP$get_financial_metrics()}}
 \item \href{#method-clone}{\code{FMP$clone()}}
 }
 }
@@ -235,6 +239,95 @@ Get SP500 symbols from fmp cloud.
 
 \subsection{Returns}{
 Vector of SP500 symbols.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get_factor_file"></a>}}
+\if{latex}{\out{\hypertarget{method-get_factor_file}{}}}
+\subsection{Method \code{get_factor_file()}}{
+Create factor files for calculating adjusted prices (adjusted for splits and dividends).
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Factor files saved to "factor-file" blob.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get_ipo_date"></a>}}
+\if{latex}{\out{\hypertarget{method-get_ipo_date}{}}}
+\subsection{Method \code{get_ipo_date()}}{
+Get IPO date from fmp cloud
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_ipo_date(ticker)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ticker}}{Stock ticker}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Stock IPO date.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get_fi_statement"></a>}}
+\if{latex}{\out{\hypertarget{method-get_fi_statement}{}}}
+\subsection{Method \code{get_fi_statement()}}{
+Get FI data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_fi_statement(
+  symbol,
+  statement = c("income-statement", "balance-sheet-statement", "cash-flow-statement"),
+  period = c("annual", "quarter")
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbol}}{Stock symbol.}
+
+\item{\code{statement}}{Stock statement.}
+
+\item{\code{period}}{Stock period.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of financial reports.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get_financial_metrics"></a>}}
+\if{latex}{\out{\hypertarget{method-get_financial_metrics}{}}}
+\subsection{Method \code{get_financial_metrics()}}{
+Get financial ratios, company key metrics.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_financial_metrics(
+  symbol,
+  type = c("ratios", "key-metrics", "financial-growth"),
+  period = c("annual", "quarter")
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbol}}{Stock symbol.}
+
+\item{\code{type}}{Type of fundamental analysis.}
+
+\item{\code{period}}{Stock period.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}

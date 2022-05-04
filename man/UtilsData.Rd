@@ -14,6 +14,9 @@ Various help data.
 \itemize{
 \item \href{#method-new}{\code{UtilsData$new()}}
 \item \href{#method-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
+\item \href{#method-get_split_factor}{\code{UtilsData$get_split_factor()}}
+\item \href{#method-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
+\item \href{#method-sp500_history}{\code{UtilsData$sp500_history()}}
 \item \href{#method-clone}{\code{UtilsData$clone()}}
 }
 }
@@ -55,6 +58,59 @@ Get tick data from finam source using QuantTools.
 }
 \subsection{Returns}{
 Get investing com ea data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get_split_factor"></a>}}
+\if{latex}{\out{\hypertarget{method-get_split_factor}{}}}
+\subsection{Method \code{get_split_factor()}}{
+Get split data from the web and calculate split factors.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$get_split_factor(ticker)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ticker}}{Stock ticker}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Stock splits
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-adjust_intraday_data"></a>}}
+\if{latex}{\out{\hypertarget{method-adjust_intraday_data}{}}}
+\subsection{Method \code{adjust_intraday_data()}}{
+Adjusted instraday data for splits and dividends
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_intraday_data(freq = c("hour", "minute"))}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{freq}}{Frequency, can be hour or minute.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Adjusted data saved to Azure blob
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-sp500_history"></a>}}
+\if{latex}{\out{\hypertarget{method-sp500_history}{}}}
+\subsection{Method \code{sp500_history()}}{
+Get SP500 stocks for every date.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$sp500_history()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Data table of Sp500 tickers
 }
 }
 \if{html}{\out{<hr>}}

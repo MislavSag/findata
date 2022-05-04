@@ -14,6 +14,7 @@ Help functions for transforming raw market data to Quantconnect data.
 \itemize{
 \item \href{#method-new}{\code{Lean$new()}}
 \item \href{#method-equity_hour_from_fmpcloud}{\code{Lean$equity_hour_from_fmpcloud()}}
+\item \href{#method-equity_minute_from_fmpcloud}{\code{Lean$equity_minute_from_fmpcloud()}}
 \item \href{#method-clone}{\code{Lean$clone()}}
 }
 }
@@ -57,6 +58,28 @@ Convert FMP Cloud hour data to Quantconnect hour data.
 }
 \subsection{Returns}{
 No valuie returned.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-equity_minute_from_fmpcloud"></a>}}
+\if{latex}{\out{\hypertarget{method-equity_minute_from_fmpcloud}{}}}
+\subsection{Method \code{equity_minute_from_fmpcloud()}}{
+Convert FMP Cloud minute data to Quantconnect minute data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Lean$equity_minute_from_fmpcloud(
+  save_path = "D:/lean_projects/data/equity/usa/minute"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{save_path}}{Quantconnect data equity minute folder path.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+No value returned.
 }
 }
 \if{html}{\out{<hr>}}

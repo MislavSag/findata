@@ -22,7 +22,8 @@ Imports:
     rlang,
     QuantTools,
     pins,
-    zip
+    zip,
+    zoo
 Suggests: 
     rmarkdown,
     knitr

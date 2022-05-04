@@ -12,4 +12,5 @@
 #' @importFrom jsonlite fromJSON
 #' @importFrom httr GET POST RETRY content timeout
 #' @importFrom zip zipr
+#' @importFrom zoo na.locf
 "_PACKAGE"

@@ -46,15 +46,19 @@ Lean = R6::R6Class(
 
         # convert to lean format
         data_[, `:=`(
-          DateTime = format.POSIXct(as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST"),
-                                    format = "%Y-%m-%d %H:%M"),
+          DateTime = as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST"),
           Open = o * 1000,
           High = h * 1000,
           Low = l * 1000,
           Close = c * 1000,
           Volume = v
         )]
+        data_ <- data_[format(DateTime, "%H:%M:%S") %between% c("10:00:00", "16:01:00")]
+        data_[, DateTime := format.POSIXct(DateTime, format = "%Y%m%d %H:%M")]
         data_qc <- data_[, .(DateTime, Open, High, Low, Close, Volume)]
+        data_qc[, DateTime := as.character(DateTime)]
+        cols <- colnames(data_qc)[2:ncol(data_qc)]
+        data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
 
         # save to destination
         file_name_csv <- paste0(tolower(symbol), ".csv")
@@ -63,6 +67,84 @@ Lean = R6::R6Class(
         zipr(zip_file, file.path(save_path, file_name_csv))
         file.remove(file.path(save_path, file_name_csv))
       }
+    },
+
+    #' @description Convert FMP Cloud minute data to Quantconnect minute data.
+    #'
+    #' @param save_path Quantconnect data equity minute folder path.
+    #'
+    #' @return No value returned.
+    equity_minute_from_fmpcloud = function(save_path = "D:/lean_projects/data/equity/usa/minute") {
+
+      # crate pin board
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "equity-usa-minute-trades-fmplcoud"),
+        path = "",
+        n_processes = 4L,
+        versioned = FALSE,
+        cache = NULL
+      )
+      blob_dir <- pin_list(board)
+
+      # change every file to quantconnect like file and add to destination
+      for (symbol in blob_dir) {
+
+        # debug
+        print(symbol)
+
+        # load data
+        data_ <- pin_read(board, tolower(symbol))
+        data_ <- as.data.table(data_)
+
+        # data types and uniquness
+        data_[, formated := as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST")]
+        data_ <- unique(data_, by = c("formated"))
+        data_ <- data_[data.table::between(format(formated, "%H:%M:%S"), "09:29:50", "16:00:50")]
+        dates_ <- unique(as.Date(data_$formated))
+
+        # path
+        symbol_path <- file.path(save_path, tolower(symbol))
+
+        # create path if it doesnt exist, instead get already scraped
+        if (!dir.exists(symbol_path)) {
+          dir.create(symbol_path)
+        } else {
+          scraped_dates <- list.files(symbol_path)
+          scraped_dates <- gsub("_.*", "", scraped_dates)
+          scraped_dates <- as.Date(scraped_dates, "%Y%m%d")
+          dates_ <- as.Date(setdiff(dates_, scraped_dates), origin = "1970-01-01")
+        }
+
+        # scrap loop
+        for (d in dates_) {
+          day_minute <- data_[as.Date(formated) == d]
+          if (is.null(day_minute)) {
+            next()
+          }
+          day_minute <- unique(day_minute, by = c("formated"))
+          setorderv(day_minute, "t")
+          date_ <- gsub("-", "", as.character(as.Date(day_minute$formated[1])))
+          day_minute[, `:=`(DateTime = (hour(formated) * 3600 + minute(formated) * 60 + second(formated)) * 1000,
+                            Open = o * 10000,
+                            High = h * 10000,
+                            Low = l * 10000,
+                            Close = c * 10000,
+                            Volume = v)]
+          day_minute <- day_minute[, .(DateTime, Open, High, Low, Close, Volume)]
+          day_minute[, DateTime := as.character(DateTime)]
+          cols <- colnames(day_minute)[2:ncol(data_qc)]
+          data_qc <- day_minute[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+
+          # save
+          file_name <- file.path(symbol_path, paste0(date_, "_", tolower(symbol), "_minute_trade.csv"))
+          zip_file_name <- file.path(symbol_path, paste0(date_, "_trade.zip"))
+          fwrite(data_qc, file_name, col.names = FALSE)
+          zipr(zip_file_name, file_name)
+          file.remove(file_name)
+        }
+      }
     }
+
   )
 )
+
