@@ -19,32 +19,37 @@ Get data data from FMP Cloud.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{FMP$new()}}
-\item \href{#method-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
-\item \href{#method-get_transcripts}{\code{FMP$get_transcripts()}}
-\item \href{#method-update_transcripts}{\code{FMP$update_transcripts()}}
-\item \href{#method-get_daily}{\code{FMP$get_daily()}}
-\item \href{#method-get_daily_batch}{\code{FMP$get_daily_batch()}}
-\item \href{#method-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
-\item \href{#method-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
-\item \href{#method-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
-\item \href{#method-get_factor_file}{\code{FMP$get_factor_file()}}
-\item \href{#method-get_ipo_date}{\code{FMP$get_ipo_date()}}
-\item \href{#method-get_fi_statement}{\code{FMP$get_fi_statement()}}
-\item \href{#method-get_financial_metrics}{\code{FMP$get_financial_metrics()}}
-\item \href{#method-clone}{\code{FMP$clone()}}
+\item \href{#method-FMP-new}{\code{FMP$new()}}
+\item \href{#method-FMP-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
+\item \href{#method-FMP-get_transcripts}{\code{FMP$get_transcripts()}}
+\item \href{#method-FMP-update_transcripts}{\code{FMP$update_transcripts()}}
+\item \href{#method-FMP-get_daily}{\code{FMP$get_daily()}}
+\item \href{#method-FMP-get_daily_batch}{\code{FMP$get_daily_batch()}}
+\item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
+\item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
+\item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
+\item \href{#method-FMP-get_factor_file}{\code{FMP$get_factor_file()}}
+\item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
+\item \href{#method-FMP-get_fi_statement}{\code{FMP$get_fi_statement()}}
+\item \href{#method-FMP-get_financial_metrics}{\code{FMP$get_financial_metrics()}}
+\item \href{#method-FMP-get_stock_splits}{\code{FMP$get_stock_splits()}}
+\item \href{#method-FMP-get_market_cap}{\code{FMP$get_market_cap()}}
+\item \href{#method-FMP-get_market_cap_bulk}{\code{FMP$get_market_cap_bulk()}}
+\item \href{#method-FMP-get_stock_list}{\code{FMP$get_stock_list()}}
+\item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
+\item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
-\if{html}{
-\out{<details open ><summary>Inherited methods</summary>}
-\itemize{
-\item \out{<span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files">}\href{../../findata/html/DataAbstract.html#method-save_blob_files}{\code{findata::DataAbstract$save_blob_files()}}\out{</span>}
-}
-\out{</details>}
-}
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-FMP-new"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new FMP object.
 \subsection{Usage}{
@@ -63,8 +68,8 @@ A new `FMP` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_earning_announcements"></a>}}
-\if{latex}{\out{\hypertarget{method-get_earning_announcements}{}}}
+\if{html}{\out{<a id="method-FMP-get_earning_announcements"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_earning_announcements}{}}}
 \subsection{Method \code{get_earning_announcements()}}{
 Create a new FMP object.
 \subsection{Usage}{
@@ -83,8 +88,8 @@ Earning announcements data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_transcripts"></a>}}
-\if{latex}{\out{\hypertarget{method-get_transcripts}{}}}
+\if{html}{\out{<a id="method-FMP-get_transcripts"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_transcripts}{}}}
 \subsection{Method \code{get_transcripts()}}{
 Get Earning Call Transcript from FMP cloud.
 \subsection{Usage}{
@@ -114,8 +119,8 @@ Result of GET request
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-update_transcripts"></a>}}
-\if{latex}{\out{\hypertarget{method-update_transcripts}{}}}
+\if{html}{\out{<a id="method-FMP-update_transcripts"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-update_transcripts}{}}}
 \subsection{Method \code{update_transcripts()}}{
 Update earnings announcements data from FMP cloud
 \subsection{Usage}{
@@ -136,8 +141,8 @@ Return transcripts from FMP cloud.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_daily"></a>}}
-\if{latex}{\out{\hypertarget{method-get_daily}{}}}
+\if{html}{\out{<a id="method-FMP-get_daily"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_daily}{}}}
 \subsection{Method \code{get_daily()}}{
 get daily data from FMP cloud
 \subsection{Usage}{
@@ -160,8 +165,8 @@ Return transcripts from FMP cloud.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_daily_batch"></a>}}
-\if{latex}{\out{\hypertarget{method-get_daily_batch}{}}}
+\if{html}{\out{<a id="method-FMP-get_daily_batch"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_daily_batch}{}}}
 \subsection{Method \code{get_daily_batch()}}{
 get daily data from FMP cloud for all stocks
 \subsection{Usage}{
@@ -173,15 +178,15 @@ Scrap all daily data
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_intraday_equities"></a>}}
-\if{latex}{\out{\hypertarget{method-get_intraday_equities}{}}}
+\if{html}{\out{<a id="method-FMP-get_intraday_equities"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities}{}}}
 \subsection{Method \code{get_intraday_equities()}}{
 retrieving intraday market data from FMP cloud.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities(
   symbol,
   multiply = 1,
-  time = "hour",
+  time = "day",
   from = as.character(Sys.Date() - 3),
   to = as.character(Sys.Date())
 )}\if{html}{\out{</div>}}
@@ -207,8 +212,8 @@ Data frame with ohlcv data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_intraday_equities_batch"></a>}}
-\if{latex}{\out{\hypertarget{method-get_intraday_equities_batch}{}}}
+\if{html}{\out{<a id="method-FMP-get_intraday_equities_batch"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities_batch}{}}}
 \subsection{Method \code{get_intraday_equities_batch()}}{
 Get hour data for all history from fmp cloud.
 \subsection{Usage}{
@@ -229,8 +234,8 @@ Data saved to Azure blob.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_sp500_symbols"></a>}}
-\if{latex}{\out{\hypertarget{method-get_sp500_symbols}{}}}
+\if{html}{\out{<a id="method-FMP-get_sp500_symbols"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_sp500_symbols}{}}}
 \subsection{Method \code{get_sp500_symbols()}}{
 Get SP500 symbols from fmp cloud.
 \subsection{Usage}{
@@ -242,8 +247,8 @@ Vector of SP500 symbols.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_factor_file"></a>}}
-\if{latex}{\out{\hypertarget{method-get_factor_file}{}}}
+\if{html}{\out{<a id="method-FMP-get_factor_file"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_factor_file}{}}}
 \subsection{Method \code{get_factor_file()}}{
 Create factor files for calculating adjusted prices (adjusted for splits and dividends).
 \subsection{Usage}{
@@ -255,8 +260,8 @@ Factor files saved to "factor-file" blob.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_ipo_date"></a>}}
-\if{latex}{\out{\hypertarget{method-get_ipo_date}{}}}
+\if{html}{\out{<a id="method-FMP-get_ipo_date"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_ipo_date}{}}}
 \subsection{Method \code{get_ipo_date()}}{
 Get IPO date from fmp cloud
 \subsection{Usage}{
@@ -275,8 +280,8 @@ Stock IPO date.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_fi_statement"></a>}}
-\if{latex}{\out{\hypertarget{method-get_fi_statement}{}}}
+\if{html}{\out{<a id="method-FMP-get_fi_statement"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_fi_statement}{}}}
 \subsection{Method \code{get_fi_statement()}}{
 Get FI data.
 \subsection{Usage}{
@@ -303,8 +308,8 @@ data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_financial_metrics"></a>}}
-\if{latex}{\out{\hypertarget{method-get_financial_metrics}{}}}
+\if{html}{\out{<a id="method-FMP-get_financial_metrics"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_financial_metrics}{}}}
 \subsection{Method \code{get_financial_metrics()}}{
 Get financial ratios, company key metrics.
 \subsection{Usage}{
@@ -331,8 +336,91 @@ data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-FMP-get_stock_splits"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_stock_splits}{}}}
+\subsection{Method \code{get_stock_splits()}}{
+Get stock splits data from FMP cloud Prep.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_stock_splits(start_date = Sys.Date() - 5, end_date = Sys.Date())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{start_date}}{Start date}
+
+\item{\code{end_date}}{End date.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of stock splits
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_market_cap"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_market_cap}{}}}
+\subsection{Method \code{get_market_cap()}}{
+Get market cap data from FMP cloud Prep.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_market_cap(ticker, limit = 10)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ticker}}{Ticker.}
+
+\item{\code{limit}}{Limit.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table with market cap data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_market_cap_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_market_cap_bulk}{}}}
+\subsection{Method \code{get_market_cap_bulk()}}{
+Get market cap data from FMP cloud Prep - bulk.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_market_cap_bulk()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with market cap data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_stock_list"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_stock_list}{}}}
+\subsection{Method \code{get_stock_list()}}{
+Get stock list.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_stock_list()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with stock list data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_available_traded_list"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_available_traded_list}{}}}
+\subsection{Method \code{get_available_traded_list()}}{
+Get available traded list.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_available_traded_list()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with available traded list data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

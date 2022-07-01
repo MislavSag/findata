@@ -18,6 +18,73 @@ Lean = R6::R6Class(
       print("Good")
     },
 
+    #' @description Convert FMP Cloud daily data to Quantconnect daily data.
+    #'
+    #' @param save_path Quantconnect data equity daily folder path.
+    #'
+    #' @return No valuie returned.
+    equity_daily_from_fmpcloud = function(save_path = "D:/findata") {
+
+      # crate pin board
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "fmpcloud-daily"),
+        path = "",
+        n_processes = 2L,
+        versioned = FALSE,
+        cache = save_path
+      )
+      blob_dir <- pin_list(board)
+
+      # downlaod new data if available
+      files_new <- setdiff(blob_dir, list.files(save_path))
+      lapply(files_new, pin_download, board = board)
+      files_local <- vapply(file.path(CACHEDIR, blob_dir),
+                            list.files, recursive = TRUE, pattern = "\\.csv", full.names = TRUE,
+                            FUN.VALUE = character(1))
+      prices_l <- lapply(files_local, fread)
+      prices <- prices_l[vapply(prices_l, function(x) nrow(x) > 0, FUN.VALUE = logical(1))]
+      prices <- rbindlist(prices)
+
+      # 19980102 00:00	136300	162500	135000	162500	6315000
+      # 19980105 00:00	165000	165600	151900	160000	5677300
+      # 19980106 00:00	159400	205000	147500	190000	16064600
+      # 19980107 00:00	188100	192500	173100	174400	9122300
+
+      # change every file to quantconnect like file and add to destination
+      for (symbol in blob_dir) {
+        # debug
+        print(symbol)
+
+        # load data
+        data_ <- pin_read(board, tolower(symbol))
+        data_ <- as.data.table(data_)
+
+        # convert to lean format
+        data_[, `:=`(
+          DateTime = as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST"),
+          Open = o * 1000,
+          High = h * 1000,
+          Low = l * 1000,
+          Close = c * 1000,
+          Volume = v
+        )]
+        data_ <- data_[format(DateTime, "%H:%M:%S") %between% c("10:00:00", "16:01:00")]
+        data_[, DateTime := format.POSIXct(DateTime, format = "%Y%m%d %H:%M")]
+        data_qc <- data_[, .(DateTime, Open, High, Low, Close, Volume)]
+        data_qc[, DateTime := as.character(DateTime)]
+        cols <- colnames(data_qc)[2:ncol(data_qc)]
+        data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+
+        # save to destination
+        file_name_csv <- paste0(tolower(symbol), ".csv")
+        fwrite(data_qc, file.path(save_path, file_name_csv), col.names = FALSE)
+        zip_file <- file.path(save_path, paste0(tolower(symbol), ".zip"))
+        zipr(zip_file, file.path(save_path, file_name_csv))
+        file.remove(file.path(save_path, file_name_csv))
+      }
+    },
+
+
     #' @description Convert FMP Cloud hour data to Quantconnect hour data.
     #'
     #' @param save_path Quantconnect data equity hour folder path.
@@ -29,7 +96,7 @@ Lean = R6::R6Class(
       board <- board_azure(
         container = storage_container(private$azure_storage_endpoint, "equity-usa-hour-trades-fmplcoud"),
         path = "",
-        n_processes = 4L,
+        n_processes = 2L,
         versioned = FALSE,
         cache = NULL
       )
@@ -80,7 +147,7 @@ Lean = R6::R6Class(
       board <- board_azure(
         container = storage_container(private$azure_storage_endpoint, "equity-usa-minute-trades-fmplcoud"),
         path = "",
-        n_processes = 4L,
+        n_processes = 2L,
         versioned = FALSE,
         cache = NULL
       )
@@ -132,13 +199,13 @@ Lean = R6::R6Class(
                             Volume = v)]
           day_minute <- day_minute[, .(DateTime, Open, High, Low, Close, Volume)]
           day_minute[, DateTime := as.character(DateTime)]
-          cols <- colnames(day_minute)[2:ncol(data_qc)]
-          data_qc <- day_minute[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+          cols <- colnames(day_minute)[2:ncol(day_minute)]
+          day_minute[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
 
           # save
           file_name <- file.path(symbol_path, paste0(date_, "_", tolower(symbol), "_minute_trade.csv"))
           zip_file_name <- file.path(symbol_path, paste0(date_, "_trade.zip"))
-          fwrite(data_qc, file_name, col.names = FALSE)
+          fwrite(day_minute, file_name, col.names = FALSE)
           zipr(zip_file_name, file_name)
           file.remove(file_name)
         }

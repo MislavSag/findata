@@ -10,7 +10,7 @@
 #' @import pins
 #' @import stringr
 #' @importFrom jsonlite fromJSON
-#' @importFrom httr GET POST RETRY content timeout
+#' @importFrom httr GET POST RETRY content timeout add_headers
 #' @importFrom zip zipr
 #' @importFrom zoo na.locf
 "_PACKAGE"

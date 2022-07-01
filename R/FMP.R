@@ -9,9 +9,9 @@ FMP = R6::R6Class(
   inherit = DataAbstract,
 
   public = list(
-
     #' @field api_key API KEY for FMP Cloud
     api_key = NULL,
+
 
     #' @description
     #' Create a new FMP object.
@@ -289,7 +289,7 @@ FMP = R6::R6Class(
     #' @return Data frame with ohlcv data.
     get_intraday_equities = function(symbol,
                                      multiply = 1,
-                                     time = 'hour',
+                                     time = 'day',
                                      from = as.character(Sys.Date() - 3),
                                      to = as.character(Sys.Date())) {
 
@@ -358,6 +358,7 @@ FMP = R6::R6Class(
 
         # get trading days from daily data
         print("get daily data")
+        # cache_prune(days=0) not sure where to put this !!!
         daily_data <- self$get_intraday_equities(symbol,
                                                  multiply = 1,
                                                  time = 'day',
@@ -371,7 +372,7 @@ FMP = R6::R6Class(
         board <- board_azure(
           container = storage_container(private$azure_storage_endpoint, storage_name), # HERE CHANGE WHEN MINUTE DATA !!!
           path = "",
-          n_processes = 10,
+          n_processes = 4,
           versioned = FALSE,
           cache = NULL
         )
@@ -640,13 +641,133 @@ FMP = R6::R6Class(
         res <- content(p)
         res <- rbindlist(res, fill = TRUE)
         return(res)
+      },
+
+    #' @description Get stock splits data from FMP cloud Prep.
+    #'
+    #' @param start_date Start date
+    #' @param end_date End date.
+    #'
+    #' @return data.table of stock splits
+    get_stock_splits = function(start_date = Sys.Date() - 5,
+                                end_date = Sys.Date()) {
+      url <- "https://financialmodelingprep.com/api/v3/stock_split_calendar"
+      p <- RETRY("GET", url, query = list(from = start_date,
+                                          to = end_date,
+                                          apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
+
+    #' @description Get market cap data from FMP cloud Prep.
+    #'
+    #' @param ticker Ticker.
+    #' @param limit Limit.
+    #'
+    #' @return data.table with market cap data.
+    get_market_cap = function(ticker, limit = 10) {
+      url <- "https://financialmodelingprep.com/api/v3/historical-market-capitalization/"
+      url <- paste0(url, toupper(ticker))
+      p <- RETRY("GET", url, query = list(limit = limit, apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
+
+    # get_market_cap = function(ticker, limit = 10) {
+    #   url <- "https://financialmodelingprep.com/api/v3/historical-market-capitalization/"
+    #   url <- paste0(url, toupper(ticker))
+    #   p <- RETRY("GET", url, query = list(limit = limit, apikey = Sys.getenv("APIKEY-FMPCLOUD")))
+    #   res <- content(p)
+    #   res <- rbindlist(res, fill = TRUE)
+    #   return(res)
+    # }
+
+    #' @description Get market cap data from FMP cloud Prep - bulk.
+    #'
+    #' @return data.table with market cap data.
+    get_market_cap_bulk = function() {
+
+      # define board
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "fmpcloud"),
+        path = "",
+        n_processes = 6L,
+        versioned = FALSE,
+        cache = NULL
+      )
+
+      # get history data if exists
+      print("Read old data")
+      file_exists <- pin_exists(board = board, private$market_cap_file_name)
+      if (file_exists) {
+        data_history <- pin_read(board, private$market_cap_file_name)
+        data_history <- as.data.table(data_history)
+        data_history[, `:=`(symbol = as.character(symbol),
+                            date = as.Date(as.character(date)))]
+        days_history <- max(data_history$date)
+        days_history <- Sys.Date() - days_history
+        if (days_history <= 1) {
+          return(NULL)
+        }
+        tickers <- unique(as.character(data_history$symbol))
+      } else {
+        fmp <- FMP$new()
+        tickers <- fmp$get_available_traded_list()
+        tickers <- tickers[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "ETF", "OTC")]
+        tickers <- unique(tickers$symbol)
+        days_history = 50000
       }
+
+      # get new data
+      print("Get new data")
+      data_ <- lapply(tickers, self$get_market_cap, limit = days_history + 1)
+      DT <- rbindlist(data_)
+      DT[, date := as.Date(date)]
+
+      # merge old and new
+      if (file_exists) {
+        data_new <- rbind(data_history, DT)
+        data_new <- unique(data_new)
+      } else {
+        data_new <- copy(DT)
+      }
+
+      # write (save) objeet to azure blob
+      pin_write(board, data_new, private$market_cap_file_name, type = "csv")
+
+      return(data_new)
+    },
+
+    #' @description Get stock list.
+    #'
+    #' @return data.table with stock list data.
+    get_stock_list = function() {
+      url <- "https://financialmodelingprep.com/api/v3/stock/list"
+      p <- RETRY("GET", url, query = list(apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
+
+    #' @description Get available traded list.
+    #'
+    #' @return data.table with available traded list data.
+    get_available_traded_list = function() {
+      url <- "https://financialmodelingprep.com/api/v3/available-traded/list"
+      p <- RETRY("GET", url, query = list(apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    }
   ),
 
   private = list(
     ea_file_name = "EarningAnnouncements",
     transcripts_file_name = "earnings-calendar.rds",
     prices_file_name = "prices.csv",
+    market_cap_file_name = "MarketCap",
 
     fmpv_path = function(path = "earning_calendar", v = "v3", ...) {
 

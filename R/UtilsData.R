@@ -75,15 +75,21 @@ UtilsData = R6::R6Class(
     #' @return Adjusted data saved to Azure blob
     adjust_intraday_data = function(freq = c("hour", "minute")) {
 
+      # delete cached pins
+      # cache_prune(days=0)
+
       # define board for factor files
       board_factors <- board_azure(
         container = storage_container(private$azure_storage_endpoint, "factor-file"),
         path = "",
-        n_processes = 10,
+        n_processes = 2,
         versioned = FALSE,
         cache = NULL
       )
-      factor_files <- lapply(pin_list(board_factors), pin_read, board = board_factors)
+      factor_files <- lapply(pin_list(board_factors), function(x) {
+        print(x)
+        pin_read(x, board = board_factors)
+      })
       names(factor_files) <- toupper(pin_list(board_factors))
       factor_files <- rbindlist(factor_files, idcol = "symbol")
       factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
@@ -115,14 +121,14 @@ UtilsData = R6::R6Class(
       board_files <- pin_list(board)
 
       # board for market adjusted data
-      storage_name_adjusted <- paste0(storage_name, "-adjusted")
-      board_adjusted <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, storage_name_adjusted),
-        path = "",
-        n_processes = 10,
-        versioned = FALSE,
-        cache = NULL
-      )
+        storage_name_adjusted <- paste0(storage_name, "-adjusted")
+        board_adjusted <- board_azure(
+          container = storage_container(private$azure_storage_endpoint, storage_name_adjusted),
+          path = "",
+          n_processes = 10,
+          versioned = FALSE,
+          cache = NULL
+        )
 
       # market data adjusments
       for (f in board_files) {
@@ -135,14 +141,22 @@ UtilsData = R6::R6Class(
         if (nrow(market_data) == 0) next()
         market_data <- as.data.table(market_data)
         market_data[, datetime := as.POSIXct(as.character(formated), tz = "America/New_York")]
-        market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:01:00")]
+        if (freq == "hour") {
+          market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:01:00")]
+        } else if(freq == "minute") {
+          market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
+        }
+        ##### TEST #####
+        min(format.POSIXct(market_data$datetime, format = "%H:%M:%S"))
+        max(format.POSIXct(market_data$datetime, format = "%H:%M:%S"))
+        ##### TEST #####
         market_data[, symbol := toupper(f)]
         market_data <- market_data[, .(symbol, datetime, o, h, l, c, v)]
         setnames(market_data, c("symbol", "datetime", "open", "high", "low", "close", "volume"))
 
         # extract only data after IPO
         market_data_new <- ipo_dates_dt[market_data, on = "symbol"]
-        market_data_new <- market_data_new[datetime >= ipo_dates]
+        market_data_new <- market_data_new[as.Date(datetime) >= ipo_dates]
         market_data_new_daily <- market_data_new[, .SD[.N], by = .(symbol, date = as.Date(datetime))]
         market_data_new_daily$ipo_dates <- NULL
 

@@ -12,24 +12,24 @@ Various help data.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{UtilsData$new()}}
-\item \href{#method-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
-\item \href{#method-get_split_factor}{\code{UtilsData$get_split_factor()}}
-\item \href{#method-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
-\item \href{#method-sp500_history}{\code{UtilsData$sp500_history()}}
-\item \href{#method-clone}{\code{UtilsData$clone()}}
+\item \href{#method-UtilsData-new}{\code{UtilsData$new()}}
+\item \href{#method-UtilsData-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
+\item \href{#method-UtilsData-get_split_factor}{\code{UtilsData$get_split_factor()}}
+\item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
+\item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
+\item \href{#method-UtilsData-clone}{\code{UtilsData$clone()}}
 }
 }
-\if{html}{
-\out{<details open ><summary>Inherited methods</summary>}
-\itemize{
-\item \out{<span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files">}\href{../../findata/html/DataAbstract.html#method-save_blob_files}{\code{findata::DataAbstract$save_blob_files()}}\out{</span>}
-}
-\out{</details>}
-}
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-UtilsData-new"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new UtilsData object.
 \subsection{Usage}{
@@ -41,8 +41,8 @@ A new `UtilsData` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_ticker_data"></a>}}
-\if{latex}{\out{\hypertarget{method-get_ticker_data}{}}}
+\if{html}{\out{<a id="method-UtilsData-get_ticker_data"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_ticker_data}{}}}
 \subsection{Method \code{get_ticker_data()}}{
 Get tick data from finam source using QuantTools.
 \subsection{Usage}{
@@ -61,8 +61,8 @@ Get investing com ea data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_split_factor"></a>}}
-\if{latex}{\out{\hypertarget{method-get_split_factor}{}}}
+\if{html}{\out{<a id="method-UtilsData-get_split_factor"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_split_factor}{}}}
 \subsection{Method \code{get_split_factor()}}{
 Get split data from the web and calculate split factors.
 \subsection{Usage}{
@@ -81,8 +81,8 @@ Stock splits
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-adjust_intraday_data"></a>}}
-\if{latex}{\out{\hypertarget{method-adjust_intraday_data}{}}}
+\if{html}{\out{<a id="method-UtilsData-adjust_intraday_data"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-adjust_intraday_data}{}}}
 \subsection{Method \code{adjust_intraday_data()}}{
 Adjusted instraday data for splits and dividends
 \subsection{Usage}{
@@ -101,8 +101,8 @@ Adjusted data saved to Azure blob
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-sp500_history"></a>}}
-\if{latex}{\out{\hypertarget{method-sp500_history}{}}}
+\if{html}{\out{<a id="method-UtilsData-sp500_history"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-sp500_history}{}}}
 \subsection{Method \code{sp500_history()}}{
 Get SP500 stocks for every date.
 \subsection{Usage}{
@@ -114,8 +114,8 @@ Data table of Sp500 tickers
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-UtilsData-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -12,21 +12,21 @@ Get data data from finam using Quanttools package.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Finam$new()}}
-\item \href{#method-get_ticker_data}{\code{Finam$get_ticker_data()}}
-\item \href{#method-clone}{\code{Finam$clone()}}
+\item \href{#method-Finam-new}{\code{Finam$new()}}
+\item \href{#method-Finam-get_ticker_data}{\code{Finam$get_ticker_data()}}
+\item \href{#method-Finam-clone}{\code{Finam$clone()}}
 }
 }
-\if{html}{
-\out{<details open ><summary>Inherited methods</summary>}
-\itemize{
-\item \out{<span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files">}\href{../../findata/html/DataAbstract.html#method-save_blob_files}{\code{findata::DataAbstract$save_blob_files()}}\out{</span>}
-}
-\out{</details>}
-}
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Finam-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Finam-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new Finam object.
 \subsection{Usage}{
@@ -38,8 +38,8 @@ A new `Finam` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_ticker_data"></a>}}
-\if{latex}{\out{\hypertarget{method-get_ticker_data}{}}}
+\if{html}{\out{<a id="method-Finam-get_ticker_data"></a>}}
+\if{latex}{\out{\hypertarget{method-Finam-get_ticker_data}{}}}
 \subsection{Method \code{get_ticker_data()}}{
 Get tick data from finam source using QuantTools.
 \subsection{Usage}{
@@ -63,8 +63,8 @@ Get investing com ea data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-Finam-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-Finam-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

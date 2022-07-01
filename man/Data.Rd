@@ -16,14 +16,14 @@ Get or update all data from the package.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Data$new()}}
-\item \href{#method-get_all_data}{\code{Data$get_all_data()}}
-\item \href{#method-clone}{\code{Data$clone()}}
+\item \href{#method-Data-new}{\code{Data$new()}}
+\item \href{#method-Data-get_all_data}{\code{Data$get_all_data()}}
+\item \href{#method-Data-clone}{\code{Data$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Data-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Data-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new Data object.
 \subsection{Usage}{
@@ -42,8 +42,8 @@ A new `Data` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get_all_data"></a>}}
-\if{latex}{\out{\hypertarget{method-get_all_data}{}}}
+\if{html}{\out{<a id="method-Data-get_all_data"></a>}}
+\if{latex}{\out{\hypertarget{method-Data-get_all_data}{}}}
 \subsection{Method \code{get_all_data()}}{
 Scrap (download) all data
 \subsection{Usage}{
@@ -55,8 +55,8 @@ Earning announcements data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-Data-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-Data-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

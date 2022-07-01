@@ -9,14 +9,14 @@ Abstract class for all other data classes.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{DataAbstract$new()}}
-\item \href{#method-save_blob_files}{\code{DataAbstract$save_blob_files()}}
-\item \href{#method-clone}{\code{DataAbstract$clone()}}
+\item \href{#method-DataAbstract-new}{\code{DataAbstract$new()}}
+\item \href{#method-DataAbstract-save_blob_files}{\code{DataAbstract$save_blob_files()}}
+\item \href{#method-DataAbstract-clone}{\code{DataAbstract$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-DataAbstract-new"></a>}}
+\if{latex}{\out{\hypertarget{method-DataAbstract-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
@@ -35,8 +35,8 @@ A new `DataAbstract` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-save_blob_files"></a>}}
-\if{latex}{\out{\hypertarget{method-save_blob_files}{}}}
+\if{html}{\out{<a id="method-DataAbstract-save_blob_files"></a>}}
+\if{latex}{\out{\hypertarget{method-DataAbstract-save_blob_files}{}}}
 \subsection{Method \code{save_blob_files()}}{
 Save files bob. It automaticly saves files as csv and rds objects
 \subsection{Usage}{
@@ -56,8 +56,8 @@ Save files bob. It automaticly saves files as csv and rds objects
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-DataAbstract-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-DataAbstract-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

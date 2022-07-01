@@ -146,18 +146,25 @@ InvestingCom = R6::R6Class(
     #' @return Get and update ea data from investingcom,
     update_investingcom_earnings = function(days_history = 10) {
 
+      # define board
+      board <- board_azure(
+        container = storage_container(private$azure_storage_endpoint, "investingcom"),
+        path = "",
+        n_processes = 6L,
+        versioned = FALSE,
+        cache = NULL
+      )
 
-      # read old file if exists
-      cont <- storage_container(private$azure_storage_endpoint, "investingcom")
-      blob_files <- list_blobs(cont)
-      # "EarningAnnouncementsInvestingCom.csv" %in% blob_files$name
-      if (private$ea_file_name %in% blob_files$name) {
-        history <- storage_read_csv(cont, private$ea_file_name) # history <- storage_read_csv(cont, "EarningAnnouncementsInvestingCom.csv")
-        history$datetime <- as.POSIXct(history$datetime, tz = "UTC")
-        attr(history$datetime, "tzone") <- "EST"
+      # define container
+      blob_files <- pin_list(board)
+      file_exists_on_blob <- private$ea_file_name %in% blob_files
+      if (file_exists_on_blob) {
+        history <- pin_read(board, private$ea_file_name)
         history <- as.data.table(history)
-        history <- history[as.Date(datetime) < (Sys.Date() - days_history)] # there can be changes in the data in the last 10 days? Connservative approach.
-        date_ <- max(as.Date(history$datetime)) + 1
+        cols_factors <- names(history)[sapply(history, is.factor)]
+        history[, (cols_factors) := lapply(.SD, as.character), .SDcols = cols_factors]
+        history <- history[as.Date(substr(datetime, 1, 10)) < (Sys.Date() - days_history)] # there can be changes in the data in the last 10 days? Connservative approach.
+        date_ <- max(as.Date(substr(history$datetime, 1, 10)))
       } else {
         date_ <- as.Date("2014-01-01")
       }
@@ -172,8 +179,7 @@ InvestingCom = R6::R6Class(
       }
 
       # clean data
-      if (private$ea_file_name %in% blob_files$name) {
-        new$datetime <- as.POSIXct(new$datetime, tz = "EST")
+      if (pin_exists(board, private$ea_file_name)) {
         results <- rbind(history, new)
       } else {
         results <- copy(new)
@@ -182,20 +188,12 @@ InvestingCom = R6::R6Class(
       setorder(results, "datetime")
 
       # save file to Azure blob if blob_file is not NA
-      # print(paste0("Data saved to blob file ", private$ea_file_name))
-      super$save_blob_files(results, file_name = private$ea_file_name, container = "investingcom")
-      # print(paste0("Data saved to blob file ", private$ea_file_name))
-
-      # save file to Azure blob if blob_file is not NA
-      # if (!is.na(blob_file)) {
-      #   save_blob_files(events_new, file_name = blob_file, container = "fundamentals")
-      #   print(paste0("Data saved to blob file ", blob_file))
-      # }
+      pin_write(board, results, name = private$ea_file_name, type = "csv")
 
       return(new)
     }
   ),
   private = list(
-    ea_file_name = "EarningAnnouncementsInvestingCom.csv"
+    ea_file_name = "EarningAnnouncementsInvestingCom"
   )
 )

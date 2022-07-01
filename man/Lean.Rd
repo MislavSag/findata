@@ -12,22 +12,23 @@ Help functions for transforming raw market data to Quantconnect data.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Lean$new()}}
-\item \href{#method-equity_hour_from_fmpcloud}{\code{Lean$equity_hour_from_fmpcloud()}}
-\item \href{#method-equity_minute_from_fmpcloud}{\code{Lean$equity_minute_from_fmpcloud()}}
-\item \href{#method-clone}{\code{Lean$clone()}}
+\item \href{#method-Lean-new}{\code{Lean$new()}}
+\item \href{#method-Lean-equity_daily_from_fmpcloud}{\code{Lean$equity_daily_from_fmpcloud()}}
+\item \href{#method-Lean-equity_hour_from_fmpcloud}{\code{Lean$equity_hour_from_fmpcloud()}}
+\item \href{#method-Lean-equity_minute_from_fmpcloud}{\code{Lean$equity_minute_from_fmpcloud()}}
+\item \href{#method-Lean-clone}{\code{Lean$clone()}}
 }
 }
-\if{html}{
-\out{<details open ><summary>Inherited methods</summary>}
-\itemize{
-\item \out{<span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files">}\href{../../findata/html/DataAbstract.html#method-save_blob_files}{\code{findata::DataAbstract$save_blob_files()}}\out{</span>}
-}
-\out{</details>}
-}
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Lean-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new Lean object.
 \subsection{Usage}{
@@ -39,8 +40,28 @@ A new `Lean` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-equity_hour_from_fmpcloud"></a>}}
-\if{latex}{\out{\hypertarget{method-equity_hour_from_fmpcloud}{}}}
+\if{html}{\out{<a id="method-Lean-equity_daily_from_fmpcloud"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-equity_daily_from_fmpcloud}{}}}
+\subsection{Method \code{equity_daily_from_fmpcloud()}}{
+Convert FMP Cloud daily data to Quantconnect daily data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Lean$equity_daily_from_fmpcloud(save_path = "D:/findata")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{save_path}}{Quantconnect data equity daily folder path.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+No valuie returned.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Lean-equity_hour_from_fmpcloud"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-equity_hour_from_fmpcloud}{}}}
 \subsection{Method \code{equity_hour_from_fmpcloud()}}{
 Convert FMP Cloud hour data to Quantconnect hour data.
 \subsection{Usage}{
@@ -61,8 +82,8 @@ No valuie returned.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-equity_minute_from_fmpcloud"></a>}}
-\if{latex}{\out{\hypertarget{method-equity_minute_from_fmpcloud}{}}}
+\if{html}{\out{<a id="method-Lean-equity_minute_from_fmpcloud"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-equity_minute_from_fmpcloud}{}}}
 \subsection{Method \code{equity_minute_from_fmpcloud()}}{
 Convert FMP Cloud minute data to Quantconnect minute data.
 \subsection{Usage}{
@@ -83,8 +104,8 @@ No value returned.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-Lean-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
