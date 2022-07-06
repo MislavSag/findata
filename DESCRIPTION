@@ -19,12 +19,12 @@ Imports:
     rvest,
     stringr,
     jsonlite,
-    rlang,
     QuantTools,
     pins,
     zip,
     zoo
 Suggests: 
     rmarkdown,
-    knitr
+    knitr,
+    rlang
 VignetteBuilder: knitr

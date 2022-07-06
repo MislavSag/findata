@@ -10,11 +10,18 @@ UtilsData = R6::R6Class(
 
   public = list(
 
+    #' @field azure_storage_endpoint Azure storate endpont
+    azure_storage_endpoint = NULL,
+
     #' @description
     #' Create a new UtilsData object.
     #'
     #' @return A new `UtilsData` object.
     initialize = function() {
+
+      # endpoint
+      super$initialize(NULL)
+
       print("Good")
     },
 
@@ -80,7 +87,7 @@ UtilsData = R6::R6Class(
 
       # define board for factor files
       board_factors <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "factor-file"),
+        container = storage_container(self$azure_storage_endpoint, "factor-file"),
         path = "",
         n_processes = 2,
         versioned = FALSE,
@@ -112,7 +119,7 @@ UtilsData = R6::R6Class(
       # board for market data
       storage_name <- paste0("equity-usa-", freq, "-trades-fmplcoud")
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, storage_name),
+        container = storage_container(self$azure_storage_endpoint, storage_name),
         path = "",
         n_processes = 10,
         versioned = FALSE,
@@ -123,7 +130,7 @@ UtilsData = R6::R6Class(
       # board for market adjusted data
         storage_name_adjusted <- paste0(storage_name, "-adjusted")
         board_adjusted <- board_azure(
-          container = storage_container(private$azure_storage_endpoint, storage_name_adjusted),
+          container = storage_container(self$azure_storage_endpoint, storage_name_adjusted),
           path = "",
           n_processes = 10,
           versioned = FALSE,

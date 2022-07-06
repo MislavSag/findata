@@ -6,6 +6,13 @@
 \description{
 Abstract class for all other data classes.
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -20,7 +27,7 @@ Abstract class for all other data classes.
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(azure_storage_endpoint)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(azure_storage_endpoint = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

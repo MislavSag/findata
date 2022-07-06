@@ -9,6 +9,13 @@ Get data data from investing.com.
 \section{Super class}{
 \code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{InvestingCom}
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{

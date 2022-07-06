@@ -12,6 +12,9 @@ FMP = R6::R6Class(
     #' @field api_key API KEY for FMP Cloud
     api_key = NULL,
 
+    #' @field azure_storage_endpoint Azure storate endpont
+    azure_storage_endpoint = NULL,
+
 
     #' @description
     #' Create a new FMP object.
@@ -20,6 +23,9 @@ FMP = R6::R6Class(
     #'
     #' @return A new `FMP` object.
     initialize = function(api_key = NULL) {
+
+      # endpoint
+      super$initialize(NULL)
 
       # check and define variables
       if (is.null(api_key)) {
@@ -39,7 +45,7 @@ FMP = R6::R6Class(
 
       # define board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "fmpcloud"),
+        container = storage_container(self$azure_storage_endpoint, "fmpcloud"),
         path = "",
         n_processes = 6L,
         versioned = FALSE,
@@ -47,7 +53,7 @@ FMP = R6::R6Class(
       )
 
       # define container
-      # cont <- storage_container(private$azure_storage_endpoint, "fmpcloud")
+      # cont <- storage_container(self$azure_storage_endpoint, "fmpcloud")
       blob_files <- pin_list(board)
       file_exists_on_blob <- private$ea_file_name %in% blob_files
       if (file_exists_on_blob) {
@@ -150,7 +156,7 @@ FMP = R6::R6Class(
     update_transcripts = function(symbols, check_years = c(2021, 2022)) {
 
       # set up container
-      cont <- storage_container(private$azure_storage_endpoint, "transcripts")
+      cont <- storage_container(self$azure_storage_endpoint, "transcripts")
       # cont <- storage_container(storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), key=Sys.getenv("BLOB-KEY")), "transcripts")
 
       # import transcripts metadata for all symbols
@@ -224,7 +230,7 @@ FMP = R6::R6Class(
     get_daily = function(symbols, date_start, date_end) {
 
       # define container
-      cont <- storage_container(private$azure_storage_endpoint, "fmpcloud")
+      cont <- storage_container(self$azure_storage_endpoint, "fmpcloud")
 
       # get daily data from FMP cloud
       result <- lapply(symbols, function(x) {
@@ -253,7 +259,7 @@ FMP = R6::R6Class(
 
       # create board for saving files
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "fmpcloud-daily"),
+        container = storage_container(self$azure_storage_endpoint, "fmpcloud-daily"),
         path = "",
         n_processes = 6L,
         versioned = FALSE,
@@ -370,7 +376,7 @@ FMP = R6::R6Class(
         # define board
         storage_name <- paste0("equity-usa-", freq, "-trades-fmplcoud")
         board <- board_azure(
-          container = storage_container(private$azure_storage_endpoint, storage_name), # HERE CHANGE WHEN MINUTE DATA !!!
+          container = storage_container(self$azure_storage_endpoint, storage_name), # HERE CHANGE WHEN MINUTE DATA !!!
           path = "",
           n_processes = 4,
           versioned = FALSE,
@@ -461,7 +467,7 @@ FMP = R6::R6Class(
       # define board
       storage_name <- paste0("equity-usa-hour-trades-fmplcoud")
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, storage_name),
+        container = storage_container(self$azure_storage_endpoint, storage_name),
         path = "",
         n_processes = 10,
         versioned = FALSE,
@@ -471,7 +477,7 @@ FMP = R6::R6Class(
 
       # define board for factor files
       board_factors <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "factor-file"),
+        container = storage_container(self$azure_storage_endpoint, "factor-file"),
         path = "",
         n_processes = 10,
         versioned = FALSE,
@@ -691,7 +697,7 @@ FMP = R6::R6Class(
 
       # define board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "fmpcloud"),
+        container = storage_container(self$azure_storage_endpoint, "fmpcloud"),
         path = "",
         n_processes = 6L,
         versioned = FALSE,

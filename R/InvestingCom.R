@@ -10,11 +10,18 @@ InvestingCom = R6::R6Class(
 
   public = list(
 
+    #' @field azure_storage_endpoint Azure storate endpont
+    azure_storage_endpoint = NULL,
+
     #' @description
     #' Create a new InvestingCom object.
     #'
     #' @return A new `InvestingCom` object.
     initialize = function() {
+
+      # endpoint
+      super$initialize(NULL)
+
       print("Good")
     },
 
@@ -148,7 +155,7 @@ InvestingCom = R6::R6Class(
 
       # define board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "investingcom"),
+        container = storage_container(self$azure_storage_endpoint, "investingcom"),
         path = "",
         n_processes = 6L,
         versioned = FALSE,

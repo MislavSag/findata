@@ -13,6 +13,8 @@ Get data data from FMP Cloud.
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
 \item{\code{api_key}}{API KEY for FMP Cloud}
+
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
 }
 \if{html}{\out{</div>}}
 }
