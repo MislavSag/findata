@@ -523,14 +523,7 @@ FMP = R6::R6Class(
         market_data_hour <- as.data.table(market_data_hour)
         market_data_hour[, formated := as.POSIXct(formated, tz = "America/New_York")]
         market_data_hour <- market_data_hour[format.POSIXct(formated, format = "%H:%D:%M") %between% c("09:30:00", "16:01:00")]
-        market_data_hour[, datetime_test := as.POSIXct(market_data_hour$t / 1000, origin = "1970-01-01", tz = "UTC")]
-        attr(market_data_hour$datetime_test, "tzone") <- "America/New_York"
-        market_data_hour[symbol == "aapl"]
         tail(market_data_hour, 100)
-
-
-        fmp <- FMP$new()
-        fmp$get_intraday_equities("AAPL", 1, "hour", as.character(as.Date("2022-05-05")), as.character(as.Date("2022-05-08")))
 
         market_data_daily <- market_data_hour[, .SD[.N], by = .(date = as.Date(formated))]
         market_data_daily[,symbol := toupper(f)]
