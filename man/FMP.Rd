@@ -39,6 +39,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_market_cap_bulk}{\code{FMP$get_market_cap_bulk()}}
 \item \href{#method-FMP-get_stock_list}{\code{FMP$get_stock_list()}}
 \item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
+\item \href{#method-FMP-get_sp500_constituent}{\code{FMP$get_sp500_constituent()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -418,6 +419,19 @@ Get available traded list.
 
 \subsection{Returns}{
 data.table with available traded list data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_sp500_constituent"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_sp500_constituent}{}}}
+\subsection{Method \code{get_sp500_constituent()}}{
+Get SP500 stocks.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_sp500_constituent()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with SP500 tocks.
 }
 }
 \if{html}{\out{<hr>}}

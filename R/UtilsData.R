@@ -205,6 +205,62 @@ UtilsData = R6::R6Class(
       setorder(sp500_symbols, "date")
 
       return(sp500_symbols)
+    },
+
+    #' @description Help function to import clean data from Azureblob.
+    #'
+    #' @param symbols Symbols
+    #' @param frequency Frequency can be hour and minute.
+    #'
+    #' @return Data table with market prices
+    get_market_data = function(symbols = c("aapl", "aal"),
+                               frequency = "hour") {
+
+
+      ##### DEBUG #####
+      # library(pins)
+      # library(data.table)
+      # library(fasttime)
+      # symbols = c("aapl", "aal", "fgsdf")
+      # frequency = "hour"
+      # self <- list()
+      # self$azure_storage_endpoint = AzureStor::storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
+      ##### DEBUG #####
+
+      # board
+      sc <- storage_container(self$azure_storage_endpoint,
+                              paste0("equity-usa-",
+                                     frequency,
+                                     "-trades-fmplcoud-adjusted"))
+      board_market_data <- board_azure(
+        container = sc,
+        path = "",
+        n_processes = 6L,
+        versioned = NULL,
+        cache = NULL
+      )
+
+      # check if symbols on blob azure
+      symbols_exists <- tolower(symbols) %in% pin_list(board_market_data)
+      print(paste0("This symbols are not on blob: ",
+                   unlist(symbols[symbols_exists == FALSE])))
+      symbols <- symbols[symbols_exists]
+
+      # import minute market data
+      market_data_l <- lapply(tolower(symbols), pin_read, board = board_market_data)
+      names(market_data_l) <- tolower(symbols)
+      market_data <- rbindlist(market_data_l, idcol = "symbol")
+      market_data[, datetime := fastPOSIXct(as.character(datetime), tz = "GMT")]
+      market_data[, datetime := as.POSIXct(as.numeric(datetime),
+                                           origin=as.POSIXct("1970-01-01", tz="EST"),
+                                           tz="EST")]
+      market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
+      market_data <- unique(market_data, by = c("symbol", "datetime"))
+      market_data[, returns := close / shift(close, 1L) - 1, by = "symbol"]
+      market_data <- na.omit(market_data)
+
+      return(market_data)
     }
+
   )
 )

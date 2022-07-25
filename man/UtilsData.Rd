@@ -9,6 +9,13 @@ Various help data.
 \section{Super class}{
 \code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{UtilsData}
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -17,6 +24,7 @@ Various help data.
 \item \href{#method-UtilsData-get_split_factor}{\code{UtilsData$get_split_factor()}}
 \item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
 \item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
+\item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
 \item \href{#method-UtilsData-clone}{\code{UtilsData$clone()}}
 }
 }
@@ -111,6 +119,28 @@ Get SP500 stocks for every date.
 
 \subsection{Returns}{
 Data table of Sp500 tickers
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-get_market_data"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_market_data}{}}}
+\subsection{Method \code{get_market_data()}}{
+Help function to import clean data from Azureblob.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$get_market_data(symbols = c("aapl", "aal"), frequency = "hour")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Symbols}
+
+\item{\code{frequency}}{Frequency can be hour and minute.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with market prices
 }
 }
 \if{html}{\out{<hr>}}

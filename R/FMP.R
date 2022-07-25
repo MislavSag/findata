@@ -352,6 +352,12 @@ FMP = R6::R6Class(
     #' @return Data saved to Azure blob.
     get_intraday_equities_batch = function(symbols, freq = c("hour", "minute")) {
 
+
+      ####### DEBUG #######
+      # library(RcppQuantuccia)
+      ####### DEBUG #######
+
+
       # loop over all symbols
       for (symbol in symbols) {
 
@@ -390,8 +396,18 @@ FMP = R6::R6Class(
           data_history <- as.data.table(data_history)
           data_history <- unique(data_history, by = "formated")
           setorder(data_history, t)
-          data_history_date <- as.Date(data_history$formated)
-          start_dates <- as.Date(setdiff(start_dates, as.Date(data_history$formated)), origin = "1970-01-01")
+
+          # check missing freq
+          data_history[, date := as.Date(formated)]
+          data_history[, date_n := .N, by = date]
+
+          # define dates
+          data_history_date <- as.Date(setdiff(as.Date(data_history$formated),
+                                               unique(data_history[date_n < 7, date])),
+                                       origin = "1970-01-01")
+          start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
+
+          data_history[, `:=`(date = NULL, date_n = NULL)]
         }
 
         # create sequence of dates for GET requests
@@ -464,6 +480,17 @@ FMP = R6::R6Class(
     #' @return Factor files saved to "factor-file" blob.
     get_factor_file = function() {
 
+      ######### DEBUG #########
+      # library(httr)
+      # library(findata)
+      # library(data.table)
+      # library(pins)
+      # library(AzureStor)
+      # self = list()
+      # self$azure_storage_endpoint = storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
+      # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
+      ######### DEBUG #########
+
       # define board
       storage_name <- paste0("equity-usa-hour-trades-fmplcoud")
       board <- board_azure(
@@ -496,6 +523,15 @@ FMP = R6::R6Class(
         market_data_hour <- as.data.table(market_data_hour)
         market_data_hour[, formated := as.POSIXct(formated, tz = "America/New_York")]
         market_data_hour <- market_data_hour[format.POSIXct(formated, format = "%H:%D:%M") %between% c("09:30:00", "16:01:00")]
+        market_data_hour[, datetime_test := as.POSIXct(market_data_hour$t / 1000, origin = "1970-01-01", tz = "UTC")]
+        attr(market_data_hour$datetime_test, "tzone") <- "America/New_York"
+        market_data_hour[symbol == "aapl"]
+        tail(market_data_hour, 100)
+
+
+        fmp <- FMP$new()
+        fmp$get_intraday_equities("AAPL", 1, "hour", as.character(as.Date("2022-05-05")), as.character(as.Date("2022-05-08")))
+
         market_data_daily <- market_data_hour[, .SD[.N], by = .(date = as.Date(formated))]
         market_data_daily[,symbol := toupper(f)]
         setnames(market_data_daily, c("date", "open", "high", "close", "low", "volume", "t", "symbol"))
@@ -762,6 +798,17 @@ FMP = R6::R6Class(
     #' @return data.table with available traded list data.
     get_available_traded_list = function() {
       url <- "https://financialmodelingprep.com/api/v3/available-traded/list"
+      p <- RETRY("GET", url, query = list(apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
+
+    #' @description Get SP500 stocks.
+    #'
+    #' @return data.table with SP500 tocks.
+    get_sp500_constituent = function() {
+      url <- "https://financialmodelingprep.com/api/v3/sp500_constituent"
       p <- RETRY("GET", url, query = list(apikey = self$api_key))
       res <- content(p)
       res <- rbindlist(res, fill = TRUE)
