@@ -12,20 +12,21 @@ FMP = R6::R6Class(
     #' @field api_key API KEY for FMP Cloud
     api_key = NULL,
 
-    #' @field azure_storage_endpoint Azure storate endpont
-    azure_storage_endpoint = NULL,
+    # #' @field azure_storage_endpoint Azure storate endpont
+    # azure_storage_endpoint = NULL,
 
 
     #' @description
     #' Create a new FMP object.
     #'
     #' @param api_key API KEY for FMP cloud data.
+    #' @param azure_storage_endpoint Azure storate endpont
     #'
     #' @return A new `FMP` object.
-    initialize = function(api_key = NULL) {
+    initialize = function(api_key = NULL, azure_storage_endpoint = NULL) {
 
       # endpoint
-      super$initialize(NULL)
+      super$initialize(azure_storage_endpoint)
 
       # check and define variables
       if (is.null(api_key)) {
