@@ -25,6 +25,7 @@ Various help data.
 \item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
 \item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
 \item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
+\item \href{#method-UtilsData-adjust_market_data}{\code{UtilsData$adjust_market_data()}}
 \item \href{#method-UtilsData-clone}{\code{UtilsData$clone()}}
 }
 }
@@ -141,6 +142,41 @@ Help function to import clean data from Azureblob.
 }
 \subsection{Returns}{
 Data table with market prices
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-adjust_market_data"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-adjust_market_data}{}}}
+\subsection{Method \code{adjust_market_data()}}{
+adjust market data for splits and/or dividends
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_market_data(
+  market_data,
+  factor_files,
+  type = c("all", "dividends", "splits"),
+  cols_adjust = c("o", "h", "l", "c")
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{market_data}}{Market data of OHLCV type.}
+
+\item{\code{factor_files}}{Factor files must contain columns:
+- symbol
+- date
+- price_factor
+- split_factor}
+
+\item{\code{type}}{Type of adjustment.}
+
+\item{\code{cols_adjust}}{Columns to adjust.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with adjusted market prices.
 }
 }
 \if{html}{\out{<hr>}}

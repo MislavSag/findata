@@ -1,11 +1,11 @@
-#' @title IB Class
+#' @title IBTWS Class
 #'
 #' @description
 #' Get data data from IB.
 #'
 #' @export
-IB = R6::R6Class(
-  "IB",
+IBTWS = R6::R6Class(
+  "IBTWS",
   inherit = DataAbstract,
 
   public = list(
@@ -25,7 +25,7 @@ IB = R6::R6Class(
     #' @param port Port.
     #' @param clientId client ID.
     #'
-    #' @return A new `IB` object.
+    #' @return A new `IBTWS` object.
     initialize = function(port = 4002, clientId = 1) {
 
       # endpoint
@@ -83,23 +83,3 @@ IB = R6::R6Class(
     ea_file_name = "EarningAnnouncements"
   )
 )
-
-# DEBUG
-
-# library(findata)
-# library(rib)
-#
-# ib = IB$new(port = 7496, 2)
-#
-#
-#
-# ib$ic$reqHistoricalData(tickerId = 1,
-#                         IBContract("AAPL"),
-#                         endDateTime = "",
-#                         durationStr = "1 M",
-#                         barSizeSetting = "1 day",
-#                         useRTH = "1",
-#                         whatToShow = "TRADES",
-#                         keepUpToDate = TRUE,
-#                         formatDate = "1")
-# ib$ic$checkMsg()

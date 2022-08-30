@@ -260,7 +260,51 @@ UtilsData = R6::R6Class(
       market_data <- na.omit(market_data)
 
       return(market_data)
-    }
+    },
 
+    #' @description adjust market data for splits and/or dividends
+    #'
+    #' @param market_data Market data of OHLCV type.
+    #' @param factor_files Factor files must contain columns:
+    #'    - symbol
+    #'    - date
+    #'    - price_factor
+    #'    - split_factor
+    #' @param type Type of adjustment.
+    #' @param cols_adjust Columns to adjust.
+    #'
+    #' @return Data table with adjusted market prices.
+    adjust_market_data = function(market_data, factor_files,
+                                  type = c("all", "dividends", "splits"),
+                                  cols_adjust = c("o", "h", "l", "c")) {
+
+      # checks
+      assert_names(colnames(market_data), must.include = c("symbol", "date"))
+      assert_names(colnames(factor_files),
+                   must.include = c("symbol", "date", "price_factor",
+                                    "split_factor"))
+
+      # merge market data and factorfiles
+      market_data[, date_ := as.Date(date)]
+      market_data <- factor_files[market_data, on = c("symbol" = "symbol", "date" = "date_"), roll = -Inf]
+      market_data[symbol == "aapl"]
+
+      # adjust for fividends and splits
+      type <- match.arg(type)
+      if (type == "all") {
+        market_data[, (cols_adjust) := lapply(.SD, function(x) {x * price_factor * split_factor}),
+                    .SDcols = cols_adjust]
+      } else if (type == "dividends") {
+        market_data[, (cols_adjust) := lapply(.SD, function(x) {x * price_factor}),
+                    .SDcols = cols_adjust]
+      } else if (type == "splits") {
+        market_data[, (cols_adjust) := lapply(.SD, function(x) {x * split_factor}),
+                    .SDcols = cols_adjust]
+      }
+      market_data <- market_data[, -2]
+      setnames(market_data, "i.date", "date")
+
+      return(market_data)
+    }
   )
 )
