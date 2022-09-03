@@ -13,8 +13,14 @@ Lean = R6::R6Class(
     #' @description
     #' Create a new Lean object.
     #'
+    #' @param azure_storage_endpoint Azure storate endpont
+    #'
     #' @return A new `Lean` object.
-    initialize = function() {
+    initialize = function(azure_storage_endpoint = NULL) {
+
+      # endpoint
+      super$initialize(azure_storage_endpoint)
+
       print("Good")
     },
 
@@ -27,7 +33,7 @@ Lean = R6::R6Class(
 
       # crate pin board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "fmpcloud-daily"),
+        container = storage_container(azure_storage_endpoint, "fmpcloud-daily"),
         path = "",
         n_processes = 2L,
         versioned = FALSE,
@@ -94,7 +100,7 @@ Lean = R6::R6Class(
 
       # crate pin board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "equity-usa-hour-trades-fmplcoud"),
+        container = storage_container(self$azure_storage_endpoint, "equity-usa-hour-trades-fmplcoud"),
         path = "",
         n_processes = 2L,
         versioned = FALSE,
@@ -145,7 +151,7 @@ Lean = R6::R6Class(
 
       # crate pin board
       board <- board_azure(
-        container = storage_container(private$azure_storage_endpoint, "equity-usa-minute-trades-fmplcoud"),
+        container = storage_container(self$azure_storage_endpoint, "equity-usa-minute-trades-fmplcoud"),
         path = "",
         n_processes = 2L,
         versioned = FALSE,
@@ -199,7 +205,7 @@ Lean = R6::R6Class(
                             Volume = v)]
           day_minute <- day_minute[, .(DateTime, Open, High, Low, Close, Volume)]
           day_minute[, DateTime := as.character(DateTime)]
-          cols <- colnames(day_minute)[2:ncol(day_minute)]
+          cols <- colnames(day_minute)
           day_minute[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
 
           # save
@@ -211,7 +217,5 @@ Lean = R6::R6Class(
         }
       }
     }
-
   )
 )
-

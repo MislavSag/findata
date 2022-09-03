@@ -220,7 +220,11 @@ Data frame with ohlcv data.
 \subsection{Method \code{get_intraday_equities_batch()}}{
 Get hour data for all history from fmp cloud.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(symbols, freq = c("hour", "minute"))}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(
+  symbols,
+  freq = c("hour", "minute"),
+  deep_scan = FALSE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -229,6 +233,9 @@ Get hour data for all history from fmp cloud.
 \item{\code{symbols}}{Symbol of the stock.}
 
 \item{\code{freq}}{frequency (hour or minute)}
+
+\item{\code{deep_scan}}{should we test for dates with low number od observation
+and try to scrap again.}
 }
 \if{html}{\out{</div>}}
 }

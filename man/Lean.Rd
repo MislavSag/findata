@@ -32,9 +32,16 @@ Help functions for transforming raw market data to Quantconnect data.
 \subsection{Method \code{new()}}{
 Create a new Lean object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Lean$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Lean$new(azure_storage_endpoint = NULL)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 A new `Lean` object.
 }

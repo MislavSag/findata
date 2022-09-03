@@ -51,12 +51,14 @@ IBREST = R6::R6Class(
     #' @return GET response.
     ib_post = function(url = "https://localhost:5000/v1/api/tickle",
                         body = NULL) {
-      p <- POST(url,
-                config = httr::config(ssl_verifypeer = FALSE),
-                body = body,
-                add_headers('User-Agent' = 'Console',
-                            'content-type' = 'application/json'),
-                encode = "json")
+      p <- RETRY("POST",
+                 url,
+                 config = httr::config(ssl_verifypeer = FALSE),
+                 body = body,
+                 add_headers('User-Agent' = 'Console',
+                             'content-type' = 'application/json'),
+                 encode = "json",
+                 times = 5L)
       x <- content(p)
       return(x)
     },
@@ -91,6 +93,7 @@ IBREST = R6::R6Class(
                                      keep_nytime_10_16 = TRUE) {
 
       # send GET request fro market data
+      print("Get unadjusted data from IB...")
       md <- self$ib_get("https://localhost:5000/v1/api/iserver/marketdata/history",
                    list(conid = conid,
                         exchange = exchange,
@@ -101,13 +104,19 @@ IBREST = R6::R6Class(
 
       # convert timezone to New york time and keep trading hours
       if (keep_nytime_10_16) {
+        print("Change timezone to NY time.")
         # change timesone to NY
+        print(class(md$t))
+        print(md$t)
+        md$t <- as.numeric(md$t)
         md[, datetime := as.POSIXct(t / 1000,
                                     origin = "1970-01-01",
                                     tz = Sys.timezone())]
+        print("Debug")
         attr(md$datetime, "tzone") <- "America/New_York"
 
         # keep trading hours
+        print("Keep trading hours.")
         md$datetime <- md$datetime + 60 * 60
         md <- md[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
       }
@@ -135,7 +144,7 @@ IBREST = R6::R6Class(
     #' Place order.
     #'
     #' @param account_id Account ID.
-    #' @param order_ody Body of POST request which place order.
+    #' @param order_body Body of POST request which place order.
     #'
     #' @references \url{https://www.interactivebrokers.com/api/doc.html#tag/Order/paths/~1iserver~1account~1\%7Bacc€ountId\%7D~1orders/post}
     #' @return list object with info on positions.
@@ -173,6 +182,20 @@ IBREST = R6::R6Class(
                     order_id)
       p <- DELETE(url, config = httr::config(ssl_verifypeer = FALSE))
       return(content(p))
+    },
+
+    #' @description
+    #' Portfolio summary.
+    #'
+    #' @param account_id Account ID.
+    #'
+    #' @return list object with info on podrtfolio summary.
+    get_portfolio_summary = function(account_id) {
+      url <- paste0("https://localhost:5000/v1/api/portfolio/",
+                    account_id,
+                    "/summary")
+      positions <- self$ib_get(url)
+      return(positions)
     }
   )
 )

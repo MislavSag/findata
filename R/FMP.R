@@ -349,9 +349,13 @@ FMP = R6::R6Class(
     #'
     #' @param symbols Symbol of the stock.
     #' @param freq frequency (hour or minute)
+    #' @param deep_scan should we test for dates with low number od observation
+    #'     and try to scrap again.
     #'
     #' @return Data saved to Azure blob.
-    get_intraday_equities_batch = function(symbols, freq = c("hour", "minute")) {
+    get_intraday_equities_batch = function(symbols,
+                                           freq = c("hour", "minute"),
+                                           deep_scan = FALSE) {
 
 
       ####### DEBUG #######
@@ -392,6 +396,7 @@ FMP = R6::R6Class(
 
         # read old data
         if (pin_exists(board, tolower(symbol))) {
+          # read minute data for szmbol and conver to DT with no duplicates
           data_history <- pin_read(board, tolower(symbol))
           if (length(data_history) == 0) next()
           data_history <- as.data.table(data_history)
@@ -402,10 +407,22 @@ FMP = R6::R6Class(
           data_history[, date := as.Date(formated)]
           data_history[, date_n := .N, by = date]
 
-          # define dates
-          data_history_date <- as.Date(setdiff(as.Date(data_history$formated),
-                                               unique(data_history[date_n < 7, date])),
-                                       origin = "1970-01-01")
+          # define dates we will try to scrap again
+          if (freq == "minutes") {
+            observation_per_day <- 60 * 6
+          } else {
+            observation_per_day <- 7
+          }
+          try_again <- unique(data_history[date_n < observation_per_day, date])
+
+          # define dates to scrap
+          if (deep_scan) {
+            data_history_date <- as.Date(setdiff(as.Date(data_history$formated),
+                                                 try_again),
+                                         origin = "1970-01-01")
+          } else {
+            data_history_date <- as.Date(data_history$formated)
+          }
           start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
 
           data_history[, `:=`(date = NULL, date_n = NULL)]

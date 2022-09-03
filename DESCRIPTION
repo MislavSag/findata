@@ -19,10 +19,12 @@ Imports:
     rvest,
     stringr,
     jsonlite,
-    QuantTools,
     pins,
     zip,
-    zoo
+    zoo,
+    QuantTools
+Remotes:
+    bitbucket::quanttools/quanttools
 Suggests: 
     rmarkdown,
     knitr,

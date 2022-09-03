@@ -29,6 +29,7 @@ Get data data from IB Client Portal API.
 \item \href{#method-IBREST-get_position}{\code{IBREST$get_position()}}
 \item \href{#method-IBREST-buy_and_confirm}{\code{IBREST$buy_and_confirm()}}
 \item \href{#method-IBREST-cancel_order}{\code{IBREST$cancel_order()}}
+\item \href{#method-IBREST-get_portfolio_summary}{\code{IBREST$get_portfolio_summary()}}
 \item \href{#method-IBREST-clone}{\code{IBREST$clone()}}
 }
 }
@@ -182,7 +183,7 @@ list object with info on positions.
 \subsection{Method \code{buy_and_confirm()}}{
 Place order.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{IBREST$buy_and_confirm(account_id, ...)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{IBREST$buy_and_confirm(account_id, order_body)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -190,7 +191,7 @@ Place order.
 \describe{
 \item{\code{account_id}}{Account ID.}
 
-\item{\code{...}}{Body of POST request which place order.}
+\item{\code{order_body}}{Body of POST request which place order.}
 }
 \if{html}{\out{</div>}}
 }
@@ -218,6 +219,26 @@ Cancel order.
 }
 \subsection{Returns}{
 list object with info on positions.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-IBREST-get_portfolio_summary"></a>}}
+\if{latex}{\out{\hypertarget{method-IBREST-get_portfolio_summary}{}}}
+\subsection{Method \code{get_portfolio_summary()}}{
+Portfolio summary.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{IBREST$get_portfolio_summary(account_id)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{account_id}}{Account ID.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+list object with info on podrtfolio summary.
 }
 }
 \if{html}{\out{<hr>}}
