@@ -144,39 +144,56 @@ Lean = R6::R6Class(
 
     #' @description Convert FMP Cloud minute data to Quantconnect minute data.
     #'
-    #' @param save_path Quantconnect data equity minute folder path.
+    #' @param lean_data_path Quantconnect data equity minute folder path.
+    #' @param url S3 url.
     #'
     #' @return No value returned.
-    equity_minute_from_fmpcloud = function(save_path = "D:/lean_projects/data/equity/usa/minute") {
+    equity_minute_from_fmpcloud = function(lean_data_path = "D:/lean_projects/data/equity/usa/minute",
+                                           url = "s3://equity-usa-minute-fmp") {
 
-      # crate pin board
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "equity-usa-minute-trades-fmplcoud"),
-        path = "",
-        n_processes = 2L,
-        versioned = FALSE,
-        cache = NULL
-      )
-      blob_dir <- pin_list(board)
+      # configure s3
+      config <- tiledb_config()
+      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
+      config["vfs.s3.aws_secret_access_key"] <- "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"
+      config["vfs.s3.region"] <- "eu-central-1"
+      config["sm.compute_concurrency_level"] = "8"
+      context_with_config <- tiledb_ctx(config)
 
-      # change every file to quantconnect like file and add to destination
-      for (symbol in blob_dir) {
+      # read old data
+      arr <- tiledb_array(url, as.data.frame = TRUE)
+      data_history <- arr[]
+      data_history <- as.data.table(data_history)
 
-        # debug
-        print(symbol)
+      # data types and uniquness
+      data_history[, date := with_tz(date, "America/New_York")]
 
-        # load data
-        data_ <- pin_read(board, tolower(symbol))
-        data_ <- as.data.table(data_)
+      # convert to QC format
+      data_history[, `:=`(DateTime = (hour(date) * 3600 + minute(date) * 60 + second(date)) * 1000,
+                          Open = open * 10000,
+                          High = high * 10000,
+                          Low = low * 10000,
+                          Close = close * 10000,
+                          Volume = volume)]
+      data_history <- data_history[, .(symbol, date, DateTime, Open, High, Low, Close, Volume)]
 
-        # data types and uniquness
-        data_[, formated := as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST")]
-        data_ <- unique(data_, by = c("formated"))
-        data_ <- data_[data.table::between(format(formated, "%H:%M:%S"), "09:29:50", "16:00:50")]
-        dates_ <- unique(as.Date(data_$formated))
+      # take unique values
+      data_history <- unique(data_history, by = c("symbol", "date"))
+
+      # remove scientific notation
+      cols <- colnames(data_history)[3:ncol(data_history)]
+      data_history <- data_history[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+
+      # add data to lean folder
+      for (s in data_history[, unique(symbol)]) {
+
+        # sample
+        sample_ <- data_history[symbol == s]
+
+        # extract dates
+        dates_ <- unique(as.Date(sample_$date))
 
         # path
-        symbol_path <- file.path(save_path, tolower(symbol))
+        symbol_path <- file.path(lean_data_path, tolower(s))
 
         # create path if it doesnt exist, instead get already scraped
         if (!dir.exists(symbol_path)) {
@@ -188,33 +205,24 @@ Lean = R6::R6Class(
           dates_ <- as.Date(setdiff(dates_, scraped_dates), origin = "1970-01-01")
         }
 
-        # scrap loop
+        # saving loop
         for (d in dates_) {
-          day_minute <- data_[as.Date(formated) == d]
+          day_minute <- sample_[as.Date(date) == d]
           if (is.null(day_minute)) {
             next()
           }
-          day_minute <- unique(day_minute, by = c("formated"))
-          setorderv(day_minute, "t")
-          date_ <- gsub("-", "", as.character(as.Date(day_minute$formated[1])))
-          day_minute[, `:=`(DateTime = (hour(formated) * 3600 + minute(formated) * 60 + second(formated)) * 1000,
-                            Open = o * 10000,
-                            High = h * 10000,
-                            Low = l * 10000,
-                            Close = c * 10000,
-                            Volume = v)]
+          setorderv(day_minute, "date")
+          date_ <- gsub("-", "", as.character(as.Date(day_minute$date[1])))
           day_minute <- day_minute[, .(DateTime, Open, High, Low, Close, Volume)]
-          day_minute[, DateTime := as.character(DateTime)]
-          cols <- colnames(day_minute)
-          day_minute[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+          # day_minute[, DateTime := as.character(DateTime)]
 
           # save
-          file_name <- file.path(symbol_path, paste0(date_, "_", tolower(symbol), "_minute_trade.csv"))
+          file_name <- file.path(symbol_path, paste0(date_, "_", tolower(s), "_minute_trade.csv"))
           zip_file_name <- file.path(symbol_path, paste0(date_, "_trade.zip"))
           fwrite(day_minute, file_name, col.names = FALSE)
           zipr(zip_file_name, file_name)
           file.remove(file_name)
-        }
+          }
       }
     }
   )

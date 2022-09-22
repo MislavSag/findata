@@ -22,7 +22,9 @@ Imports:
     pins,
     zip,
     zoo,
-    QuantTools
+    lubridate,
+    QuantTools,
+    tiledb
 Remotes:
     bitbucket::quanttools/quanttools
 Suggests: 

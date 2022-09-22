@@ -9,8 +9,10 @@
 #' @import QuantTools
 #' @import pins
 #' @import stringr
+#' @import tiledb
 #' @importFrom jsonlite fromJSON
 #' @importFrom httr GET POST RETRY content timeout add_headers
 #' @importFrom zip zipr
 #' @importFrom zoo na.locf
+#' @importFrom lubridate force_tz with_tz
 "_PACKAGE"

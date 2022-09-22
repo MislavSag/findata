@@ -15,18 +15,63 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+# PREUZIMANJE MINUTNIH PODATAKA -------------------------------------------
+
 library(findata)
+library(rvest)
+library(tiledb)
+library(RcppQuantuccia)
+library(data.table)
 ```
 
 # FMP CLOUD DATA
 
 ```{r}
-# define fmp cloud object
-# fmp = FMP$new()
-# print(fmp$api_key)
+fmp = FMP$new()
+```
 
-# # get all database of earning announcements
-# ea = fmp$get_earning_announcements()
+
+## Get minute data
+
+```{r}
+if (FALSE) {
+  # SP100
+  sp100 <- read_html("https://en.wikipedia.org/wiki/S%26P_100") |>
+    html_elements(x = _, "table") |>
+    (`[[`)(3) |>
+    html_table(x = _, fill = TRUE)
+  sp100_symbols <- c("SPY", "TLT", "GLD", "USO", sp100$Symbol)
+
+
+  # SP500 symbols
+  fmp_symbols <- fmp$get_available_traded_list()
+  fmp_symbols_usa <- fmp_symbols[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "ETF", "OTC")]
+  symbols <- fmp$get_sp500_symbols()
+  # utils_data <- UtilsData$new()
+  # sp500_symobls_by_date <- utils_data$sp500_history()
+  # sp500 <- unique(symbols, sp500_symobls_by_date$symbol)
+  # sp500 <- c(symbols, "SPY")
+  symbols <- na.omit(symbols)
+  symbols <- symbols[!grepl("/", symbols)]
+  
+    # SP200
+  sp200 <- read_html("https://en.wikipedia.org/wiki/S%26P/ASX_200") |>
+    html_elements(x = _, "table") |>
+    (`[[`)(1) |>
+    html_table(x = _, fill = TRUE)
+  sp200_symbols <- c("SPY", "TLT", "GLD", "USO", sp200$Code)
+
+  # merge
+  symbols <- unique(union(sp100_symbols, sp200_symbols))
+  
+  # sp100 <- read_html("https://en.wikipedia.org/wiki/S%26P/ASX_200")
+  
+  # get minute data from FMP cloud
+  fmp = FMP$new()
+  fmp$get_minute_equities_tiledb(symbols = symbols,
+                                 url = "s3://equity-usa-minute-fmp",
+                                 deep_scan = FALSE)
+}
 ```
 
 

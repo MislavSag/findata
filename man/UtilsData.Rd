@@ -23,6 +23,7 @@ Various help data.
 \item \href{#method-UtilsData-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
 \item \href{#method-UtilsData-get_split_factor}{\code{UtilsData$get_split_factor()}}
 \item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
+\item \href{#method-UtilsData-adjust_minute_data_tiledb}{\code{UtilsData$adjust_minute_data_tiledb()}}
 \item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
 \item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
 \item \href{#method-UtilsData-adjust_market_data}{\code{UtilsData$adjust_market_data()}}
@@ -96,6 +97,26 @@ Stock splits
 Adjusted instraday data for splits and dividends
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_intraday_data(freq = c("hour", "minute"))}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{freq}}{Frequency, can be hour or minute.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Adjusted data saved to Azure blob
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-adjust_minute_data_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-adjust_minute_data_tiledb}{}}}
+\subsection{Method \code{adjust_minute_data_tiledb()}}{
+Adjusted instraday data for splits and dividends
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_minute_data_tiledb()}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

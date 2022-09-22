@@ -95,14 +95,17 @@ No valuie returned.
 Convert FMP Cloud minute data to Quantconnect minute data.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Lean$equity_minute_from_fmpcloud(
-  save_path = "D:/lean_projects/data/equity/usa/minute"
+  lean_data_path = "D:/lean_projects/data/equity/usa/minute",
+  url = "s3://equity-usa-minute-fmp"
 )}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{save_path}}{Quantconnect data equity minute folder path.}
+\item{\code{lean_data_path}}{Quantconnect data equity minute folder path.}
+
+\item{\code{url}}{S3 url.}
 }
 \if{html}{\out{</div>}}
 }

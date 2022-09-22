@@ -22,7 +22,13 @@ UtilsData = R6::R6Class(
       # endpoint
       super$initialize(NULL)
 
-      print("Good")
+      # configure s3
+      config <- tiledb_config()
+      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
+      config["vfs.s3.aws_secret_access_key"] <- "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"
+      config["vfs.s3.region"] <- "eu-central-1"
+      config["sm.compute_concurrency_level"] = "8"
+      self$context_with_config <- tiledb_ctx(config)
     },
 
     #' @description Get tick data from finam source using QuantTools.
@@ -186,6 +192,78 @@ UtilsData = R6::R6Class(
       }
     },
 
+    #' @description Adjusted instraday data for splits and dividends
+    #'
+    #' @param freq Frequency, can be hour or minute.
+    #'
+    #' @return Adjusted data saved to Azure blob
+    adjust_minute_data_tiledb = function() {
+
+      # factor files
+      arr_ff <- tiledb_array("s3://equity-usa-factor-files",
+                             as.data.frame = TRUE,
+                             ctx = self$context_with_config)
+      factor_files <- arr_ff[]
+      tiledb_array_close(arr_ff)
+      factor_files <- as.data.table(factor_files)
+      factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
+
+      # get IPO data
+      fmp_ipo <- FMP$new()
+      ipo_dates <- vapply(unique(factor_files$symbol), function(x) {
+        y <- fmp_ipo$get_ipo_date(x)
+        if (is.null(y)) {
+          return("2004-01-02")
+        } else {
+          return(y)
+        }
+      }, character(1))
+      ipo_dates_dt <- as.data.table(ipo_dates, keep.rownames = TRUE)
+      setnames(ipo_dates_dt, "rn", "symbol")
+      ipo_dates_dt[, ipo_dates := as.Date(ipo_dates)]
+      ipo_dates_dt[, symbol := toupper(gsub("\\.csv", "", symbol))]
+
+      # import minute data
+      arr <- tiledb_array("s3://equity-usa-minute-fmp", as.data.frame = TRUE)
+      unadjusted_data <- arr[]
+
+      # unadjusted data from IPO
+      unadj_from_ipo <- ipo_dates_dt[unadjusted_data, on = "symbol"]
+      unadj_from_ipo <- unadj_from_ipo[as.Date(date) >= ipo_dates]
+      unadj_from_ipo_daily <- unadj_from_ipo[, .SD[.N], by = .(symbol, date = as.Date(date))]
+      unadj_from_ipo_daily[, ipo_dates := NULL]
+
+      # adjust
+      df <- unadj_from_ipo[symbol %in% unique(factor_files$symbol)]
+      df[, date_ := as.Date(date)]
+      df <- merge(df, factor_files,
+                  by.x = c("symbol", "date_"), by.y = c("symbol", "date"),
+                  all.x = TRUE, all.y = FALSE)
+      df[, `:=`(split_factor = nafill(split_factor, "nocb"),
+                price_factor = nafill(price_factor, "nocb")), by = symbol]
+      df[, `:=`(split_factor = ifelse(is.na(split_factor), 1, split_factor),
+                price_factor = ifelse(is.na(price_factor), 1, price_factor))]
+      cols_change <- c("open", "high", "low", "close")
+      df[, (cols_change) := lapply(.SD, function(x) {x * price_factor * split_factor}), .SDcols = cols_change]
+      df <- df[, .(symbol, date, open, high, low, close, volume)]
+      setorder(df, symbol, date)
+      df <- unique(df)
+
+      # create schema
+      system.time({
+        fromDataFrame(
+          as.data.frame(df),
+          uri = "s3://equity-usa-minute-fmp-adjusted",
+          col_index = c("symbol", "date"),
+          sparse = TRUE,
+          allows_dups = TRUE,
+          tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
+                                  as.POSIXct("2099-12-31 23:59:59"))),
+          capacity = 10000L
+        )
+      })
+    },
+
     #' @description Get SP500 stocks for every date.
     #'
     #' @return Data table of Sp500 tickers
@@ -217,7 +295,7 @@ UtilsData = R6::R6Class(
                                frequency = "hour") {
 
 
-      ##### DEBUG #####
+      # DEBUG
       # library(pins)
       # library(data.table)
       # library(fasttime)
@@ -225,7 +303,7 @@ UtilsData = R6::R6Class(
       # frequency = "hour"
       # self <- list()
       # self$azure_storage_endpoint = AzureStor::storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
-      ##### DEBUG #####
+      # DEBUG
 
       # board
       sc <- storage_container(self$azure_storage_endpoint,

@@ -25,9 +25,12 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-update_transcripts}{\code{FMP$update_transcripts()}}
 \item \href{#method-FMP-get_daily}{\code{FMP$get_daily()}}
 \item \href{#method-FMP-get_daily_batch}{\code{FMP$get_daily_batch()}}
+\item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
 \item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
+\item \href{#method-FMP-get_minute_equities_tiledb}{\code{FMP$get_minute_equities_tiledb()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
+\item \href{#method-FMP-get_factor_file_tiledb}{\code{FMP$get_factor_file_tiledb()}}
 \item \href{#method-FMP-get_factor_file}{\code{FMP$get_factor_file()}}
 \item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
 \item \href{#method-FMP-get_fi_statement}{\code{FMP$get_fi_statement()}}
@@ -181,6 +184,26 @@ Scrap all daily data
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_daily_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_daily_tiledb}{}}}
+\subsection{Method \code{get_daily_tiledb()}}{
+get daily data from FMP cloud for all stocks
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_tiledb(url = "s3://equity-usa-daily-fmp")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{url}}{AWS S3 url.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Scrap all daily data
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_intraday_equities"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities}{}}}
 \subsection{Method \code{get_intraday_equities()}}{
@@ -244,6 +267,35 @@ Data saved to Azure blob.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_minute_equities_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_minute_equities_tiledb}{}}}
+\subsection{Method \code{get_minute_equities_tiledb()}}{
+Get hour data for all history from fmp cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute_equities_tiledb(
+  symbols,
+  url = "s3://equity-usa-minute-fmp",
+  deep_scan = FALSE
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Symbol of the stock.}
+
+\item{\code{url}}{AWS S3 bucket url.}
+
+\item{\code{deep_scan}}{should we test for dates with low number od observation
+and try to scrap again.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data saved to Azure blob.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_sp500_symbols"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_sp500_symbols}{}}}
 \subsection{Method \code{get_sp500_symbols()}}{
@@ -254,6 +306,19 @@ Get SP500 symbols from fmp cloud.
 
 \subsection{Returns}{
 Vector of SP500 symbols.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_factor_file_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_factor_file_tiledb}{}}}
+\subsection{Method \code{get_factor_file_tiledb()}}{
+Create factor files for calculating adjusted prices (adjusted for splits and dividends).
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Factor files saved to "factor-file" blob.
 }
 }
 \if{html}{\out{<hr>}}
