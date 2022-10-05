@@ -24,7 +24,8 @@ Imports:
     zoo,
     lubridate,
     QuantTools,
-    tiledb
+    tiledb,
+    aws.s3
 Remotes:
     bitbucket::quanttools/quanttools
 Suggests: 

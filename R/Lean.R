@@ -14,14 +14,14 @@ Lean = R6::R6Class(
     #' Create a new Lean object.
     #'
     #' @param azure_storage_endpoint Azure storate endpont
+    #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `Lean` object.
-    initialize = function(azure_storage_endpoint = NULL) {
+    initialize = function(azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint)
-
-      print("Good")
+      super$initialize(azure_storage_endpoint, context_with_config)
     },
 
     #' @description Convert FMP Cloud daily data to Quantconnect daily data.
@@ -151,43 +151,60 @@ Lean = R6::R6Class(
     equity_minute_from_fmpcloud = function(lean_data_path = "D:/lean_projects/data/equity/usa/minute",
                                            url = "s3://equity-usa-minute-fmp") {
 
-      # configure s3
-      config <- tiledb_config()
-      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
-      config["vfs.s3.aws_secret_access_key"] <- "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"
-      config["vfs.s3.region"] <- "eu-central-1"
-      config["sm.compute_concurrency_level"] = "8"
-      context_with_config <- tiledb_ctx(config)
+      # debug
+      # library(data.table)
+      # library(findata)
+      # self = Lean$new()
 
-      # read old data
-      arr <- tiledb_array(url, as.data.frame = TRUE)
-      data_history <- arr[]
-      data_history <- as.data.table(data_history)
+      options(scipen=999)
 
-      # data types and uniquness
-      data_history[, date := with_tz(date, "America/New_York")]
+      # read factor files
+      # factor files
+      arr_ff <- tiledb_array("s3://equity-usa-factor-files",
+                             as.data.frame = TRUE,
+                             ctx = self$context_with_config)
+      factor_files <- arr_ff[]
+      tiledb_array_close(arr_ff)
+      factor_files <- as.data.table(factor_files)
+      factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
+      factor_files <- setorder(factor_files, symbol, date)
 
-      # convert to QC format
-      data_history[, `:=`(DateTime = (hour(date) * 3600 + minute(date) * 60 + second(date)) * 1000,
-                          Open = open * 10000,
-                          High = high * 10000,
-                          Low = low * 10000,
-                          Close = close * 10000,
-                          Volume = volume)]
-      data_history <- data_history[, .(symbol, date, DateTime, Open, High, Low, Close, Volume)]
+      # add factor files to Lean folder
+      for (ff in unique(factor_files$symbol)) {
+        sample_ <- factor_files[symbol == ff]
+        folder <- file.path("D:/lean_projects/data/equity/usa", "factor_files")
+        file_name <- file.path(folder, paste0(tolower(ff), ".csv"))
+        fwrite(sample_[, -1], file_name, col.names = FALSE)
+      }
 
-      # take unique values
-      data_history <- unique(data_history, by = c("symbol", "date"))
+        # add data to lean folder
+      for (s in factor_files[, unique(symbol)]) {
 
-      # remove scientific notation
-      cols <- colnames(data_history)[3:ncol(data_history)]
-      data_history <- data_history[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
-
-      # add data to lean folder
-      for (s in data_history[, unique(symbol)]) {
+        # debug
+        print(s)
 
         # sample
-        sample_ <- data_history[symbol == s]
+        arr <- tiledb_array(url,
+                            as.data.frame = TRUE,
+                            selected_ranges = list(symbol = cbind(s, s)))
+        sample_ <- arr[]
+        sample_ <- as.data.table(sample_)
+        sample_[, date := with_tz(date, "America/New_York")]
+        sample_ <- unique(sample_, by = c("symbol", "date"))
+
+        # convert to QC format
+        sample_[, `:=`(DateTime = (hour(date) * 3600 + minute(date) * 60 + second(date)) * 1000,
+                       Open = open * 10000,
+                       High = high * 10000,
+                       Low = low * 10000,
+                       Close = close * 10000,
+                       Volume = volume)]
+        sample_ <- sample_[, .(symbol, date, DateTime, Open, High, Low, Close, Volume)]
+
+        # remove scientific notation
+        # cols <- colnames(sample_)[3:ncol(sample_)]
+        # sample_ <- sample_[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+        # sample_ <- sample_[, lapply(.SD, sprintf, "%10d"), .SDcols = cols]
 
         # extract dates
         dates_ <- unique(as.Date(sample_$date))
@@ -224,6 +241,8 @@ Lean = R6::R6Class(
           file.remove(file_name)
           }
       }
+      # allow again scientific notation
+      options(scipen=0)
     }
   )
 )

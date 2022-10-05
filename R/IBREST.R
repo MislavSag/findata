@@ -93,7 +93,7 @@ IBREST = R6::R6Class(
                                      keep_nytime_10_16 = TRUE) {
 
       # send GET request fro market data
-      print("Get unadjusted data from IB...")
+      # print("Get unadjusted data from IB...")
       md <- self$ib_get("https://localhost:5000/v1/api/iserver/marketdata/history",
                    list(conid = conid,
                         exchange = exchange,
@@ -104,7 +104,7 @@ IBREST = R6::R6Class(
 
       # convert timezone to New york time and keep trading hours
       if (keep_nytime_10_16) {
-        print("Change timezone to NY time.")
+        # print("Change timezone to NY time.")
         # change timesone to NY
         print(class(md$t))
         print(md$t)
@@ -112,11 +112,11 @@ IBREST = R6::R6Class(
         md[, datetime := as.POSIXct(t / 1000,
                                     origin = "1970-01-01",
                                     tz = Sys.timezone())]
-        print("Debug")
+        # print("Debug")
         attr(md$datetime, "tzone") <- "America/New_York"
 
         # keep trading hours
-        print("Keep trading hours.")
+        # print("Keep trading hours.")
         md$datetime <- md$datetime + 60 * 60
         md <- md[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
       }

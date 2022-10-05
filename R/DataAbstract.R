@@ -11,13 +11,18 @@ DataAbstract = R6::R6Class(
     #' @field azure_storage_endpoint Azure storate endpont
     azure_storage_endpoint = NULL,
 
+    #' @field context_with_config AWS S3 Tiledb config
+    context_with_config = NULL,
+
     #' @description
     #' Create a new DataAbstract object.
     #'
     #' @param azure_storage_endpoint Azure endpoint
+    #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `DataAbstract` object.
-    initialize = function(azure_storage_endpoint = NULL) {
+    initialize = function(azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
 
       # set calendar for RcppQuantuccia package
       setCalendar("UnitedStates::NYSE")
@@ -28,6 +33,13 @@ DataAbstract = R6::R6Class(
       } else {
         self$azure_storage_endpoint <- azure_storage_endpoint
       }
+
+      # configure s3
+      config <- tiledb_config()
+      config["vfs.s3.aws_access_key_id"] <- Sys.getenv("AWS-ACCESS-KEY")
+      config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
+      config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
+      self$context_with_config <- tiledb_ctx(config)
     },
 
     #' @description Save files bob. It automaticly saves files as csv and rds objects

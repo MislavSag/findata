@@ -15,18 +15,20 @@ FMP = R6::R6Class(
     # #' @field azure_storage_endpoint Azure storate endpont
     # azure_storage_endpoint = NULL,
 
-
     #' @description
     #' Create a new FMP object.
     #'
     #' @param api_key API KEY for FMP cloud data.
     #' @param azure_storage_endpoint Azure storate endpont
+    #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `FMP` object.
-    initialize = function(api_key = NULL, azure_storage_endpoint = NULL) {
+    initialize = function(api_key = NULL,
+                          azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint)
+      super$initialize(azure_storage_endpoint, context_with_config)
 
       # check and define variables
       if (is.null(api_key)) {
@@ -365,6 +367,9 @@ FMP = R6::R6Class(
                                      from = as.character(Sys.Date() - 3),
                                      to = as.character(Sys.Date())) {
 
+      from = start_dates[1]
+      to = end_dates[1]
+
       # initial GET request. Don't use RETRY here yet.
       x <- tryCatch({
         GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
@@ -421,11 +426,6 @@ FMP = R6::R6Class(
     get_intraday_equities_batch = function(symbols,
                                            freq = c("hour", "minute"),
                                            deep_scan = FALSE) {
-
-
-      ####### DEBUG #######
-      # library(RcppQuantuccia)
-      ####### DEBUG #######
 
 
       # loop over all symbols
@@ -538,6 +538,33 @@ FMP = R6::R6Class(
       }
     },
 
+    #' @description Help function for calculating start and end dates
+    #'
+    #' @param start_dates Sequence of start dates.
+    #'
+    #' @return list of start and end dates
+    create_start_end_dates = function(start_dates) {
+
+      # rearange date sequences
+      last_date <- start_dates[1]
+      start_dates_ <- c(last_date)
+      for (s in start_dates) {
+        if ((as.integer(s) - as.integer(last_date)) >= 4) { # num of trading days to scrap
+          start_dates_ <- c(start_dates_, s)
+          last_date <- s
+        } else {
+          next()
+        }
+      }
+      start_dates_ <- as.Date(start_dates_, origin = "1970-01-01")
+      end_dates <- c(start_dates_[-1], tail(start_dates, 1) + 5)
+      end_dates <- end_dates - 1
+      if (tail(end_dates, 1) > (Sys.Date() - 1)) {
+        end_dates[length(end_dates)] <- Sys.Date() - 1
+      }
+      return(list(start_dates = start_dates_, end_dates = end_dates))
+    },
+
     #' @description Get hour data for all history from fmp cloud.
     #'
     #' @param symbols Symbol of the stock.
@@ -551,6 +578,16 @@ FMP = R6::R6Class(
                                           deep_scan = FALSE) {
 
 
+      # debug
+      # library(findata)
+      # library(data.table)
+      # library(httr)
+      # library(RcppQuantuccia)
+      # library(tiledb)
+      # library(lubridate)
+      # self = FMP$new()
+      # symbol = "WHR"
+
       # loop over all symbols
       for (symbol in symbols) {
 
@@ -563,7 +600,6 @@ FMP = R6::R6Class(
 
         # get trading days from daily data
         print("get daily data")
-        # cache_prune(days=0) not sure where to put this !!!
         daily_data <- self$get_intraday_equities(symbol,
                                                  multiply = 1,
                                                  time = 'day',
@@ -572,54 +608,54 @@ FMP = R6::R6Class(
         if (is.null(daily_data)) next()
         start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
 
-        # configure s3
-        config <- tiledb_config()
-        config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
-        config["vfs.s3.aws_secret_access_key"] <- "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"
-        config["vfs.s3.region"] <- "eu-central-1"
-        context_with_config <- tiledb_ctx(config)
-
         # read old data
-        arr <- tiledb_array(url, as.data.frame = TRUE)
-        selected_ranges(arr) <- list(symbol = cbind(symbol, symbol))
-        data_history <- arr[]
+        if (tiledb_object_type(url) == "ARRAY") {
+          arr <- tiledb_array(url, as.data.frame = TRUE)
+          selected_ranges(arr) <- list(symbol = cbind(symbol, symbol))
+          data_history <- arr[]
 
-        # cont if there is history data
-        if (length(data_history$symbol) > 0) {
-          # basic clean
-          data_history <- as.data.table(data_history)
-          data_history <- unique(data_history, by = "date")
-          setorder(data_history, date)
+          # cont if there is history data
+          if (length(data_history$symbol) > 0) {
+            # basic clean
+            data_history <- as.data.table(data_history)
+            data_history <- unique(data_history, by = "date")
+            setorder(data_history, date)
 
-          # missing freq
-          if (deep_scan) {
-            # create date column
-            data_history[, date_ := as.Date(date)]
-            data_history[, date_n := .N, by = date_]
+            # missing freq
+            if (deep_scan) {
 
-            # define dates we will try to scrap again
-            observation_per_day <- 60 * 6
-            try_again <- unique(data_history[date_n < observation_per_day, date_])
+              # create date column
+              data_history[, date_ := as.Date(date)]
+              data_history[, date_n := .N, by = date_]
 
-            # define dates to scrap
-            data_history_date <- as.Date(setdiff(as.Date(unique(data_history$date_)),
-                                                 try_again),
-                                         origin = "1970-01-01")
+              # define dates we will try to scrap again
+              observation_per_day <- 60 * 6
+              try_again <- unique(data_history[date_n < observation_per_day, date_])
+              start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
+              end_dates <- start_dates + 1
+
+            } else {
+
+              # define dates to scrap
+              data_history_date <- unique(as.Date(data_history$date))
+
+              # get final dates to scrap
+              start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
+              end_dates <- start_dates + 1
+
+            }
 
           } else {
-            # define dates to scrap
-            data_history_date <- as.Date(data_history$date)
+            dates <- self$create_start_end_dates(start_dates)
+            start_dates <- dates$start_dates
+            end_dates <- dates$end_dates
           }
+        } else {
 
-          # get final dates to scrap
-          start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-          if (deep_scan) {
-            data_history[, `:=`(date_ = NULL, date_n = NULL)]
-          }
+          dates <- self$create_start_end_dates(start_dates)
+          start_dates <- dates$start_dates
+          end_dates <- dates$end_dates
         }
-
-        # create sequence of dates for GET requests
-        end_dates <- start_dates + 1
 
         # if there is no dates next
         if (length(start_dates) == 0) {
@@ -636,6 +672,10 @@ FMP = R6::R6Class(
                                                         time = "minute",
                                                         from = start_dates[i],
                                                         to = end_dates[i])
+          Sys.sleep(0.1)
+        }
+        if (any(unlist(sapply(data_slice, nrow)) > 4999)) {
+          stop("More than 4999 rows!")
         }
         data_by_symbol <- rbindlist(data_slice)
 
@@ -646,8 +686,8 @@ FMP = R6::R6Class(
         }
 
         # convert to numeric (not sure why I put these, but it have sense I believe).
-        data_by_symbol[, 1:5] <- lapply(data_by_symbol[, 1:5],
-                                        as.numeric)
+        cols <- colnames(data_by_symbol)[1:5]
+        data_by_symbol[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
 
         # clean data
         data_by_symbol <- unique(data_by_symbol, by = c("formated"))
@@ -668,7 +708,7 @@ FMP = R6::R6Class(
             sparse = TRUE,
             tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
                                     as.POSIXct("2099-12-31 23:59:59"))),
-            allows_dups = TRUE
+            allows_dups = FALSE
           )
         } else {
           # save to tiledb
@@ -677,6 +717,8 @@ FMP = R6::R6Class(
           tiledb_array_close(arr)
         }
       }
+
+      return(NULL)
     },
 
     #' @description Get SP500 symbols from fmp cloud.
@@ -701,8 +743,10 @@ FMP = R6::R6Class(
 
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
     #'
+    #' @param save_uri Uri where tiledb saves files
+    #'
     #' @return Factor files saved to "factor-file" blob.
-    get_factor_file_tiledb = function() {
+    get_factor_file_tiledb = function(save_uri = "s3://equity-usa-factor-files") {
 
       # DEBUG
       # library(httr)
@@ -712,15 +756,8 @@ FMP = R6::R6Class(
       # library(tiledb)
       # library(lubridate)
       # self = FMP$new()
+      # save_uri = "s3://equity-usa-factor-files"
       # DEBUG
-
-      # configure s3
-      config <- tiledb_config()
-      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
-      config["vfs.s3.aws_secret_access_key"] <- "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"
-      config["vfs.s3.region"] <- "eu-central-1"
-      config["sm.compute_concurrency_level"] = "4"
-      context_with_config <- tiledb_ctx(config)
 
       # read old data
       seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
@@ -729,16 +766,19 @@ FMP = R6::R6Class(
       arr <- tiledb_array("s3://equity-usa-minute-fmp",
                           selected_ranges = list(date = cbind(seq_date_start, seq_date_end)),
                           as.data.frame = TRUE,
-                          ctx = context_with_config)
+                          ctx = self$context_with_config)
       system.time(minute_data <- arr[])
 
-      # prepare fo factor files createing
+      # prepare for factor files creating
       DT <- as.data.table(minute_data)
       DT[, date := with_tz(date, "America/New_York")]
       daily_data <- DT[, tail(.SD, 1), by = .(symbol, date = as.Date(date))]
 
+      # delete s3 bucket
+      del_obj <- tryCatch({tiledb_object_rm(save_uri)}, error = function(e) NA)
+
       # create schema if array doesn't exists
-      if (tiledb_object_type("s3://equity-usa-factor-files") != "ARRAY") {
+      if (tiledb_object_type(save_uri) != "ARRAY") {
         # create schema
         schema_arr <- tiledb_array_schema(
           domain=tiledb_domain(c(tiledb_dim(name="symbol", domain=c(NULL,NULL), tile=NULL, type="ASCII"))),
@@ -748,9 +788,9 @@ FMP = R6::R6Class(
           offsets_filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1))),
           validity_filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("RLE"),"COMPRESSION_LEVEL",-1)))
         )
-        tiledb_array_create("s3://equity-usa-factor-files", schema_arr)
+        tiledb_array_create(save_uri, schema_arr)
       }
-      arr <- tiledb_array("s3://equity-usa-factor-files", as.data.frame = TRUE)
+      arr <- tiledb_array(save_uri, as.data.frame = TRUE)
 
       # main loop
       for (s in unique(daily_data$symbol)) {
@@ -866,6 +906,7 @@ FMP = R6::R6Class(
         # save factor file to blob
         arr[] <- factor_file
       }
+      tiledb_array_close(arr)
     },
 
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
@@ -1103,69 +1144,55 @@ FMP = R6::R6Class(
       return(res)
     },
 
-    # get_market_cap = function(ticker, limit = 10) {
-    #   url <- "https://financialmodelingprep.com/api/v3/historical-market-capitalization/"
-    #   url <- paste0(url, toupper(ticker))
-    #   p <- RETRY("GET", url, query = list(limit = limit, apikey = Sys.getenv("APIKEY-FMPCLOUD")))
-    #   res <- content(p)
-    #   res <- rbindlist(res, fill = TRUE)
-    #   return(res)
-    # }
-
     #' @description Get market cap data from FMP cloud Prep - bulk.
     #'
     #' @return data.table with market cap data.
     get_market_cap_bulk = function() {
 
-      # define board
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "fmpcloud"),
-        path = "",
-        n_processes = 6L,
-        versioned = FALSE,
-        cache = NULL
-      )
+      # DEBUG
+      # fmp <- FMP$new()
+      # tickers <- fmp$get_available_traded_list()
+      # tickers <- tickers[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "ETF", "OTC")]
+      # tickers <- unique(tickers$symbol)
+      # limit = 50000
 
       # get history data if exists
-      print("Read old data")
-      file_exists <- pin_exists(board = board, private$market_cap_file_name)
-      if (file_exists) {
-        data_history <- pin_read(board, private$market_cap_file_name)
-        data_history <- as.data.table(data_history)
-        data_history[, `:=`(symbol = as.character(symbol),
-                            date = as.Date(as.character(date)))]
-        days_history <- max(data_history$date)
-        days_history <- Sys.Date() - days_history
-        if (days_history <= 1) {
-          return(NULL)
-        }
-        tickers <- unique(as.character(data_history$symbol))
+      if (tiledb_object_type(url) != "ARRAY") {
+        arr <- tiledb_array("s3://equity-usa-market-cap",
+                            as.data.frame = TRUE,
+                            selected_ranges = list(symbol = cbind("AAPL", "AAPL")))
+        aapl_market_cap <- arr[]
+        max_date <- max(aapl_market_cap$date, na.rm = TRUE)
+        limit <- as.integer(Sys.Date() - max_date + 2)
       } else {
-        fmp <- FMP$new()
-        tickers <- fmp$get_available_traded_list()
-        tickers <- tickers[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "ETF", "OTC")]
-        tickers <- unique(tickers$symbol)
-        days_history = 50000
+        limit = 50000
       }
 
       # get new data
       print("Get new data")
-      data_ <- lapply(tickers, self$get_market_cap, limit = days_history + 1)
+      data_ <- lapply(tickers, self$get_market_cap, limit = limit)
       DT <- rbindlist(data_)
       DT[, date := as.Date(date)]
+      DT <- DT[date > max_date]
 
-      # merge old and new
-      if (file_exists) {
-        data_new <- rbind(data_history, DT)
-        data_new <- unique(data_new)
+      # save data to array
+      # tiledb_vfs_create_bucket("s3://equity-usa-market-cap")
+      if (tiledb_object_type(url) != "ARRAY") {
+        fromDataFrame(
+          obj = DT,
+          uri = "s3://equity-usa-market-cap",
+          col_index = c("symbol"),
+          sparse = TRUE,
+          allows_dups = TRUE
+        )
       } else {
-        data_new <- copy(DT)
+        # save to tiledb
+        arr <- tiledb_array("s3://equity-usa-market-cap", as.data.frame = TRUE)
+        arr[] <- DT
+        tiledb_array_close(arr)
       }
 
-      # write (save) objeet to azure blob
-      pin_write(board, data_new, private$market_cap_file_name, type = "csv")
-
-      return(data_new)
+      return(DT)
     },
 
     #' @description Get stock list.

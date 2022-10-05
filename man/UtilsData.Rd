@@ -13,6 +13,8 @@ Various help data.
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{Tiledb ctx}
 }
 \if{html}{\out{</div>}}
 }
@@ -116,18 +118,20 @@ Adjusted data saved to Azure blob
 \subsection{Method \code{adjust_minute_data_tiledb()}}{
 Adjusted instraday data for splits and dividends
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_minute_data_tiledb()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_minute_data_tiledb(
+  save_uri = "s3://equity-usa-minute-fmp-adjusted"
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{freq}}{Frequency, can be hour or minute.}
+\item{\code{save_uri}}{TileDB uri for saving}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-Adjusted data saved to Azure blob
+Adjusted data saved to AWS S3 bucket
 }
 }
 \if{html}{\out{<hr>}}

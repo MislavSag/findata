@@ -28,6 +28,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
 \item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
+\item \href{#method-FMP-create_start_end_dates}{\code{FMP$create_start_end_dates()}}
 \item \href{#method-FMP-get_minute_equities_tiledb}{\code{FMP$get_minute_equities_tiledb()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
 \item \href{#method-FMP-get_factor_file_tiledb}{\code{FMP$get_factor_file_tiledb()}}
@@ -57,7 +58,11 @@ Get data data from FMP Cloud.
 \subsection{Method \code{new()}}{
 Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL, azure_storage_endpoint = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$new(
+  api_key = NULL,
+  azure_storage_endpoint = NULL,
+  context_with_config = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -66,6 +71,8 @@ Create a new FMP object.
 \item{\code{api_key}}{API KEY for FMP cloud data.}
 
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
 }
 \if{html}{\out{</div>}}
 }
@@ -267,6 +274,26 @@ Data saved to Azure blob.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-create_start_end_dates"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-create_start_end_dates}{}}}
+\subsection{Method \code{create_start_end_dates()}}{
+Help function for calculating start and end dates
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$create_start_end_dates(start_dates)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{start_dates}}{Sequence of start dates.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+list of start and end dates
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_minute_equities_tiledb"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_minute_equities_tiledb}{}}}
 \subsection{Method \code{get_minute_equities_tiledb()}}{
@@ -314,9 +341,16 @@ Vector of SP500 symbols.
 \subsection{Method \code{get_factor_file_tiledb()}}{
 Create factor files for calculating adjusted prices (adjusted for splits and dividends).
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb(save_uri = "s3://equity-usa-factor-files")}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{save_uri}}{Uri where tiledb saves files}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Factor files saved to "factor-file" blob.
 }

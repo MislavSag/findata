@@ -1,6 +1,8 @@
 # library(httr)
 # library(jsonlite)
+# library(nanotime)
 # library(stringr)
+# library(tiledb)
 #
 #
 # # setup
@@ -20,14 +22,23 @@
 # metadata$Var4 <- NULL
 # colnames(metadata) <- c("file_name", "date", "symbol", "url")
 # metadata$posix <- as.POSIXct(paste0(metadata$date, " ", substr(metadata$file_name, 1, 2), ":00:00"),
-#                              format = "%Y/%m/%d %H:%M:%S")
+#                              format = "%Y/%m/%d %H:%M:%S", tz = "UTC")
 # metadata$ticker <- gsub("USUSD", "", metadata$symbol)
+# metadata <- metadata[metadata$ticker == "AAPL", ]
 # head(metadata)
 # dim(metadata)
 #
+# # configure s3
+# config <- tiledb_config()
+# config["vfs.s3.aws_access_key_id"] <- Sys.getenv("AWS-ACCESS-KEY")
+# config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
+# config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
+# context_with_config <- tiledb_ctx(config)
+#
 # # scraping loop
-# i = 91
+# # i = 63
 # for (i in 1:nrow(metadata)) {
+#   print(i)
 #
 #   # meta
 #   url <- metadata[i, "url"]
@@ -38,23 +49,25 @@
 #            write_disk(binF, overwrite = TRUE))
 #
 #   # test if there is data for url
-#   if (length(content(p)) == 0) {
+#   if (length(content(p, encoding = "UTF-8")) == 0 | status_code(p) == 404) {
 #     next()
 #   }
 #
 #   # save file temporarily
 #   system(paste("lzma -d", binF))
 #   new_file_name <- gsub("\\.lzma", "", binF)
-#   con <- file(new_file_name, "rb")
+#   new_file_name_renamed <- paste0(new_file_name, i)
+#   file.rename(new_file_name, new_file_name_renamed)
+#   con <- file(new_file_name_renamed, "rb")
 #
 #   # create dataframe
-#   seq_along_ <- 0:(file.size(new_file_name)/20-1)
+#   seq_along_ <- 0:(file.size(new_file_name_renamed)/20-1)
 #   TIME <- vector("numeric", length(seq_along_))
 #   ASKP <- vector("numeric", length(seq_along_))
 #   BIDP <- vector("numeric", length(seq_along_))
 #   ASKV <- vector("numeric", length(seq_along_))
 #   BIDV <- vector("numeric", length(seq_along_))
-#   for (i in 0:(file.size(new_file_name)/20-1)) {
+#   for (i in 0:(file.size(new_file_name_renamed)/20-1)) {
 #     data <- readBin(con = con, "raw", 20)
 #     TIME[i] <- data[4:1] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
 #     ASKP[i] <- data[8:5] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
@@ -62,55 +75,36 @@
 #     ASKV[i] <- data[16:13] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
 #     BIDV[i] <- data[20:17] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
 #   }
-#   date_ <- metadata[i, "posix"]
 #
 #   # orginize data
 #   data_by_hour <- data.frame(symbol = metadata[i, "ticker"],
-#                              date = metadata[i, "posix"]+TIME/1000,
+#                              date = as.nanotime(metadata[i, "posix"])+TIME*1000000,
 #                              askp = ASKP / 1000,
 #                              bidp = BIDP / 1000,
 #                              askv = ASKV / 1000,
 #                              bidv = BIDV / 1000
 #                              )
 #
-#   # save data
-#
+#   # save to AWS S3 TileDB
+#   uri <- "s3://equity-usa-quote-dukascopy"
+#   if (tiledb_object_type(uri) != "ARRAY") {
+#     fromDataFrame(
+#       obj = data_by_hour,
+#       uri = uri,
+#       col_index = c("symbol", "date"),
+#       sparse = TRUE,
+#       tile_domain=list(date=c(as.nanotime("2015-06-17T00:00:00"),
+#                               as.nanotime("2099-06-17T00:00:00"))),
+#       allows_dups = FALSE
+#     )
+#   } else {
+#     # save to tiledb
+#     arr <- tiledb_array(uri, as.data.frame = TRUE)
+#     arr[] <- data_by_hour
+#     tiledb_array_close(arr)
+#   }
 #
 #   # remove new file
 #   close(con)
-#   file.remove(new_file_name)
+#   file.remove(new_file_name_renamed)
 # }
-#
-# # url <- "https://datafeed.dukascopy.com/datafeed/AAPLUSUSD/2022/07/29/15h_ticks.bi5"
-#
-#
-#
-# binF_ <- gsub("\\.lzma", "", binF)
-# con <- file(binF_, "rb")
-#
-#
-# for (i in 0:(file.size(binF_)/20-1)) {
-#   data <- readBin(con = con, "raw", 20)
-#   TIME <- data[4:1] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
-#   ASKP <- data[8:5] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
-#   BIDP <- data[12:9] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
-#   ASKV <- data[16:13] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
-#   BIDV <- data[20:17] %>% rawToBits %>% as.logical %>% which %>% {2^(. - 1)} %>% sum
-#   print(paste(TIME, ASKP, BIDP, ASKV, BIDV))
-# }
-# #> [1] "246 33867231 33862497 946528651 943230116"
-# #> [1] "296 33867291 33861749 947628162 943230116"
-# #> [1] "421 33867003 33862299 897988541 943230116"
-# #> [1] "472 33867781 33862219 947628162 943230116"
-# #> [1] "2440 33867773 33862779 897988541 943230116"
-# [...]
-# #> [1] "3583902 33882501 33877289 947628162 943230116"
-#
-# ASKPRICE = 161223 / 1000
-# BIDPRICE = 161197 / 1000
-# ASKVOL = 1011129254 / 1000
-# BIDVOL = 1011129254 / 1000
-#
-# as.POSIXct("2022-07-15 23:00:00")+3599976/1000
-#
-# 246 * 1000

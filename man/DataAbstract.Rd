@@ -10,6 +10,8 @@ Abstract class for all other data classes.
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
 }
 \if{html}{\out{</div>}}
 }
@@ -27,13 +29,15 @@ Abstract class for all other data classes.
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(azure_storage_endpoint = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{azure_storage_endpoint}}{Azure endpoint}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
 }
 \if{html}{\out{</div>}}
 }
