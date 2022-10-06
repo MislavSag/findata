@@ -10,28 +10,18 @@ UtilsData = R6::R6Class(
 
   public = list(
 
-    #' @field azure_storage_endpoint Azure storate endpont
-    azure_storage_endpoint = NULL,
-
-    #' @field context_with_config Tiledb ctx
-    context_with_config = NULL,
-
     #' @description
     #' Create a new UtilsData object.
     #'
+    #' @param azure_storage_endpoint Azure storate endpont
+    #' @param context_with_config AWS S3 Tiledb config
+    #'
     #' @return A new `UtilsData` object.
-    initialize = function() {
+    initialize = function(azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
 
       # endpoint
-      super$initialize(NULL)
-
-      # configure s3
-      config <- tiledb_config()
-      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
-      config["vfs.s3.aws_secret_access_key"] <- "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"
-      config["vfs.s3.region"] <- "eu-central-1"
-      config["sm.compute_concurrency_level"] = "8"
-      self$context_with_config <- tiledb_ctx(config)
+      super$initialize(azure_storage_endpoint, context_with_config)
     },
 
     #' @description Get tick data from finam source using QuantTools.
@@ -200,7 +190,7 @@ UtilsData = R6::R6Class(
     #' @param save_uri TileDB uri for saving
     #'
     #' @return Adjusted data saved to AWS S3 bucket
-    adjust_minute_data_tiledb = function(save_uri = "s3://equity-usa-minute-fmp-adjusted") {
+    adjust_fm_tiledb = function(save_uri = "s3://equity-usa-minute-fmp-adjusted") {
 
       # debug
       # library(findata)
@@ -238,9 +228,9 @@ UtilsData = R6::R6Class(
       ipo_dates_dt[, symbol := toupper(gsub("\\.csv", "", symbol))]
 
       # delete uri
-      tryCatch({tiledb_object_rm(save_uri)}, error = function(e) NA)
+      tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
       save_uri_hour <- gsub("minute", "hour", save_uri)
-      tryCatch({tiledb_object_rm(save_uri_hour)}, error = function(e) NA)
+      tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
 
       # loop that import unadjusted data and adjust them
       for (symbol in unique(factor_files$symbol)) {
@@ -318,8 +308,8 @@ UtilsData = R6::R6Class(
               col_index = c("symbol", "date"),
               sparse = TRUE,
               allows_dups = TRUE,
-              tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
-                                      as.POSIXct("2099-12-31 23:59:59"))),
+              tile_domain=list(date=c(bit64::as.integer64(as.nanotime("1970-01-01 00:00:00", tz = "UTC")),
+                                      bit64::as.integer64(as.nanotime("2099-12-31 23:59:59", tz = "UTC")))),
               capacity = 10000L
             )
           })
@@ -331,18 +321,19 @@ UtilsData = R6::R6Class(
         }
 
         # get daily data
-        daily_data <- df[, .(open = head(open, 1),
-                            high = max(high, na.rm = TRUE),
-                            low = min(low, na.rm = TRUE),
-                            close = tail(close, 1),
-                            volume = sum(volume, na.rm = TRUE)),
-                        by = .(symbol, date = as.Date(date, tz = "UTC"))]
+        # daily_data <- df[, .(open = head(open, 1),
+        #                     high = max(high, na.rm = TRUE),
+        #                     low = min(low, na.rm = TRUE),
+        #                     close = tail(close, 1),
+        #                     volume = sum(volume, na.rm = TRUE)),
+        #                 by = .(symbol, date = as.Date(date, tz = "UTC"))]
 
       }
 
       # consolidate and vacuum
       tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr,
                                            uri = save_uri)
+      tiledb::array_vacuum(ctx = context_with_config, uri = save_uri)
       tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
                                       uri = save_uri)
 

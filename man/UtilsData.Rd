@@ -9,15 +9,6 @@ Various help data.
 \section{Super class}{
 \code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{UtilsData}
 }
-\section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
-
-\item{\code{context_with_config}}{Tiledb ctx}
-}
-\if{html}{\out{</div>}}
-}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -25,7 +16,7 @@ Various help data.
 \item \href{#method-UtilsData-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
 \item \href{#method-UtilsData-get_split_factor}{\code{UtilsData$get_split_factor()}}
 \item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
-\item \href{#method-UtilsData-adjust_minute_data_tiledb}{\code{UtilsData$adjust_minute_data_tiledb()}}
+\item \href{#method-UtilsData-adjust_fm_tiledb}{\code{UtilsData$adjust_fm_tiledb()}}
 \item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
 \item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
 \item \href{#method-UtilsData-adjust_market_data}{\code{UtilsData$adjust_market_data()}}
@@ -45,9 +36,18 @@ Various help data.
 \subsection{Method \code{new()}}{
 Create a new UtilsData object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 A new `UtilsData` object.
 }
@@ -113,14 +113,12 @@ Adjusted data saved to Azure blob
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-UtilsData-adjust_minute_data_tiledb"></a>}}
-\if{latex}{\out{\hypertarget{method-UtilsData-adjust_minute_data_tiledb}{}}}
-\subsection{Method \code{adjust_minute_data_tiledb()}}{
+\if{html}{\out{<a id="method-UtilsData-adjust_fm_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-adjust_fm_tiledb}{}}}
+\subsection{Method \code{adjust_fm_tiledb()}}{
 Adjusted instraday data for splits and dividends
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_minute_data_tiledb(
-  save_uri = "s3://equity-usa-minute-fmp-adjusted"
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_fm_tiledb(save_uri = "s3://equity-usa-minute-fmp-adjusted")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

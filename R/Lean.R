@@ -154,12 +154,14 @@ Lean = R6::R6Class(
       # debug
       # library(data.table)
       # library(findata)
+      # library(tiledb)
+      # library(lubridate)
+      # library(nanotime)
       # self = Lean$new()
 
       options(scipen=999)
 
       # read factor files
-      # factor files
       arr_ff <- tiledb_array("s3://equity-usa-factor-files",
                              as.data.frame = TRUE,
                              ctx = self$context_with_config)
@@ -177,7 +179,7 @@ Lean = R6::R6Class(
         fwrite(sample_[, -1], file_name, col.names = FALSE)
       }
 
-        # add data to lean folder
+      # add data to lean folder
       for (s in factor_files[, unique(symbol)]) {
 
         # debug
@@ -188,9 +190,33 @@ Lean = R6::R6Class(
                             as.data.frame = TRUE,
                             selected_ranges = list(symbol = cbind(s, s)))
         sample_ <- arr[]
+
+        # set timezone and change posix to nanotime
+        sample_$date <- force_tz(sample_$date, tzone = "UTC")
+
+        # Dt, timezone, unique
         sample_ <- as.data.table(sample_)
-        sample_[, date := with_tz(date, "America/New_York")]
         sample_ <- unique(sample_, by = c("symbol", "date"))
+        sample_[, date := with_tz(date, tz = "America/New_York")]
+
+        # keep trading hours
+        sample_ <- sample_[format.POSIXct(date, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
+
+        ######### NANOTIME TRY #########
+        # # set timezone and change posix to nanotime
+        # sample_$date <- force_tz(sample_$date, tzone = "UTC")
+        # sample_$date <- as.nanotime(sample_$date)
+        #
+        # # Dt, timezone, unique
+        # sample_ <- as.data.table(sample_)
+        # sample_ <- unique(sample_, by = c("symbol", "date"))
+        # sample_[, date_ := format(date, tz = "America/New_York")]
+        #
+        # # sample trading hours
+        # # sample_[format(date_, format = "%H:$M:%S") %between% c("09:30:00", "16:00:00")]
+        # as.nanoival("+T09:30:00 -> T16:00:00+")
+        # sample_[format(date_, format = "%H:$M:%S") %in% as.nanoival("+T09:30:00 -> T16:00:00+")]
+        ######### NANOTIME TRY #########
 
         # convert to QC format
         sample_[, `:=`(DateTime = (hour(date) * 3600 + minute(date) * 60 + second(date)) * 1000,

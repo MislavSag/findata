@@ -25,7 +25,7 @@ Imports:
     lubridate,
     QuantTools,
     tiledb,
-    aws.s3
+    nanotime
 Remotes:
     bitbucket::quanttools/quanttools
 Suggests: 

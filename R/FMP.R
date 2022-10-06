@@ -297,13 +297,6 @@ FMP = R6::R6Class(
       # date sequence
       seq_date <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 1)
 
-      # configure s3
-      config <- tiledb_config()
-      config["vfs.s3.aws_access_key_id"] <- "AKIA43AHCLIILOAE5CVS"
-      config["vfs.s3.aws_secret_access_key"] <- "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"
-      config["vfs.s3.region"] <- "eu-central-1"
-      context_with_config <- tiledb_ctx(config)
-
       # read old data
       if (tiledb_object_type(url) != "ARRAY") {
         print("Scrap for the first time!")
@@ -366,9 +359,6 @@ FMP = R6::R6Class(
                                      time = 'day',
                                      from = as.character(Sys.Date() - 3),
                                      to = as.character(Sys.Date())) {
-
-      from = start_dates[1]
-      to = end_dates[1]
 
       # initial GET request. Don't use RETRY here yet.
       x <- tryCatch({
@@ -586,7 +576,7 @@ FMP = R6::R6Class(
       # library(tiledb)
       # library(lubridate)
       # self = FMP$new()
-      # symbol = "WHR"
+      # symbol = "SPY"
 
       # loop over all symbols
       for (symbol in symbols) {
@@ -672,7 +662,7 @@ FMP = R6::R6Class(
                                                         time = "minute",
                                                         from = start_dates[i],
                                                         to = end_dates[i])
-          Sys.sleep(0.1)
+          # Sys.sleep(0.1)
         }
         if (any(unlist(sapply(data_slice, nrow)) > 4999)) {
           stop("More than 4999 rows!")
@@ -759,6 +749,12 @@ FMP = R6::R6Class(
       # save_uri = "s3://equity-usa-factor-files"
       # DEBUG
 
+      # delete s3 bucket
+      del_obj <- tryCatch({tiledb_object_rm(save_uri, ctx = self$context_with_config)}, error = function(e) NA)
+      if (is.na(del_obj)) {
+        stop("Can't delete old bucket object!")
+      }
+
       # read old data
       seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
       seq_date_start <- as.POSIXct(paste0(seq_date, " 21:55:00"))
@@ -773,9 +769,6 @@ FMP = R6::R6Class(
       DT <- as.data.table(minute_data)
       DT[, date := with_tz(date, "America/New_York")]
       daily_data <- DT[, tail(.SD, 1), by = .(symbol, date = as.Date(date))]
-
-      # delete s3 bucket
-      del_obj <- tryCatch({tiledb_object_rm(save_uri)}, error = function(e) NA)
 
       # create schema if array doesn't exists
       if (tiledb_object_type(save_uri) != "ARRAY") {
