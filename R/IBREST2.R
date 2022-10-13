@@ -4,8 +4,8 @@
 #' Get data data from IB Client Portal API.
 #'
 #' @export
-IBREST = R6::R6Class(
-  "IBREST",
+IBREST2 = R6::R6Class(
+  "IBREST2",
   inherit = DataAbstract,
 
   public = list(
@@ -14,12 +14,20 @@ IBREST = R6::R6Class(
     #' Create a new IBREST object.
     #'
     #' @param azure_storage_endpoint Azure storage endpoint
+    #' @param domain domain, by default https://localhost
+    #' @param port Port, by default 5000
+    #'
     #'
     #' @return A new `IBREST` object.
-    initialize = function(azure_storage_endpoint = NULL) {
+    initialize = function(domain = "localhost",
+                          port = 5000L,
+                          azure_storage_endpoint = NULL) {
 
       # endpoint
       super$initialize(azure_storage_endpoint)
+
+      # base url
+      self$baseurl <- paste(paste0("https://", domain), port, sep = ":")
     },
 
     #' @description
@@ -30,7 +38,7 @@ IBREST = R6::R6Class(
     #'
     #' @references \url{https://www.interactivebrokers.com/api/doc.html}
     #' @return GET response.
-    ib_get = function(url = "https://localhost:5000/v1/api/sso/validate",
+    ib_get = function(url = modify_url(self$baseurl, path = "v1/api/sso/validate"),
                       query = NULL) {
       p <- RETRY("GET",
                  url,
@@ -49,8 +57,8 @@ IBREST = R6::R6Class(
     #'
     #' @references \url{https://www.interactivebrokers.com/api/doc.html}
     #' @return GET response.
-    ib_post = function(url = "https://localhost:5000/v1/api/tickle",
-                        body = NULL) {
+    ib_post = function(url = modify_url(self$baseurl, path = "v1/api/tickle"),
+                       body = NULL) {
       p <- RETRY("POST",
                  url,
                  config = httr::config(ssl_verifypeer = FALSE, ssl_verifyhost = FALSE),
@@ -94,12 +102,12 @@ IBREST = R6::R6Class(
 
       # send GET request fro market data
       # print("Get unadjusted data from IB...")
-      md <- self$ib_get("https://localhost:5000/v1/api/iserver/marketdata/history",
-                   list(conid = conid,
-                        exchange = exchange,
-                        period = period,
-                        bar = bar,
-                        outsideRth = outsideRth))
+      md <- self$ib_get(modify_url(self$baseurl, path = "v1/api/iserver/marketdata/history"),
+                        list(conid = conid,
+                             exchange = exchange,
+                             period = period,
+                             bar = bar,
+                             outsideRth = outsideRth))
       md <- rbindlist(md$data)
 
       # convert timezone to New york time and keep trading hours
@@ -132,7 +140,7 @@ IBREST = R6::R6Class(
     #'
     #' @return list object with info on positions.
     get_position = function(account_id, con_id) {
-      url <- paste0("https://localhost:5000/v1/api/portfolio/",
+      url <- paste0(modify_url(self$baseurl, path = "/v1/api/portfolio/"),
                     account_id,
                     "/position/",
                     con_id)
@@ -150,7 +158,7 @@ IBREST = R6::R6Class(
     #' @return list object with info on positions.
     buy_and_confirm = function(account_id, order_body) {
       # place order
-      url <- paste0("https://localhost:5000/v1/api/iserver/account/",
+      url <- paste0(modify_url(self$baseurl, path = "/v1/api/iserver/account/"),
                     account_id,
                     "/orders")
       body_json = toJSON(list(orders = list(order_body)), auto_unbox = TRUE)
@@ -160,7 +168,7 @@ IBREST = R6::R6Class(
       Sys.sleep(1L)
 
       # confirm order
-      url <- paste0("https://localhost:5000/v1/api/iserver/reply/",
+      url <- paste0(modify_url(self$baseurl, path = "/v1/api/iserver/reply/"),
                     order_message[[1]]$id)
       confirmed <- self$ib_post(url,
                                 body = toJSON(list(confirmed = TRUE),
@@ -191,7 +199,7 @@ IBREST = R6::R6Class(
     #'
     #' @return list object with info on podrtfolio summary.
     get_portfolio_summary = function(account_id) {
-      url <- paste0("https://localhost:5000/v1/api/portfolio/",
+      url <- paste0(modify_url(self$baseurl, path = "v1/api/portfolio/"),
                     account_id,
                     "/summary")
       positions <- self$ib_get(url)

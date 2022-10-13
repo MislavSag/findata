@@ -199,8 +199,14 @@ UtilsData = R6::R6Class(
       # library(RcppQuantuccia)
       # library(tiledb)
       # library(lubridate)
+      # library(nanotime)
       # self = UtilsData$new()
       # save_uri = "s3://equity-usa-minute-fmp-adjusted"
+
+      # delete uri
+      tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
+      save_uri_hour <- gsub("minute", "hour", save_uri)
+      tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
 
       # factor files
       arr_ff <- tiledb_array("s3://equity-usa-factor-files",
@@ -226,11 +232,6 @@ UtilsData = R6::R6Class(
       setnames(ipo_dates_dt, "rn", "symbol")
       ipo_dates_dt[, ipo_dates := as.Date(ipo_dates)]
       ipo_dates_dt[, symbol := toupper(gsub("\\.csv", "", symbol))]
-
-      # delete uri
-      tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
-      save_uri_hour <- gsub("minute", "hour", save_uri)
-      tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
 
       # loop that import unadjusted data and adjust them
       for (symbol in unique(factor_files$symbol)) {
@@ -298,6 +299,7 @@ UtilsData = R6::R6Class(
                             close = tail(close, 1),
                             volume = sum(volume, na.rm = TRUE)),
                         by = .(symbol, date = nano_ceiling(date, as.nanoduration("01:00:00")))]
+        hour_data[, date := bit64::as.integer64(date)]
 
         # save hour data
         if (tiledb_object_type(save_uri_hour) != "ARRAY") {

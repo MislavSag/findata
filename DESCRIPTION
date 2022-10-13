@@ -25,7 +25,8 @@ Imports:
     lubridate,
     QuantTools,
     tiledb,
-    nanotime
+    nanotime,
+    bit64
 Remotes:
     bitbucket::quanttools/quanttools
 Suggests: 

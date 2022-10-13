@@ -1,3 +1,175 @@
+#' @title Dukascopy Class
+#'
+#' @description
+#' Get data data from Dukascopy.
+#'
+#' @export
+Dukascopy = R6::R6Class(
+  "Dukascopy",
+  inherit = DataAbstract,
+
+  public = list(
+
+    #' @description
+    #' Create a new Dukascopy object.
+    #'
+    #' @param azure_storage_endpoint Azure storate endpont
+    #' @param context_with_config AWS S3 Tiledb config
+    #'
+    #' @return A new `Dukascopy` object.
+    initialize = function(azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
+
+      # endpoint
+      super$initialize(azure_storage_endpoint, context_with_config)
+    },
+
+    #' @description
+    #' Get all symbols from Dukascopy
+    #'
+    #' @return Vector of symbols.
+    get_symbols = function() {
+      quotes <- fromJSON("https://www.dukascopy.com/plugins/quotes-list/base.json.php")
+      quotes$symbols <- gsub("/|\\.", "", quotes$instr)
+      return(quotes)
+    },
+
+    #' @description
+    #' IB GET object
+    #'
+    #' @param save_path Saving directory.
+    #' @param symbols Sybmols to scrap.
+    #' @param start_date Start date.
+    #' @param end_date End date.
+    #'
+    #' @references \url{https://www.interactivebrokers.com/api/doc.html}
+    #' @return GET response.
+    download_raw = function(save_path = "D:/market_data/equity/usa/quotes",
+                            symbols = c("AAPLUSUSD", "AMZNUSUSD"),
+                            start_date = as.Date("2020-01-01"),
+                            end_date = Sys.Date() - 1) {
+
+
+
+      # checks
+      if (!(dir.exists(save_path))) {
+        stop("Directory doesn-t exists!")
+      }
+
+      # metadata
+      url_base <- "https://datafeed.dukascopy.com/datafeed"
+      seq_dates <- seq.Date(start_date, end_date, by = 1)
+      seq_dates <- format.Date(seq_dates, format = "%Y/%m/%d")
+      file_name <- paste0(formatC(0:23, width = 2, format = "d", flag = "0"),
+                          "h_ticks.bi5")
+      metadata <- expand.grid(file_name, seq_dates, symbols, url_base,
+                              stringsAsFactors = FALSE)
+      urls <- paste(metadata$Var4, metadata$Var3, metadata$Var2, metadata$Var1,
+                    sep = "/")
+      save_paths <- paste(save_path, metadata$Var3, gsub("/", "-", metadata$Var2), metadata$Var1,
+                          sep = "/")
+      save_paths <- gsub("\\.bi5", "\\.lzma", save_paths)
+
+      # create directories
+      lapply(unique(dirname(save_paths)), dir.create, recursive = TRUE)
+
+      # scraping loop
+      for (i in seq_along(urls)) {
+
+        # get dukascopy file and save localy
+        p <- GET(urls[i],
+                 add_headers("user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"),
+                 write_disk(save_paths[i], overwrite = TRUE))
+
+
+        # check status
+        if (!(status_code(p) %in% c(200, 404))) {
+          stop(paste0("Check url ", urls[i]))
+        }
+      }
+
+
+      #   # save file temporarily
+      #   system(paste("lzma -d", binF))
+      #   new_file_name <- gsub("\\.lzma", "", binF)
+      #   new_file_name_renamed <- paste0(new_file_name, i)
+      #   file.rename(new_file_name, new_file_name_renamed)
+
+      return(x)
+    },
+
+    #' @description
+    #' Parse Dukascopy data and convert to data.table format
+    #'
+    #' @param files Bin files (lzma files) downlaoded from Dukascopy and saved
+    #'     localy.
+    #'
+    #' @return Data.table with ask and bid prices and volumes.
+    raw_to_dt = function(files) {
+
+      # debug
+      files <- list.files("D:/market_data/equity/usa/quotes/AAPLUSUSD",
+                          full.names = TRUE,
+                          recursive  = TRUE)
+
+      # keep only files with positive size
+      files <- files[file.size(files) > 0]
+      data_by_hour <- list()
+      for (f in files) {
+
+        # decompress file and save it temporarily
+        system(paste("lzma -d", f, " --keep --force"))
+        new_file_name <- gsub("\\.lzma", "", f)
+        con <- file(new_file_name, "rb")
+
+        # create dataframe
+        seq_along_ <- 0:(file.size(new_file_name)/20-1)
+        TIME <- vector("numeric", length(seq_along_))
+        ASKP <- vector("numeric", length(seq_along_))
+        BIDP <- vector("numeric", length(seq_along_))
+        ASKV <- vector("numeric", length(seq_along_))
+        BIDV <- vector("numeric", length(seq_along_))
+        for (i in 0:(file.size(new_file_name)/20-1)) {
+          data <- readBin(con = con, "raw", 20)
+          TIME[i] <- data[4:1] |> rawToBits() |> as.logical() |> which() |> (\(x) 2^(x - 1))() |> sum()
+          ASKP[i] <- data[8:5] |> rawToBits() |> as.logical() |> which() |> (\(x) 2^(x - 1))() |> sum()
+          BIDP[i] <- data[12:9]  |> rawToBits() |> as.logical() |> which() |> (\(x) 2^(x - 1))() |> sum()
+          ASKV[i] <- data[16:13] |> rawToBits() |> as.logical() |> which() |> (\(x) 2^(x - 1))() |> sum()
+          BIDV[i] <- data[20:17] |> rawToBits() |> as.logical() |> which() |> (\(x) 2^(x - 1))() |> sum()
+        }
+
+        # orginize data
+        split_path <- strsplit(new_file_name, "/", fixed = TRUE)[[1]]
+        datetime_ <- as.nanotime(paste0(split_path[7], " ", substr(split_path[8], 1, 2), ":00:00"),
+                                 tz = "UTC")
+        data_by_hour[[i]] <- data.frame(symbol = split_path[6],
+                                        date = datetime_+TIME*1000000,
+                                        askp = ASKP / 1000,
+                                        bidp = BIDP / 1000,
+                                        askv = ASKV / 1000,
+                                        bidv = BIDV / 1000)
+
+        # remove new file
+        close(con)
+      }
+      # merge list elements
+      quotes_data <- rbindlist(data_by_hour)
+
+      # remove tmep files
+      file.remove(gsub("\\.lzma", "", files))
+
+      return(quotes_data)
+    }
+
+    # autoscrape_dukascopy_tiledb = function(symbols) {
+    #
+    #   #
+    #
+    #
+    # }
+  )
+)
+
 # library(httr)
 # library(jsonlite)
 # library(nanotime)

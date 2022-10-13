@@ -11,6 +11,7 @@
 #' @import stringr
 #' @import tiledb
 #' @import nanotime
+#' @import bit64
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url
 #' @importFrom zip zipr

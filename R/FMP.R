@@ -900,6 +900,11 @@ FMP = R6::R6Class(
         arr[] <- factor_file
       }
       tiledb_array_close(arr)
+
+      # consolidate
+
+      # vacum
+
     },
 
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
