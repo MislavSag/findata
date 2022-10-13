@@ -10,11 +10,17 @@ IBREST2 = R6::R6Class(
 
   public = list(
 
+    #' @field domain Domain, by default localhost
+    domain = NULL,
+
+    #' @field port Port, by default 5000
+    port = NULL,
+
     #' @description
     #' Create a new IBREST object.
     #'
     #' @param azure_storage_endpoint Azure storage endpoint
-    #' @param domain domain, by default https://localhost
+    #' @param domain Domain, by default localhost
     #' @param port Port, by default 5000
     #'
     #'

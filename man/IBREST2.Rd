@@ -18,6 +18,15 @@ Get data data from IB Client Portal API.
 \section{Super class}{
 \code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{IBREST2}
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{domain}}{Domain, by default localhost}
+
+\item{\code{port}}{Port, by default 5000}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -52,7 +61,7 @@ Create a new IBREST object.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{domain}}{domain, by default https://localhost}
+\item{\code{domain}}{Domain, by default localhost}
 
 \item{\code{port}}{Port, by default 5000}
 
