@@ -118,13 +118,18 @@ Adjusted data saved to Azure blob
 \subsection{Method \code{adjust_fm_tiledb()}}{
 Adjusted instraday data for splits and dividends
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_fm_tiledb(save_uri = "s3://equity-usa-minute-fmp-adjusted")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_fm_tiledb(
+  save_uri = "D:/equity-usa-minute-fmp-adjusted",
+  minute_uri = "D:/equity-usa-minute-fmp"
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{save_uri}}{TileDB uri for saving}
+
+\item{\code{minute_uri}}{TileDB uri with unadjusted minute data.}
 }
 \if{html}{\out{</div>}}
 }

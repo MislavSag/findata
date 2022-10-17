@@ -188,9 +188,11 @@ UtilsData = R6::R6Class(
     #' @description Adjusted instraday data for splits and dividends
     #'
     #' @param save_uri TileDB uri for saving
+    #' @param minute_uri TileDB uri with unadjusted minute data.
     #'
     #' @return Adjusted data saved to AWS S3 bucket
-    adjust_fm_tiledb = function(save_uri = "s3://equity-usa-minute-fmp-adjusted") {
+    adjust_fm_tiledb = function(save_uri = "D:/equity-usa-minute-fmp-adjusted",
+                                minute_uri = "D:/equity-usa-minute-fmp") {
 
       # debug
       # library(findata)
@@ -201,7 +203,7 @@ UtilsData = R6::R6Class(
       # library(lubridate)
       # library(nanotime)
       # self = UtilsData$new()
-      # save_uri = "s3://equity-usa-minute-fmp-adjusted"
+      # save_uri = "D:/equity-usa-minute-fmp-adjusted"
 
       # delete uri
       tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
@@ -240,7 +242,7 @@ UtilsData = R6::R6Class(
         print(symbol)
 
         # import minute data
-        arr <- tiledb_array("s3://equity-usa-minute-fmp",
+        arr <- tiledb_array(minute_uri,
                             as.data.frame = TRUE,
                             selected_ranges = list(symbol = cbind(symbol, symbol)))
         system.time(unadjusted_data <- arr[])
@@ -332,12 +334,13 @@ UtilsData = R6::R6Class(
 
       }
 
-      # consolidate and vacuum
-      tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr,
-                                           uri = save_uri)
-      tiledb::array_vacuum(ctx = context_with_config, uri = save_uri)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri)
+      # consolidate and vacuum adjusted minute data
+      array_consolidate(uri = save_uri)
+      array_vacuum(uri = save_uri)
+
+      # consolidate and vacuum adjusted minute data
+      array_consolidate(uri = save_uri_hour)
+      array_vacuum(uri =save_uri_hour)
 
       return(NULL)
     },

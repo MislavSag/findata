@@ -31,6 +31,24 @@ fmp = FMP$new()
 ```
 
 
+## Dukascopy
+
+```{r}
+
+# dc = Dukascopy$new()
+# dc_symbols <- dc$get_symbols()
+# dc_symbols[grep("SPY", dc_symbols$symbols), ]
+# 
+# dc$download_raw(save_path = "D:/dukascopy",
+#                 symbols = c("AAPLUSUSD", "SPYUSUSD"),
+#                 start_date = as.Date("2017-01-01"),
+#                 end_date = Sys.Date() - 1)
+# 
+# download_raw
+```
+
+
+
 ## Get minute data
 
 ```{r}

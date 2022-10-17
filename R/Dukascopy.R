@@ -30,7 +30,15 @@ Dukascopy = R6::R6Class(
     #' @return Vector of symbols.
     get_symbols = function() {
       quotes <- fromJSON("https://www.dukascopy.com/plugins/quotes-list/base.json.php")
+      etfs <- read_html("https://www.dukascopy.com/swiss/english/cfd/range-of-markets/") |>
+        html_elements("#ETFtable") |>
+        html_table() |>
+        (`[[`)(1) |>
+        as.data.frame()
+      colnames(etfs) <- c("instr", "desc", "market", "point")
+      quotes <- rbindlist(list(quotes, etfs), fill = TRUE)
       quotes$symbols <- gsub("/|\\.", "", quotes$instr)
+
       return(quotes)
     },
 
@@ -73,6 +81,11 @@ Dukascopy = R6::R6Class(
       # create directories
       lapply(unique(dirname(save_paths)), dir.create, recursive = TRUE)
 
+      # remove urls and paths already scraped
+      remove_indecies <- which(file.exists(save_paths))
+      save_paths <- save_paths[-remove_indecies]
+      urls <- urls[-remove_indecies]
+
       # scraping loop
       for (i in seq_along(urls)) {
 
@@ -88,14 +101,7 @@ Dukascopy = R6::R6Class(
         }
       }
 
-
-      #   # save file temporarily
-      #   system(paste("lzma -d", binF))
-      #   new_file_name <- gsub("\\.lzma", "", binF)
-      #   new_file_name_renamed <- paste0(new_file_name, i)
-      #   file.rename(new_file_name, new_file_name_renamed)
-
-      return(x)
+      return(NULL)
     },
 
     #' @description
@@ -108,17 +114,27 @@ Dukascopy = R6::R6Class(
     raw_to_dt = function(files) {
 
       # debug
-      files <- list.files("D:/market_data/equity/usa/quotes/AAPLUSUSD",
-                          full.names = TRUE,
-                          recursive  = TRUE)
+      # files <- list.files("D:/dukascopy",
+      #                     full.names = TRUE,
+      #                     recursive  = TRUE)
+      # library(nanotime)
 
       # keep only files with positive size
-      files <- files[file.size(files) > 0]
-      data_by_hour <- list()
-      for (f in files) {
+      files_sizes <- file.size(files)
+      files <- files[files_sizes > 0]
+      data_by_hour <- lapply(files, function(f) {
+
+        print(f)
 
         # decompress file and save it temporarily
-        system(paste("lzma -d", f, " --keep --force"))
+        decompresed <- tryCatch({system(paste("lzma -d", f, " --keep --force"),
+                                        intern = TRUE)},
+                                error = function(e) NA)
+        if (!(is.null(attributes(decompresed)))) {
+          return(NULL)
+        }
+
+        # open new filw
         new_file_name <- gsub("\\.lzma", "", f)
         con <- file(new_file_name, "rb")
 
@@ -140,33 +156,32 @@ Dukascopy = R6::R6Class(
 
         # orginize data
         split_path <- strsplit(new_file_name, "/", fixed = TRUE)[[1]]
-        datetime_ <- as.nanotime(paste0(split_path[7], " ", substr(split_path[8], 1, 2), ":00:00"),
-                                 tz = "UTC")
-        data_by_hour[[i]] <- data.frame(symbol = split_path[6],
-                                        date = datetime_+TIME*1000000,
-                                        askp = ASKP / 1000,
-                                        bidp = BIDP / 1000,
-                                        askv = ASKV / 1000,
-                                        bidv = BIDV / 1000)
+        datetime_ <- as.nanotime(paste0(split_path[length(split_path)-1],
+                                        " ", substr(split_path[length(split_path)], 1, 2),
+                                        ":00:00")) # tz = "UTC" imlicitly
+        data_by_hour <- data.frame(symbol = split_path[length(split_path)-2],
+                                   date = datetime_+TIME*1000000,
+                                   askp = ASKP / 1000,
+                                   bidp = BIDP / 1000,
+                                   askv = ASKV / 1000,
+                                   bidv = BIDV / 1000)
 
         # remove new file
         close(con)
-      }
+
+        return(data_by_hour)
+      })
       # merge list elements
       quotes_data <- rbindlist(data_by_hour)
+
+      # remove observations where all double values are 0
+      quotes_data_clean <- quotes_data[askp > 0 & bidp > 0 & askv > 0 & bidv > 0]
 
       # remove tmep files
       file.remove(gsub("\\.lzma", "", files))
 
-      return(quotes_data)
+      return(quotes_data_clean)
     }
-
-    # autoscrape_dukascopy_tiledb = function(symbols) {
-    #
-    #   #
-    #
-    #
-    # }
   )
 )
 

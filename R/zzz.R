@@ -13,7 +13,7 @@
 #' @import nanotime
 #' @import bit64
 #' @importFrom jsonlite fromJSON read_json
-#' @importFrom httr GET POST RETRY content timeout add_headers modify_url
+#' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code
 #' @importFrom zip zipr
 #' @importFrom zoo na.locf
 #' @importFrom lubridate force_tz with_tz

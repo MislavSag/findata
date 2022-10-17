@@ -752,13 +752,13 @@ FMP = R6::R6Class(
       # delete s3 bucket
       del_obj <- tryCatch({tiledb_object_rm(save_uri, ctx = self$context_with_config)}, error = function(e) NA)
       if (is.na(del_obj)) {
-        stop("Can't delete old bucket object!")
+        warning("Can't delete old bucket object!")
       }
 
       # read old data
       seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
-      seq_date_start <- as.POSIXct(paste0(seq_date, " 21:55:00"))
-      seq_date_end <- as.POSIXct(paste0(seq_date, " 22:00:00"))
+      seq_date_start <- as.POSIXct(paste0(seq_date, " 20:55:00"))
+      seq_date_end <- as.POSIXct(paste0(seq_date, " 21:00:00"))
       arr <- tiledb_array("s3://equity-usa-minute-fmp",
                           selected_ranges = list(date = cbind(seq_date_start, seq_date_end)),
                           as.data.frame = TRUE,
@@ -901,9 +901,11 @@ FMP = R6::R6Class(
       }
       tiledb_array_close(arr)
 
-      # consolidate
-
-      # vacum
+      # consolidate and vacuum adjusted minute data
+      tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr,
+                                           uri = save_uri)
+      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                      uri = save_uri)
 
     },
 

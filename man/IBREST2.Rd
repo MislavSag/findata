@@ -24,6 +24,8 @@ Get data data from IB Client Portal API.
 \item{\code{domain}}{Domain, by default localhost}
 
 \item{\code{port}}{Port, by default 5000}
+
+\item{\code{baseurl}}{Base url}
 }
 \if{html}{\out{</div>}}
 }
