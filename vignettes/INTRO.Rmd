@@ -74,8 +74,8 @@ if (FALSE) {
                                  deep_scan = FALSE)
   
   # consolidate
-  tiledb:::libtiledb_array_consolidate(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
-  tiledb:::libtiledb_array_vacuum(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
+  # tiledb:::libtiledb_array_consolidate(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
+  # tiledb:::libtiledb_array_vacuum(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
 }
 ```
 

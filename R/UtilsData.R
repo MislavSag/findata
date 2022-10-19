@@ -204,6 +204,7 @@ UtilsData = R6::R6Class(
       # library(nanotime)
       # self = UtilsData$new()
       # save_uri = "D:/equity-usa-minute-fmp-adjusted"
+      # minute_uri = "D:/equity-usa-minute-fmp"
 
       # delete uri
       tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
@@ -247,6 +248,11 @@ UtilsData = R6::R6Class(
                             selected_ranges = list(symbol = cbind(symbol, symbol)))
         system.time(unadjusted_data <- arr[])
 
+        # if there is no data next
+        if (nrow(unadjusted_data) == 0) {
+          next()
+        }
+
         # unadjusted data from IPO
         unadj_from_ipo <- ipo_dates_dt[unadjusted_data, on = "symbol"]
         if (!(all(is.na(unadj_from_ipo$ipo_dates)))) {
@@ -270,6 +276,9 @@ UtilsData = R6::R6Class(
         df <- df[, .(symbol, date, open, high, low, close, volume)]
         setorder(df, symbol, date)
         df <- unique(df)
+        if (nrow(df) == 0) {
+          next()
+        }
 
         # Check if the array already exists.
         if (tiledb_object_type(save_uri) != "ARRAY") {
@@ -279,10 +288,9 @@ UtilsData = R6::R6Class(
               uri = save_uri,
               col_index = c("symbol", "date"),
               sparse = TRUE,
-              allows_dups = TRUE,
+              allows_dups = FALSE,
               tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
-                                      as.POSIXct("2099-12-31 23:59:59"))),
-              capacity = 10000L
+                                      as.POSIXct("2099-12-31 23:59:59")))
             )
           })
         } else {
@@ -311,10 +319,10 @@ UtilsData = R6::R6Class(
               uri = save_uri_hour,
               col_index = c("symbol", "date"),
               sparse = TRUE,
-              allows_dups = TRUE,
-              tile_domain=list(date=c(bit64::as.integer64(as.nanotime("1970-01-01 00:00:00", tz = "UTC")),
-                                      bit64::as.integer64(as.nanotime("2099-12-31 23:59:59", tz = "UTC")))),
-              capacity = 10000L
+              allows_dups = FALSE,
+              tile_domain=list(date=cbind(bit64::as.integer64(as.nanotime("1970-01-01 00:00:00", tz = "UTC")),
+                                          bit64::as.integer64(as.nanotime("2099-12-31 23:59:59", tz = "UTC"))))
+              # capacity = 10000L
             )
           })
         } else {
@@ -323,24 +331,15 @@ UtilsData = R6::R6Class(
           arr[] <- as.data.frame(hour_data)
           tiledb_array_close(arr)
         }
-
-        # get daily data
-        # daily_data <- df[, .(open = head(open, 1),
-        #                     high = max(high, na.rm = TRUE),
-        #                     low = min(low, na.rm = TRUE),
-        #                     close = tail(close, 1),
-        #                     volume = sum(volume, na.rm = TRUE)),
-        #                 by = .(symbol, date = as.Date(date, tz = "UTC"))]
-
       }
 
-      # consolidate and vacuum adjusted minute data
-      array_consolidate(uri = save_uri)
-      array_vacuum(uri = save_uri)
-
-      # consolidate and vacuum adjusted minute data
-      array_consolidate(uri = save_uri_hour)
-      array_vacuum(uri =save_uri_hour)
+      # # consolidate and vacuum adjusted minute data
+      # array_consolidate(uri = save_uri)
+      # array_vacuum(uri = save_uri)
+      #
+      # # consolidate and vacuum adjusted minute data
+      # array_consolidate(uri = save_uri_hour)
+      # array_vacuum(uri =save_uri_hour)
 
       return(NULL)
     },

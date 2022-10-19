@@ -564,7 +564,7 @@ FMP = R6::R6Class(
     #'
     #' @return Data saved to Azure blob.
     get_minute_equities_tiledb = function(symbols,
-                                          url = "s3://equity-usa-minute-fmp",
+                                          url = "s3://equity-usa-minute-fmpcloud",
                                           deep_scan = FALSE) {
 
 
@@ -683,7 +683,7 @@ FMP = R6::R6Class(
         data_by_symbol <- unique(data_by_symbol, by = c("formated"))
         setorder(data_by_symbol, "t")
         data_by_symbol[, formated := fasttime::fastPOSIXct(data_by_symbol$formated, tz = "UTC")]
-        data_by_symbol[, formated := force_tz(formated, "America/New_York")]
+        data_by_symbol[, formated := force_tz(formated, "EST")]
         data_by_symbol[, formated := with_tz(data_by_symbol$formated, "UTC")]
         data_by_symbol[, symbol := toupper(symbol)]
         data_by_symbol <- data_by_symbol[, .(symbol, formated, o, h, l, c, v)]
@@ -736,7 +736,8 @@ FMP = R6::R6Class(
     #' @param save_uri Uri where tiledb saves files
     #'
     #' @return Factor files saved to "factor-file" blob.
-    get_factor_file_tiledb = function(save_uri = "s3://equity-usa-factor-files") {
+    get_factor_file_tiledb = function(save_uri = "s3://equity-usa-factor-files",
+                                      prices_uri = "s3://equity-usa-minute-fmpcloud") {
 
       # DEBUG
       # library(httr)
@@ -747,23 +748,24 @@ FMP = R6::R6Class(
       # library(lubridate)
       # self = FMP$new()
       # save_uri = "s3://equity-usa-factor-files"
+      # prices_uri = "s3://equity-usa-minute-fmpcloud"
       # DEBUG
+
+      # read old data
+      seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
+      seq_date_start <- as.POSIXct(paste0(seq_date, " 20:55:00"))
+      seq_date_end <- as.POSIXct(paste0(seq_date, " 21:00:00"))
+      arr <- tiledb_array(prices_uri,
+                          selected_ranges = list(date = cbind(seq_date_start, seq_date_end)),
+                          as.data.frame = TRUE,
+                          ctx = self$context_with_config)
+      system.time(minute_data <- arr[])
 
       # delete s3 bucket
       del_obj <- tryCatch({tiledb_object_rm(save_uri, ctx = self$context_with_config)}, error = function(e) NA)
       if (is.na(del_obj)) {
         warning("Can't delete old bucket object!")
       }
-
-      # read old data
-      seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
-      seq_date_start <- as.POSIXct(paste0(seq_date, " 20:55:00"))
-      seq_date_end <- as.POSIXct(paste0(seq_date, " 21:00:00"))
-      arr <- tiledb_array("s3://equity-usa-minute-fmp",
-                          selected_ranges = list(date = cbind(seq_date_start, seq_date_end)),
-                          as.data.frame = TRUE,
-                          ctx = self$context_with_config)
-      system.time(minute_data <- arr[])
 
       # prepare for factor files creating
       DT <- as.data.table(minute_data)
@@ -906,7 +908,6 @@ FMP = R6::R6Class(
                                            uri = save_uri)
       tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
                                       uri = save_uri)
-
     },
 
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
