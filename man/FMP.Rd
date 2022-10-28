@@ -279,13 +279,15 @@ Data saved to Azure blob.
 \subsection{Method \code{create_start_end_dates()}}{
 Help function for calculating start and end dates
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$create_start_end_dates(start_dates)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$create_start_end_dates(start_dates, n = 4)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{start_dates}}{Sequence of start dates.}
+
+\item{\code{n}}{number of consecutive dates.}
 }
 \if{html}{\out{</div>}}
 }
@@ -301,7 +303,9 @@ Get hour data for all history from fmp cloud.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute_equities_tiledb(
   symbols,
-  url = "s3://equity-usa-minute-fmp",
+  url = "s3://equity-usa-minute-fmpcloud",
+  save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+  save_uri_daily = "s3://equity-usa-daily-fmpcloud",
   deep_scan = FALSE
 )}\if{html}{\out{</div>}}
 }
@@ -312,6 +316,10 @@ Get hour data for all history from fmp cloud.
 \item{\code{symbols}}{Symbol of the stock.}
 
 \item{\code{url}}{AWS S3 bucket url.}
+
+\item{\code{save_uri_hour}}{AWS S3 bucket uri for hour data.}
+
+\item{\code{save_uri_daily}}{AWS S3 bucket uri for daily data.}
 
 \item{\code{deep_scan}}{should we test for dates with low number od observation
 and try to scrap again.}
@@ -341,13 +349,18 @@ Vector of SP500 symbols.
 \subsection{Method \code{get_factor_file_tiledb()}}{
 Create factor files for calculating adjusted prices (adjusted for splits and dividends).
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb(save_uri = "s3://equity-usa-factor-files")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb(
+  save_uri = "s3://equity-usa-factor-files",
+  prices_uri = "s3://equity-usa-daily-fmpcloud"
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{save_uri}}{Uri where tiledb saves files}
+
+\item{\code{prices_uri}}{Uri to import prices from.}
 }
 \if{html}{\out{</div>}}
 }

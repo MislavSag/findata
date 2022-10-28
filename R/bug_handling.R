@@ -3,6 +3,7 @@
 #   library(tiledb)
 #   library(nanotime)
 #   library(ggplot2)
+#   library(lubridate)
 #
 #
 #   # configure s3
@@ -30,7 +31,7 @@
 #     print(s)
 #
 #     # import data
-#     arr <- tiledb_array("D:/equity-usa-minute-fmp",
+#     arr <- tiledb_array("s3://equity-usa-minute-fmp",
 #                         as.data.frame = TRUE,
 #                         selected_ranges = list(symbol = cbind(s, s)))
 #     df <- arr[]
@@ -41,6 +42,21 @@
 #     dt[, date := with_tz(date, "America/New_York")]
 #     dt[, date := force_tz(date, "EST")]
 #     dt[, date := with_tz(date, "UTC")]
+#
+#     dt[, time := as.ITime(date)]
+#     test <- dt[, sum(volume, na.rm = TRUE), by = time]
+#     setorder(test, V1)
+#     tail(test, 50)
+#
+#     test <- dt[, .N, by = time]
+#     setorder(test, N)
+#     tail(test, 50)
+#
+#     test <- dt[date %between% c("2022-10-17", "2022-10-18")]
+#
+#     18.10.2022. 16:00 142.44
+#     17.10.2022. 16:00 142.40
+#     14.10.2022. 16:00 138.40
 #
 #     # Check if the array already exists.
 #     if (tiledb_object_type(url) != "ARRAY") {

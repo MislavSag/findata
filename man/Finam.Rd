@@ -13,7 +13,7 @@ Get data data from finam using Quanttools package.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Finam-new}{\code{Finam$new()}}
-\item \href{#method-Finam-get_ticker_data}{\code{Finam$get_ticker_data()}}
+\item \href{#method-Finam-finam_tick_tiledb}{\code{Finam$finam_tick_tiledb()}}
 \item \href{#method-Finam-clone}{\code{Finam$clone()}}
 }
 }
@@ -30,22 +30,32 @@ Get data data from finam using Quanttools package.
 \subsection{Method \code{new()}}{
 Create a new Finam object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Finam$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Finam$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 A new `Finam` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Finam-get_ticker_data"></a>}}
-\if{latex}{\out{\hypertarget{method-Finam-get_ticker_data}{}}}
-\subsection{Method \code{get_ticker_data()}}{
+\if{html}{\out{<a id="method-Finam-finam_tick_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-Finam-finam_tick_tiledb}{}}}
+\subsection{Method \code{finam_tick_tiledb()}}{
 Get tick data from finam source using QuantTools.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Finam$get_ticker_data(
+\if{html}{\out{<div class="r">}}\preformatted{Finam$finam_tick_tiledb(
   symbols,
-  days = getBusinessDays(as.Date("2011-01-01"), Sys.Date() - 1)
+  days = getBusinessDays(as.Date("2011-01-01"), Sys.Date() - 1),
+  save_uri = "s3://equity-usa-tick-finam"
 )}\if{html}{\out{</div>}}
 }
 
@@ -55,6 +65,8 @@ Get tick data from finam source using QuantTools.
 \item{\code{symbols}}{Start date}
 
 \item{\code{days}}{Days to scrap data for}
+
+\item{\code{save_uri}}{Tiledb uri to save.}
 }
 \if{html}{\out{</div>}}
 }

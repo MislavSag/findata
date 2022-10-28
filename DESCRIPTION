@@ -26,7 +26,8 @@ Imports:
     QuantTools,
     tiledb,
     nanotime,
-    bit64
+    bit64,
+    timechange
 Remotes:
     bitbucket::quanttools/quanttools
 Suggests: 

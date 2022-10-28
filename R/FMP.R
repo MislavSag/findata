@@ -531,15 +531,16 @@ FMP = R6::R6Class(
     #' @description Help function for calculating start and end dates
     #'
     #' @param start_dates Sequence of start dates.
+    #' @param n number of consecutive dates.
     #'
     #' @return list of start and end dates
-    create_start_end_dates = function(start_dates) {
+    create_start_end_dates = function(start_dates, n = 4) {
 
       # rearange date sequences
       last_date <- start_dates[1]
       start_dates_ <- c(last_date)
       for (s in start_dates) {
-        if ((as.integer(s) - as.integer(last_date)) >= 4) { # num of trading days to scrap
+        if ((as.integer(s) - as.integer(last_date)) >= n) { # num of trading days to scrap
           start_dates_ <- c(start_dates_, s)
           last_date <- s
         } else {
@@ -547,7 +548,7 @@ FMP = R6::R6Class(
         }
       }
       start_dates_ <- as.Date(start_dates_, origin = "1970-01-01")
-      end_dates <- c(start_dates_[-1], tail(start_dates, 1) + 5)
+      end_dates <- c(start_dates_[-1], tail(start_dates, 1) + (n + 1))
       end_dates <- end_dates - 1
       if (tail(end_dates, 1) > (Sys.Date() - 1)) {
         end_dates[length(end_dates)] <- Sys.Date() - 1
@@ -559,14 +560,17 @@ FMP = R6::R6Class(
     #'
     #' @param symbols Symbol of the stock.
     #' @param url AWS S3 bucket url.
+    #' @param save_uri_hour AWS S3 bucket uri for hour data.
+    #' @param save_uri_daily AWS S3 bucket uri for daily data.
     #' @param deep_scan should we test for dates with low number od observation
     #'     and try to scrap again.
     #'
     #' @return Data saved to Azure blob.
     get_minute_equities_tiledb = function(symbols,
                                           url = "s3://equity-usa-minute-fmpcloud",
+                                          save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+                                          save_uri_daily = "s3://equity-usa-daily-fmpcloud",
                                           deep_scan = FALSE) {
-
 
       # debug
       # library(findata)
@@ -576,7 +580,10 @@ FMP = R6::R6Class(
       # library(tiledb)
       # library(lubridate)
       # self = FMP$new()
-      # symbol = "SPY"
+      # symbol = "META"
+      # url = "s3://equity-usa-minute-fmpcloud"
+      # save_uri_hour = "s3://equity-usa-hour-fmp"
+      # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
 
       # loop over all symbols
       for (symbol in symbols) {
@@ -600,39 +607,46 @@ FMP = R6::R6Class(
 
         # read old data
         if (tiledb_object_type(url) == "ARRAY") {
+          # read data for the symbol
           arr <- tiledb_array(url, as.data.frame = TRUE)
           selected_ranges(arr) <- list(symbol = cbind(symbol, symbol))
           data_history <- arr[]
+          tiledb_array_close(arr)
 
           # cont if there is history data
           if (length(data_history$symbol) > 0) {
             # basic clean
             data_history <- as.data.table(data_history)
-            data_history <- unique(data_history, by = "date")
-            setorder(data_history, date)
+            data_history <- unique(data_history, by = "time")
+            setorder(data_history, time)
 
             # missing freq
             if (deep_scan) {
 
               # create date column
-              data_history[, date_ := as.Date(date)]
-              data_history[, date_n := .N, by = date_]
+              data_history_tz <- copy(data_history)
+              data_history_tz[, date := with_tz(date, tz = "America/New_York")]
+              data_history_tz[, date_ := as.Date(date, tz = "America/New_York")]
+              data_history_tz[, date_n := .N, by = date_]
 
               # define dates we will try to scrap again
               observation_per_day <- 60 * 6
-              try_again <- unique(data_history[date_n < observation_per_day, date_])
+              try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
               start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
               end_dates <- start_dates + 1
 
             } else {
 
               # define dates to scrap
-              data_history_date <- unique(as.Date(data_history$date))
+              time_utc <- as.POSIXct(data_history$time,
+                                     origin = as.POSIXct("1970-01-01 00:00:00",
+                                                         tz = "UTC"),
+                                     tz = "UTC")
+              data_history_date <- unique(as.Date(time_utc, tz = "America/New_York"))
 
               # get final dates to scrap
               start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-              end_dates <- start_dates + 1
-
+              end_dates <- start_dates
             }
 
           } else {
@@ -656,13 +670,12 @@ FMP = R6::R6Class(
         # get data
         data_slice <- list()
         for (i in seq_along(start_dates)) {
-          if (end_dates[i] >= Sys.Date()) next
+          if (end_dates[i] >= Sys.Date()) end_dates[i] <- Sys.Date() - 1
           data_slice[[i]] <- self$get_intraday_equities(symbol,
                                                         multiply = 1,
                                                         time = "minute",
                                                         from = start_dates[i],
                                                         to = end_dates[i])
-          # Sys.sleep(0.1)
         }
         if (any(unlist(sapply(data_slice, nrow)) > 4999)) {
           stop("More than 4999 rows!")
@@ -682,22 +695,19 @@ FMP = R6::R6Class(
         # clean data
         data_by_symbol <- unique(data_by_symbol, by = c("formated"))
         setorder(data_by_symbol, "t")
-        data_by_symbol[, formated := fasttime::fastPOSIXct(data_by_symbol$formated, tz = "UTC")]
-        data_by_symbol[, formated := force_tz(formated, "EST")]
-        data_by_symbol[, formated := with_tz(data_by_symbol$formated, "UTC")]
         data_by_symbol[, symbol := toupper(symbol)]
-        data_by_symbol <- data_by_symbol[, .(symbol, formated, o, h, l, c, v)]
-        setnames(data_by_symbol, c("symbol", "date", "open", "high", "low", "close", "volume"))
+        data_by_symbol <- data_by_symbol[, .(symbol, t / 1000, o, h, l, c, v)]
+        setnames(data_by_symbol, c("symbol", "time", "open", "high", "low", "close", "volume"))
 
         # Check if the array already exists.
         if (tiledb_object_type(url) != "ARRAY") {
           fromDataFrame(
             obj = data_by_symbol,
             uri = url,
-            col_index = c("symbol", "date"),
+            col_index = c("symbol", "time"),
             sparse = TRUE,
-            tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
-                                    as.POSIXct("2099-12-31 23:59:59"))),
+            tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                    as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
             allows_dups = FALSE
           )
         } else {
@@ -706,7 +716,87 @@ FMP = R6::R6Class(
           arr[] <- data_by_symbol
           tiledb_array_close(arr)
         }
+
+        # create hour data
+        if (nrow(data_history) > 0 & length(start_dates) == 0) {
+          new_data <- copy(data_history)
+        } else if (nrow(data_history) > 0 & length(start_dates) > 0) {
+          new_data <- rbind(data_history, data_by_symbol)
+        } else if (nrow(data_history) == 0 & length(start_dates) > 0) {
+          new_data <- copy(data_by_symbol)
+        } else {
+          return(NULL)
+        }
+        new_data[, date := as.nanotime(time * 1000000000)]
+        hour_data <- new_data[, .(open = head(open, 1),
+                                  high = max(high, na.rm = TRUE),
+                                  low = min(low, na.rm = TRUE),
+                                  close = tail(close, 1),
+                                  volume = sum(volume, na.rm = TRUE)),
+                              by = .(symbol,
+                                     time = nano_ceiling(date, as.nanoduration("01:00:00")))]
+        hour_data[, time := as.POSIXct(time, tz = "UTC")]
+
+        # save hour data
+        if (tiledb_object_type(save_uri_hour) != "ARRAY") {
+          fromDataFrame(
+            as.data.frame(hour_data),
+            uri = save_uri_hour,
+            col_index = c("symbol", "time"),
+            sparse = TRUE,
+            allows_dups = FALSE,
+            tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                    as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+          )
+        } else {
+          # save to tiledb
+          arr <- tiledb_array(save_uri_hour, as.data.frame = TRUE)
+          arr[] <- as.data.frame(hour_data)
+          tiledb_array_close(arr)
+        }
+
+        # daily data
+        daily_data <- copy(hour_data)
+        daily_data[, time_ny := format.POSIXct(time, tz = "America/New_York")]
+        daily_data <- daily_data[substr(time_ny, 12, 19) %between% c("09:30:00", "16:00:00")]
+        daily_data <- daily_data[, .(open = head(open, 1),
+                                     high = max(high, na.rm = TRUE),
+                                     low = min(low, na.rm = TRUE),
+                                     close = tail(close, 1),
+                                     volume = sum(volume, na.rm = TRUE)),
+                                 by = .(symbol, date = as.Date(time_ny))]
+
+        # save daily data
+        if (tiledb_object_type(save_uri_daily) != "ARRAY") {
+          fromDataFrame(
+            as.data.frame(daily_data),
+            uri = save_uri_daily,
+            col_index = c("symbol", "date"),
+            sparse = TRUE,
+            allows_dups = FALSE,
+            tile_domain=list(date=cbind(as.numeric(as.Date("1970-01-01", tz = "UTC")),
+                                        as.numeric(as.Date("2099-12-31"), tz = "UTC"))),
+          )
+        } else {
+          # save to tiledb
+          arr <- tiledb_array(save_uri_daily, as.data.frame = TRUE)
+          arr[] <- as.data.frame(daily_data)
+          tiledb_array_close(arr)
+        }
       }
+
+      # consolidate and vacum hour data
+      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                           uri = save_uri_hour)
+      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                      uri = save_uri_hour)
+
+      # consolidate and vacum daily data
+      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                           uri = save_uri_daily)
+      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                      uri = save_uri_daily)
+
 
       return(NULL)
     },
@@ -734,10 +824,11 @@ FMP = R6::R6Class(
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
     #'
     #' @param save_uri Uri where tiledb saves files
+    #' @param prices_uri Uri to import prices from.
     #'
     #' @return Factor files saved to "factor-file" blob.
     get_factor_file_tiledb = function(save_uri = "s3://equity-usa-factor-files",
-                                      prices_uri = "s3://equity-usa-minute-fmpcloud") {
+                                      prices_uri = "s3://equity-usa-daily-fmpcloud") {
 
       # DEBUG
       # library(httr)
@@ -746,136 +837,100 @@ FMP = R6::R6Class(
       # library(findata)
       # library(tiledb)
       # library(lubridate)
+      # library(rvest)
       # self = FMP$new()
       # save_uri = "s3://equity-usa-factor-files"
-      # prices_uri = "s3://equity-usa-minute-fmpcloud"
+      # prices_uri = "s3://equity-usa-daily-fmpcloud"
       # DEBUG
 
-      # read old data
-      seq_date <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 1)
-      seq_date_start <- as.POSIXct(paste0(seq_date, " 20:55:00"))
-      seq_date_end <- as.POSIXct(paste0(seq_date, " 21:00:00"))
-      arr <- tiledb_array(prices_uri,
-                          selected_ranges = list(date = cbind(seq_date_start, seq_date_end)),
-                          as.data.frame = TRUE,
-                          ctx = self$context_with_config)
-      system.time(minute_data <- arr[])
+      # TODO use dividends from stocksalysis andcheck aIG then. Dividend 3$ wrong
 
-      # delete s3 bucket
-      del_obj <- tryCatch({tiledb_object_rm(save_uri, ctx = self$context_with_config)}, error = function(e) NA)
+      # read daily unadjusted daily data
+      arr <- tiledb_array(prices_uri, as.data.frame = TRUE)
+      system.time(unadj_daily_data <- arr[])
+
+      # delete object
+      del_obj <- tryCatch(tiledb_object_rm(save_uri), error = function(e) NA)
       if (is.na(del_obj)) {
-        warning("Can't delete old bucket object!")
+        warning("Can't delete object")
       }
 
-      # prepare for factor files creating
-      DT <- as.data.table(minute_data)
-      DT[, date := with_tz(date, "America/New_York")]
-      daily_data <- DT[, tail(.SD, 1), by = .(symbol, date = as.Date(date))]
+      # order by symbol and date
+      DT <- as.data.table(unadj_daily_data)
+      setorder(DT, symbol, date)
+      symbols <- unique(DT$symbol)
+      DT <- DT[, .(symbol, date , close)]
 
-      # create schema if array doesn't exists
-      if (tiledb_object_type(save_uri) != "ARRAY") {
-        # create schema
-        schema_arr <- tiledb_array_schema(
-          domain=tiledb_domain(c(tiledb_dim(name="symbol", domain=c(NULL,NULL), tile=NULL, type="ASCII"))),
-          attrs=c(tiledb_attr(name="date", type="ASCII", ncells=NA, nullable=FALSE, filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1)))), tiledb_attr(name="price_factor", type="FLOAT64", ncells=1, nullable=FALSE, filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1)))), tiledb_attr(name="split_factor", type="FLOAT64", ncells=1, nullable=FALSE, filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1)))), tiledb_attr(name="lag_close", type="FLOAT64", ncells=1, nullable=FALSE, filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1))))),
-          cell_order="COL_MAJOR", tile_order="COL_MAJOR", capacity=10000, sparse=TRUE, allows_dups=TRUE,
-          coords_filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1))),
-          offsets_filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("ZSTD"),"COMPRESSION_LEVEL",-1))),
-          validity_filter_list=tiledb_filter_list(c(tiledb_filter_set_option(tiledb_filter("RLE"),"COMPRESSION_LEVEL",-1)))
-        )
-        tiledb_array_create(save_uri, schema_arr)
-      }
-      arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+      # splits
+      utils <- UtilsData$new()
+      splits_l <- lapply(symbols, utils$get_split_factor)
+      names(splits_l) <- symbols
+      splits <- rbindlist(splits_l, fill = TRUE, idcol = "symbol")
+      df <- splits[DT, on = c("symbol", "date")]
+      df[, ratio := NULL]
 
-      # main loop
-      for (s in unique(daily_data$symbol)) {
+      # dividends
+      url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
+      dividends_l <- lapply(symbols, function(x) {
+        y <- RETRY("GET", paste0(url, x), query = list(apikey = self$api_key), times = 5L)
+        y <- content(y)
+        y <- rbindlist(y$historical, fill = TRUE)
+        y <- cbind(symbol = x, y)
+        return(y)
+      })
+      dividends <- rbindlist(dividends_l, fill = TRUE)
+      dividends[, date := as.Date(date)]
+      dividends <- dividends[date > as.Date("2004-01-01")]
+      dividends[is.na(dividend), diviend := adjDividend]
+      dividends <- dividends[, .(symbol, date, dividend)]
+      df <- dividends[df, on = c("symbol", "date")]
 
-        # DEBUG
-        print(s)
+      # create factor file
+      df[, `:=`(lag_close = shift(close), date = shift(date)), by = symbol]
+      df <- df[!is.na(date)]
+      factor_files <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
+                         .(date, dividend, split_factor, lag_close), by = symbol]
 
-        # sample
-        df <- daily_data[symbol == s, date, close]
-        setorder(df, date)
+      # create emty factor files for equities with no dividends and stock splits
+      empty_factor_file_symbols <- setdiff(symbols, unique(factor_files$symbol))
+      df_empty <- data.table(date = c("20040102",
+                                      "20500101"),
+                             price_factor = c(1, 1),
+                             split_factor = c(1, 1),
+                             lag_close = c(1, 0))
+      factor_empty <- merge(data.frame(symbol = empty_factor_file_symbols),
+                            df_empty)
+      factor_empty <- as.data.table(factor_empty)
+      setorder(factor_empty, symbol, date)
 
-        # splits
-        utils <- UtilsData$new()
-        splits <- utils$get_split_factor(s)
-        splits <- as.data.table(splits)
-        if (all(is.na(splits))) {
-          df[, `:=`(split_factor, NA)]
-        } else {
-          df <- splits[df, on = "date"]
-          df$ratio <- NULL
-        }
+      # create facotr files for othe equities
+      ### DEBUG #######
+      # df <- splits[DT, on = c("symbol", "date")]
+      # df[, ratio := NULL]
+      # df <- dividends[df, on = c("symbol", "date")]
+      # df[, `:=`(lag_close = shift(close), date = shift(date)), by = symbol]
+      # df <- df[!is.na(date)]
+      # factor_files <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
+      #                    .(date, dividend, split_factor, lag_close), by = symbol]
+      # factor_files <- factor_files[date %between% c("2004-01-01", "2021-04-01")]
+      ### DEBUG #######
 
-        # dividends
-        url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
-        dividends <- RETRY("GET", url = paste0(url, toupper(s)), query = list(apikey = self$api_key), times = 5L)
-        dividends <- content(dividends)
-        dividends <- rbindlist(dividends$historical, fill = TRUE)
-        # dividends <- fmpc_security_dividends(symbol, startDate = "2004-01-01")
-        # dividends <- as.data.table(dividends)
-        if (all(is.na(dividends))) {
-          df[, `:=`(dividend, NA)]
-        } else {
-          dividends[, date := as.Date(date)]
-          dividends <- dividends[date > as.Date("2004-01-01")]
-          if (!("dividend" %in% names(dividends))) {
-            dividends[, `:=`(dividend, adjDividend)]
-          }
-          dividends <- dividends[, `:=`(dividend, ifelse(is.na(dividend) &
-                                                           adjDividend > 0, adjDividend, dividend))]
-          dividends <- dividends[, .(date, dividend)]
-          df <- dividends[df, on = "date"]
-        }
+      # cont creating factor files
+      factor_files <- unique(factor_files)
+      factor_files[, split_factor := nafill(split_factor, type = "nocb"), by = symbol]
+      factor_files[is.na(split_factor), split_factor := as.numeric(1), by = symbol]
+      end_row_by_group <- data.table(symbol = unique(factor_files$symbol),
+                                     date = as.Date("2050-01-01"),
+                                     dividend = NA,
+                                     split_factor = 1,
+                                     lag_close = 0)
+      factor_files <- rbind(factor_files, end_row_by_group)
+      setorder(factor_files, symbol, date)
 
-        # TODO if not div and splits return factor file
-        if (length(dividends) == 0 & nrow(splits) == 0) {
-          factor_file <- data.table(date = c("20040102",
-                                             "20500101"),
-                                    price_factor = c(1, 1),
-                                    split_factor = c(1, 1),
-                                    lag_close = c(df$close[1], 0),
-                                    symbol = s)
-          # save factor file to blob
-          arr[] <- factor_file
-
-          next()
-        }
-
-        # else if there are no dividends or splits after 20040102
-        # df[date %between% c("2022-02-01 00:00:00", "2022-02-05 00:00:00")]
-        df[, `:=`(lag_close = shift(close), date = shift(date))]
-        df <- df[!is.na(date)]
-        factor_file <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
-                          .(date, dividend, split_factor, lag_close)]
-        if (nrow(factor_file) == 0) {
-          factor_file <- data.table(date = c("20040102",
-                                             "20500101"),
-                                    price_factor = c(1, 1),
-                                    split_factor = c(1, 1),
-                                    lag_close = c(df$close[1], 0),
-                                    symbol = s)
-          # save factor file to blob
-          arr[] <- factor_file
-
-          next()
-        }
-
-        # else create factor file
-        factor_file <- unique(factor_file)
-        if (any(!(is.na(factor_file[, split_factor])))) {
-          factor_file[, split_factor := nafill(split_factor, type = "nocb")]
-        }
-        factor_file <- factor_file[is.na(split_factor), split_factor := as.numeric(1)]
-        factor_file <- rbind(factor_file, data.table(date = as.Date("2050-01-01"),
-                                                     dividend = NA, lag_close = 0, split_factor = 1))
-        price_factor <- vector("numeric", nrow(factor_file))
-        lag_close <- factor_file$lag_close
-        split_factor <- factor_file$split_factor
-        dividend <- factor_file$dividend
-        for (i in nrow(factor_file):1) {
-          if (i == nrow(factor_file)) {
+      create_price_factor <- function(lag_close, split_factor, dividend) {
+        price_factor <- vector("numeric", length(lag_close))
+        for (i in length(lag_close):1) {
+          if (i == length(lag_close)) {
             price_factor[i] <- (lag_close[i - 1] - dividend[i -
                                                               1])/lag_close[i - 1] * 1
           }
@@ -892,22 +947,31 @@ FMP = R6::R6Class(
         }
         price_factor <- c(price_factor[-1], NA)
         price_factor[is.na(price_factor)] <- 1
-        factor_file[, `:=`(price_factor, price_factor)]
-        factor_file[, `:=`(date, format.Date(date, "%Y%m%d"))]
-        factor_file <- factor_file[, .(date, price_factor, split_factor,
-                                       lag_close)]
-        factor_file[, symbol := s]
 
-        # save factor file to blob
-        arr[] <- factor_file
+        return(price_factor)
       }
-      tiledb_array_close(arr)
 
-      # consolidate and vacuum adjusted minute data
-      tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr,
-                                           uri = save_uri)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri)
+      factor_files[, price_factor := create_price_factor(lag_close, split_factor, dividend),
+                   by = symbol]
+
+      # debug
+      # factor_files[symbol == "BAC"]
+
+      factor_files <- factor_files[, .(symbol, date, price_factor, split_factor,
+                                       lag_close)]
+
+      # save factor file to blob
+      if (tiledb_object_type(save_uri) != "ARRAY") {
+        fromDataFrame(
+          obj = as.data.frame(factor_files),
+          uri = save_uri,
+          col_index = c("symbol"),
+          sparse = TRUE,
+          allows_dups = TRUE
+        )
+      }
+
+      return(factor_files)
     },
 
     #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).

@@ -70,7 +70,9 @@ if (FALSE) {
 
   # get minute data from FMP cloud
   fmp$get_minute_equities_tiledb(symbols = symbols,
-                                 url = "s3://equity-usa-minute-fmp",
+                                 url = "s3://equity-usa-minute-fmpcloud",
+                                 save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+                                 save_uri_daily = "s3://equity-usa-daily-fmpcloud",
                                  deep_scan = FALSE)
   
   # consolidate

@@ -12,6 +12,7 @@
 #' @import tiledb
 #' @import nanotime
 #' @import bit64
+#' @import timechange
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code
 #' @importFrom zip zipr

@@ -158,7 +158,7 @@ Dukascopy = R6::R6Class(
         split_path <- strsplit(new_file_name, "/", fixed = TRUE)[[1]]
         datetime_ <- as.nanotime(paste0(split_path[length(split_path)-1],
                                         " ", substr(split_path[length(split_path)], 1, 2),
-                                        ":00:00")) # tz = "UTC" imlicitly
+                                        ":00:00"), tz = "UTC") # tz = "UTC" imlicitly
         data_by_hour <- data.frame(symbol = split_path[length(split_path)-2],
                                    date = datetime_+TIME*1000000,
                                    askp = ASKP / 1000,

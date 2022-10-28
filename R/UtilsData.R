@@ -191,8 +191,8 @@ UtilsData = R6::R6Class(
     #' @param minute_uri TileDB uri with unadjusted minute data.
     #'
     #' @return Adjusted data saved to AWS S3 bucket
-    adjust_fm_tiledb = function(save_uri = "D:/equity-usa-minute-fmp-adjusted",
-                                minute_uri = "D:/equity-usa-minute-fmp") {
+    adjust_fm_tiledb = function(save_uri = "D:/equity-usa-minute-fmpcloud-adjusted",
+                                minute_uri = "D:/equity-usa-minute-fmpcloud") {
 
       # debug
       # library(findata)
@@ -203,8 +203,8 @@ UtilsData = R6::R6Class(
       # library(lubridate)
       # library(nanotime)
       # self = UtilsData$new()
-      # save_uri = "D:/equity-usa-minute-fmp-adjusted"
-      # minute_uri = "D:/equity-usa-minute-fmp"
+      # save_uri = "D:/equity-usa-minute-fmpcloud-adjusted"
+      # minute_uri = "D:/equity-usa-minute-fmpcloud"
 
       # delete uri
       tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
@@ -212,13 +212,10 @@ UtilsData = R6::R6Class(
       tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
 
       # factor files
-      arr_ff <- tiledb_array("s3://equity-usa-factor-files",
-                             as.data.frame = TRUE,
-                             ctx = self$context_with_config)
+      arr_ff <- tiledb_array("s3://equity-usa-factor-files", as.data.frame = TRUE)
       factor_files <- arr_ff[]
       tiledb_array_close(arr_ff)
       factor_files <- as.data.table(factor_files)
-      factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
       factor_files <- setorder(factor_files, symbol, date)
 
       # get IPO data
@@ -247,25 +244,31 @@ UtilsData = R6::R6Class(
                             as.data.frame = TRUE,
                             selected_ranges = list(symbol = cbind(symbol, symbol)))
         system.time(unadjusted_data <- arr[])
+        tiledb_array_close(arr)
 
         # if there is no data next
         if (nrow(unadjusted_data) == 0) {
           next()
         }
 
+        # change timezone
+        unadjusted_data <- as.data.table(unadjusted_data)
+        unadjusted_data[, time := as.POSIXct(time, "UTC",
+                                             origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"))]
+
         # unadjusted data from IPO
         unadj_from_ipo <- ipo_dates_dt[unadjusted_data, on = "symbol"]
         if (!(all(is.na(unadj_from_ipo$ipo_dates)))) {
-          unadj_from_ipo <- unadj_from_ipo[as.Date(date) >= ipo_dates]
+          unadj_from_ipo <- unadj_from_ipo[as.Date(time) >= ipo_dates]
         }
-        unadj_from_ipo_daily <- unadj_from_ipo[, .SD[.N], by = .(symbol, date = as.Date(date))]
+        unadj_from_ipo_daily <- unadj_from_ipo[, .SD[.N], by = .(symbol, time = as.Date(time))]
         unadj_from_ipo_daily[, ipo_dates := NULL]
 
         # adjust
         df <- unadj_from_ipo[symbol %in% unique(factor_files$symbol)]
-        df[, date_ := as.Date(date)]
+        df[, date := as.Date(time)]
         df <- merge(df, factor_files,
-                    by.x = c("symbol", "date_"), by.y = c("symbol", "date"),
+                    by.x = c("symbol", "date"), by.y = c("symbol", "date"),
                     all.x = TRUE, all.y = FALSE)
         df[, `:=`(split_factor = nafill(split_factor, "nocb"),
                   price_factor = nafill(price_factor, "nocb")), by = symbol]
@@ -273,8 +276,8 @@ UtilsData = R6::R6Class(
                   price_factor = ifelse(is.na(price_factor), 1, price_factor))]
         cols_change <- c("open", "high", "low", "close")
         df[, (cols_change) := lapply(.SD, function(x) {x * price_factor * split_factor}), .SDcols = cols_change]
-        df <- df[, .(symbol, date, open, high, low, close, volume)]
-        setorder(df, symbol, date)
+        df <- df[, .(symbol, time, open, high, low, close, volume)]
+        setorder(df, symbol, time)
         df <- unique(df)
         if (nrow(df) == 0) {
           next()
@@ -286,11 +289,11 @@ UtilsData = R6::R6Class(
             fromDataFrame(
               as.data.frame(df),
               uri = save_uri,
-              col_index = c("symbol", "date"),
+              col_index = c("symbol", "time"),
               sparse = TRUE,
               allows_dups = FALSE,
-              tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00"),
-                                      as.POSIXct("2099-12-31 23:59:59")))
+              tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                      as.POSIXct("2099-12-31 23:59:59", tz = "UTC")))
             )
           })
         } else {
@@ -301,15 +304,15 @@ UtilsData = R6::R6Class(
         }
 
         # get hour data
-        df$date <- as.POSIXct(as.numeric(df$date), tz = "UTC", origin = as.Date("1970-01-01", tz = "UTC"))
-        df[, date := as.nanotime(date)]
+        df[, time := as.nanotime(time)]
         hour_data <- df[, .(open = head(open, 1),
                             high = max(high, na.rm = TRUE),
                             low = min(low, na.rm = TRUE),
                             close = tail(close, 1),
                             volume = sum(volume, na.rm = TRUE)),
-                        by = .(symbol, date = nano_ceiling(date, as.nanoduration("01:00:00")))]
-        hour_data[, date := bit64::as.integer64(date)]
+                        by = .(symbol, time = nano_ceiling(time, as.nanoduration("01:00:00")))]
+        hour_data[, time := as.POSIXct(time, tz = "UTC")]
+
 
         # save hour data
         if (tiledb_object_type(save_uri_hour) != "ARRAY") {
@@ -317,12 +320,11 @@ UtilsData = R6::R6Class(
             fromDataFrame(
               as.data.frame(hour_data),
               uri = save_uri_hour,
-              col_index = c("symbol", "date"),
+              col_index = c("symbol", "time"),
               sparse = TRUE,
               allows_dups = FALSE,
-              tile_domain=list(date=cbind(bit64::as.integer64(as.nanotime("1970-01-01 00:00:00", tz = "UTC")),
-                                          bit64::as.integer64(as.nanotime("2099-12-31 23:59:59", tz = "UTC"))))
-              # capacity = 10000L
+              tile_domain=list(time=cbind(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                          as.POSIXct("2099-12-31 23:59:59", tz = "UTC")))
             )
           })
         } else {
@@ -332,14 +334,6 @@ UtilsData = R6::R6Class(
           tiledb_array_close(arr)
         }
       }
-
-      # # consolidate and vacuum adjusted minute data
-      # array_consolidate(uri = save_uri)
-      # array_vacuum(uri = save_uri)
-      #
-      # # consolidate and vacuum adjusted minute data
-      # array_consolidate(uri = save_uri_hour)
-      # array_vacuum(uri =save_uri_hour)
 
       return(NULL)
     },
