@@ -22,7 +22,6 @@ Get data data from FirstRate.
 \item \href{#method-FirstRate-new}{\code{FirstRate$new()}}
 \item \href{#method-FirstRate-get_historical_data}{\code{FirstRate$get_historical_data()}}
 \item \href{#method-FirstRate-firstrate_to_tledb}{\code{FirstRate$firstrate_to_tledb()}}
-\item \href{#method-FirstRate-update_historical_data}{\code{FirstRate$update_historical_data()}}
 \item \href{#method-FirstRate-clone}{\code{FirstRate$clone()}}
 }
 }
@@ -73,7 +72,7 @@ Download stock data from FirstRate.
   period = c("full", "month", "week", "day"),
   ticker_range = toupper(letters),
   timeframe = c("1min", "5min", "30min", "1hour", "1day"),
-  adjustment = c("adjsplit", "adjsplitdiv", "UNADJUSTED")
+  adjustment = c("adj_split", "adj_splitdiv", "UNADJUSTED")
 )}\if{html}{\out{</div>}}
 }
 
@@ -106,7 +105,7 @@ Save data to TileDB Uri.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FirstRate$firstrate_to_tledb(
   zip_files,
-  save_uri = "s3://equity-usa-minute-firstrate-adjusted"
+  save_uri = "s3://equity-usa-hour-firstrate-adjusted"
 )}\if{html}{\out{</div>}}
 }
 
@@ -119,19 +118,6 @@ Save data to TileDB Uri.
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Returns}{
-NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FirstRate-update_historical_data"></a>}}
-\if{latex}{\out{\hypertarget{method-FirstRate-update_historical_data}{}}}
-\subsection{Method \code{update_historical_data()}}{
-Help function that update historical data
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FirstRate$update_historical_data()}\if{html}{\out{</div>}}
-}
-
 \subsection{Returns}{
 NULL
 }

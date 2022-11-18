@@ -45,8 +45,9 @@ Finam = R6::R6Class(
       # config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
       # config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
       # context_with_config <- tiledb_ctx(config)
-      # symbols <- c("SPY")
+      # symbols <- c("SPY", "AAPL")
       # days = getBusinessDays(as.Date("2011-01-01"), Sys.Date() - 1)
+      # save_uri = "s3://equity-usa-tick-finam"
 
       # get data for every symbol
       for (s in symbols) {

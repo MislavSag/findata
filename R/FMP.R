@@ -330,8 +330,8 @@ FMP = R6::R6Class(
             uri = url,
             col_index = c("symbol", "date"),
             sparse = TRUE,
-            tile_domain=list(date=c(as.Date("1970-01-01"),
-                                    as.Date("2099-12-31"))),
+            tile_domain=list(date=cbind(as.Date("1970-01-01"),
+                                        as.Date("2099-12-31"))),
             allows_dups = TRUE
           )
         } else {
@@ -564,13 +564,17 @@ FMP = R6::R6Class(
     #' @param save_uri_daily AWS S3 bucket uri for daily data.
     #' @param deep_scan should we test for dates with low number od observation
     #'     and try to scrap again.
+    #' @param hardcode_start_dates Start dates to scrape from.
+    #' @param hardcode_end_dates end_date to scrap from.
     #'
     #' @return Data saved to Azure blob.
     get_minute_equities_tiledb = function(symbols,
                                           url = "s3://equity-usa-minute-fmpcloud",
                                           save_uri_hour = "s3://equity-usa-hour-fmpcloud",
                                           save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-                                          deep_scan = FALSE) {
+                                          deep_scan = FALSE,
+                                          hardcode_start_dates = NULL,
+                                          hardcode_end_dates = NULL) {
 
       # debug
       # library(findata)
@@ -579,11 +583,15 @@ FMP = R6::R6Class(
       # library(RcppQuantuccia)
       # library(tiledb)
       # library(lubridate)
+      # library(nanotime)
       # self = FMP$new()
-      # symbol = "META"
+      # symbol = "CA"
       # url = "s3://equity-usa-minute-fmpcloud"
-      # save_uri_hour = "s3://equity-usa-hour-fmp"
+      # save_uri_hour = "s3://equity-usa-hour-fmpcloud"
       # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
+      # hardcode_start_dates = Sys.Date() - 1
+      # hardcode_end_dates = Sys.Date() - 1
+      # deep_scan = FALSE
 
       # loop over all symbols
       for (symbol in symbols) {
@@ -591,74 +599,92 @@ FMP = R6::R6Class(
         # DEBUG
         print(symbol)
 
-        # define start_dates
-        start_dates <- seq.Date(as.Date('2004-01-01'), Sys.Date() - 1, by = 1)
-        start_dates <- start_dates[isBusinessDay(start_dates)]
+        # use start and end dates from arguments if exists
+        if (!is.null(hardcode_start_dates) & !is.null(hardcode_end_dates)) {
+          start_dates <- hardcode_start_dates
+          end_dates <- hardcode_end_dates
+          daily_data <- tryCatch({
+            self$get_intraday_equities(symbol, multiply = 1, time = 'day')
+          }, error = function(e) NULL)
+          if (length(daily_data) == 0) next()
+          data_history <- data.table()
+        } else {
+          # define start_dates
+          start_dates <- seq.Date(as.Date("2004-01-01"), Sys.Date() - 1, by = 1)
+          start_dates <- start_dates[isBusinessDay(start_dates)]
 
-        # get trading days from daily data
-        print("get daily data")
-        daily_data <- self$get_intraday_equities(symbol,
-                                                 multiply = 1,
-                                                 time = 'day',
-                                                 from = as.character(as.Date('2004-01-01')),
-                                                 to = as.character(Sys.Date() - 1))
-        if (is.null(daily_data)) next()
-        start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
+          # get trading days from daily data
+          print("get daily data")
+          daily_data <- tryCatch({
+            self$get_intraday_equities(symbol,
+                                       multiply = 1,
+                                       time = 'day',
+                                       from = as.character(as.Date("2004-01-01")),
+                                       to = as.character(Sys.Date() - 1))
+          }, error = function(e) NULL)
+          if (length(daily_data) == 0) next()
+          start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
+          # TODO: check BRK-b (BTK.B) and other symbols with -/.
 
-        # read old data
-        if (tiledb_object_type(url) == "ARRAY") {
-          # read data for the symbol
-          arr <- tiledb_array(url, as.data.frame = TRUE)
-          selected_ranges(arr) <- list(symbol = cbind(symbol, symbol))
-          data_history <- arr[]
-          tiledb_array_close(arr)
 
-          # cont if there is history data
-          if (length(data_history$symbol) > 0) {
-            # basic clean
-            data_history <- as.data.table(data_history)
-            data_history <- unique(data_history, by = "time")
-            setorder(data_history, time)
+          # read old data
+          if (tiledb_object_type(url) == "ARRAY") {
+            # read data for the symbol
+            ranges <- list(
+              symbol = cbind(symbol, symbol)
+            )
+            arr <- tiledb_array(url, as.data.frame = TRUE, selected_ranges = ranges)
+            data_history <- arr[]
+            tiledb_array_close(arr)
 
-            # missing freq
-            if (deep_scan) {
+            # cont if there is history data
+            if (length(data_history$symbol) > 0) {
+              # basic clean
+              data_history <- as.data.table(data_history)
+              data_history <- unique(data_history, by = "time")
+              setorder(data_history, time)
+              # data_history[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
 
-              # create date column
-              data_history_tz <- copy(data_history)
-              data_history_tz[, date := with_tz(date, tz = "America/New_York")]
-              data_history_tz[, date_ := as.Date(date, tz = "America/New_York")]
-              data_history_tz[, date_n := .N, by = date_]
+              # missing freq
+              if (deep_scan) {
 
-              # define dates we will try to scrap again
-              observation_per_day <- 60 * 6
-              try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
-              start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
-              end_dates <- start_dates + 1
+                # create date column
+                data_history_tz <- copy(data_history)
+                data_history_tz[, date := with_tz(date, tz = "America/New_York")]
+                data_history_tz[, date_ := as.Date(date, tz = "America/New_York")]
+                data_history_tz[, date_n := .N, by = date_]
+
+                # define dates we will try to scrap again
+                observation_per_day <- 60 * 6
+                try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
+                start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
+                end_dates <- start_dates + 1
+
+              } else {
+
+                # define dates to scrap
+                time_utc <- as.POSIXct(data_history$time,
+                                       origin = as.POSIXct("1970-01-01 00:00:00",
+                                                           tz = "UTC"),
+                                       tz = "UTC")
+                data_history_date <- unique(as.Date(time_utc, tz = "America/New_York"))
+
+                # get final dates to scrap
+                start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
+                end_dates <- start_dates
+              }
 
             } else {
-
-              # define dates to scrap
-              time_utc <- as.POSIXct(data_history$time,
-                                     origin = as.POSIXct("1970-01-01 00:00:00",
-                                                         tz = "UTC"),
-                                     tz = "UTC")
-              data_history_date <- unique(as.Date(time_utc, tz = "America/New_York"))
-
-              # get final dates to scrap
-              start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-              end_dates <- start_dates
+              dates <- self$create_start_end_dates(start_dates)
+              start_dates <- dates$start_dates
+              end_dates <- dates$end_dates
             }
-
           } else {
+
             dates <- self$create_start_end_dates(start_dates)
             start_dates <- dates$start_dates
             end_dates <- dates$end_dates
           }
-        } else {
-
-          dates <- self$create_start_end_dates(start_dates)
-          start_dates <- dates$start_dates
-          end_dates <- dates$end_dates
         }
 
         # if there is no dates next
@@ -891,10 +917,10 @@ FMP = R6::R6Class(
       factor_files <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
                          .(date, dividend, split_factor, lag_close), by = symbol]
 
-      # create emty factor files for equities with no dividends and stock splits
+      # create empty factor files for equities with no dividends and stock splits
       empty_factor_file_symbols <- setdiff(symbols, unique(factor_files$symbol))
-      df_empty <- data.table(date = c("20040102",
-                                      "20500101"),
+      df_empty <- data.table(date = c(as.Date("2004-01-02"),
+                                      as.Date("2050-01-02")),
                              price_factor = c(1, 1),
                              split_factor = c(1, 1),
                              lag_close = c(1, 0))
@@ -953,19 +979,22 @@ FMP = R6::R6Class(
 
       factor_files[, price_factor := create_price_factor(lag_close, split_factor, dividend),
                    by = symbol]
-
-      # debug
-      # factor_files[symbol == "BAC"]
-
       factor_files <- factor_files[, .(symbol, date, price_factor, split_factor,
                                        lag_close)]
+
+      # debug
+      # factor_files[symbol == "ABT"]
+
+      # add empty
+      factor_files_final <- rbind(factor_empty, factor_files)
+      setorder(factor_files_final, symbol, date)
 
       # save factor file to blob
       if (tiledb_object_type(save_uri) != "ARRAY") {
         fromDataFrame(
-          obj = as.data.frame(factor_files),
+          obj = as.data.frame(factor_files_final),
           uri = save_uri,
-          col_index = c("symbol"),
+          col_index = c("symbol", "date"),
           sparse = TRUE,
           allows_dups = TRUE
         )
@@ -1291,6 +1320,93 @@ FMP = R6::R6Class(
       res <- content(p)
       res <- rbindlist(res, fill = TRUE)
       return(res)
+    },
+
+    #' @description Get Financial Statements data
+    #'
+    #' @param save_path Path to save csv file.
+    #' @param years Get statement for specific year.
+    #' @param statement quarter or annual.
+    #' @param period quarter or annual.
+    #'
+    #' @return data.table of financial reports.
+    get_fi_statement_bulk = function(save_path,
+                                     years = 1999:(data.table::year(Sys.Date())),
+                                     statement = c("income-statement-bulk",
+                                                   "balance-sheet-statement-bulk",
+                                                   "cash-flow-statement-bulk",
+                                                   "ratios-bulk",
+                                                   "key-metrics-bulk",
+                                                   "financial-growth-bulk",
+                                                   "income-statement-growth-bulk",
+                                                   "balance-sheet-statement-growth-bulk",
+                                                   "cash-flow-statement-growth-bulk"),
+                                     period = c("annual", "quarter")
+                                     ) {
+
+      # DEBUG
+      # library(findata)
+      # library(httr)
+      # library(data.table)
+      # library(tiledb)
+      # years = 1990:(data.table::year(Sys.Date()))
+      # statement = "financial-growth-bulk"
+      # period = "quarter"
+      # self <- FMP$new()
+      # save_path = "D:/fundamental_data/FS"
+      # save_uri = "s3://equity-usa-fundamentals"
+
+      # define save_uri
+      save_uri = paste0("equity-usa-", statement)
+
+      # prepare donwload data
+      url <- "https://financialmodelingprep.com/api/v4"
+      url <- paste(url, statement, sep = "/")
+
+      # donwload data
+      lapply(years, function(year) {
+        print(year)
+        file_name <- file.path(save_path, paste0(statement, "-", year, ".csv"))
+        RETRY("GET",
+              url,
+              query = list(year = year, period = period, apikey = self$api_key),
+              write_disk(file_name, overwrite = TRUE))
+      })
+
+      # import tables
+      fs_data_l <- lapply(
+        file.path(save_path, paste0(statement, "-", years, ".csv")),
+        function(x) {
+          df <- fread(x)
+          if (any(duplicated(df[, c("symbol", "date")]))) {
+            stop("Duplicates in (symbol, date) tuple.")
+          }
+          return(df)
+        })
+      fs_data_l <- lapply(fs_data_l, function(df) {
+        if ("acceptedDate" %in% colnames(df)) {
+          df[, acceptedDate := as.character(acceptedDate)]
+        }
+      })
+      fs_data <- rbindlist(fs_data_l, fill = TRUE)
+      fs_data <- fs_data[, lapply(fs_data, function(x) {
+        if ("IDate" %in% class(x)) {
+          x <- as.Date(x)
+        }
+        return(x)
+        })]
+      fs_data <- as.data.frame(fs_data)
+
+      # save to tiledb.
+      fromDataFrame(
+        obj = fs_data,
+        uri = save_uri,
+        col_index = c("symbol", "date"),
+        sparse = TRUE,
+        tile_domain=list(date = cbind(as.Date("1970-01-01"),
+                                      as.Date("2099-12-31"))),
+        allows_dups = FALSE
+        )
     }
   ),
 

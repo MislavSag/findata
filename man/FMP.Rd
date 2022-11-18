@@ -42,6 +42,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_stock_list}{\code{FMP$get_stock_list()}}
 \item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
 \item \href{#method-FMP-get_sp500_constituent}{\code{FMP$get_sp500_constituent()}}
+\item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -306,7 +307,9 @@ Get hour data for all history from fmp cloud.
   url = "s3://equity-usa-minute-fmpcloud",
   save_uri_hour = "s3://equity-usa-hour-fmpcloud",
   save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-  deep_scan = FALSE
+  deep_scan = FALSE,
+  hardcode_start_dates = NULL,
+  hardcode_end_dates = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -323,6 +326,10 @@ Get hour data for all history from fmp cloud.
 
 \item{\code{deep_scan}}{should we test for dates with low number od observation
 and try to scrap again.}
+
+\item{\code{hardcode_start_dates}}{Start dates to scrape from.}
+
+\item{\code{hardcode_end_dates}}{end_date to scrap from.}
 }
 \if{html}{\out{</div>}}
 }
@@ -551,6 +558,40 @@ Get SP500 stocks.
 
 \subsection{Returns}{
 data.table with SP500 tocks.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_fi_statement_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_fi_statement_bulk}{}}}
+\subsection{Method \code{get_fi_statement_bulk()}}{
+Get Financial Statements data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_fi_statement_bulk(
+  save_path,
+  years = 1999:(data.table::year(Sys.Date())),
+  statement = c("income-statement-bulk", "balance-sheet-statement-bulk",
+    "cash-flow-statement-bulk", "ratios-bulk", "key-metrics-bulk",
+    "financial-growth-bulk", "income-statement-growth-bulk",
+    "balance-sheet-statement-growth-bulk", "cash-flow-statement-growth-bulk"),
+  period = c("annual", "quarter")
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{save_path}}{Path to save csv file.}
+
+\item{\code{years}}{Get statement for specific year.}
+
+\item{\code{statement}}{quarter or annual.}
+
+\item{\code{period}}{quarter or annual.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}

@@ -51,7 +51,7 @@ FirstRate = R6::R6Class(
                                    period = c("full", "month", "week", "day"),
                                    ticker_range = toupper(letters),
                                    timeframe = c("1min", "5min", "30min", "1hour", "1day"),
-                                   adjustment = c("adjsplit", "adjsplitdiv", "UNADJUSTED")) {
+                                   adjustment = c("adj_split", "adj_splitdiv", "UNADJUSTED")) {
 
       # debug
       # library(httr)
@@ -59,15 +59,15 @@ FirstRate = R6::R6Class(
       # save_dest = "D:/FirstRate"
       # type = "stock"
       # period = "full"
-      # ticker_range = "A"
-      # timeframe = "1min"
-      # adjustment = "UNADJUSTED"
+      # ticker_range = toupper(letters)
+      # timeframe = "1hour"
+      # adjustment = "adjsplitdiv"
       # self = list()
       # self$userid = Sys.getenv("FIRSTRATE-USERID")
 
       # checks
       assert_choice(timeframe, c("1min", "5min", "30min", "1hour", "1day"))
-      assert_choice(adjustment, c("adjsplit", "adjsplitdiv", "UNADJUSTED"))
+      assert_choice(adjustment, c("adj_split", "adj_splitdiv", "UNADJUSTED"))
 
       # url endpoint
       url_endpoint <- "https://firstratedata.com/api/data_file"
@@ -104,12 +104,14 @@ FirstRate = R6::R6Class(
     #'
     #' @return NULL
     firstrate_to_tledb = function(zip_files,
-                                  save_uri = "s3://equity-usa-minute-firstrate-adjusted") {
+                                  save_uri = "s3://equity-usa-hour-firstrate-adjusted") {
 
       # debug
       # library(data.table)
+      # library(lubridate)
+      # library(tiledb)
       # zip_files = list.files(path = "D:/FirstRate",
-      #                    pattern = "1min.*adjsplitdiv",
+      #                    pattern = "1hour.*adj_",
       #                    full.names = TRUE)
       # config <- tiledb_config()
       # config["vfs.s3.aws_access_key_id"] <- Sys.getenv("AWS-ACCESS-KEY")
@@ -118,21 +120,26 @@ FirstRate = R6::R6Class(
       # tiledb_ctx(config)
 
       #
-      for (z in zip_files[3:length(zip_files)]) {
+      for (z in zip_files[1:length(zip_files)]) {
 
         # debug
+        # zip_files <- "C:/Users/Mislav/Downloads/hour_adjusted.zip"
+        # z <- "C:/Users/Mislav/Downloads/hour_adjusted.zip"
         print(z)
 
-        # unzip and select files
-        zip::unzip(z, exdir = dirname(files)[1])
+        # unzip , clean and merge al files
+        zip::unzip(z, exdir = dirname(zip_files)[1])
         files_txt <- list.files(dirname(zip_files)[1],
                                 pattern = "txt",
                                 full.names = TRUE)
 
         # parse and save to S3 loop
-        for (f in files_txt ) {
+        data_ <- list()
+        for (i in seq_along(files_txt)) {
 
           # debug
+          # f <- "C:/Users/Mislav/Downloads/BVXV_1-hour.txt"
+          f <- files_txt[i]
           print(f)
 
           #
@@ -140,46 +147,42 @@ FirstRate = R6::R6Class(
           if (length(DT) > 6) {
             print(paste0("Problem with file ", f))
             next()
+          } else if (length(DT) == 0) {
+            print(paste0("No data in file ", f))
+            next()
           }
           setnames(DT, c("time", "open", "high", "low", "close", "volume"))
           DT[, time := force_tz(time, "America/New_York")]
           DT[, time := with_tz(time, "UTC")]
           DT[, symbol := gsub("_.*", "", basename(f))]
-          DT <- unique(DT, by = c("symbol", "time"))
-
-          # save to AWS S3
-          if (tiledb_object_type(save_uri) != "ARRAY") {
-            fromDataFrame(
-              obj = DT,
-              uri = save_uri,
-              col_index = c("symbol", "time"),
-              sparse = TRUE,
-              tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
-                                      as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
-              allows_dups = FALSE
-            )
-          } else {
-            # save to tiledb
-            arr <- tiledb_array(save_uri, as.data.frame = TRUE)
-            arr[] <- DT
-            tiledb_array_close(arr)
-          }
+          data_[[i]] <- unique(DT, by = c("symbol", "time"))
         }
+
+        # merge all data
+        data_merged <- rbindlist(data_)
+
+        # save to AWS S3
+        if (tiledb_object_type(save_uri) != "ARRAY") {
+          fromDataFrame(
+            obj = as.data.frame(data_merged),
+            uri = save_uri,
+            col_index = c("symbol", "time"),
+            sparse = TRUE,
+            tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                    as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+            allows_dups = FALSE
+          )
+        } else {
+          # save to tiledb
+          arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+          arr[] <- as.data.frame(data_merged)
+          tiledb_array_close(arr)
+        }
+
         # delete unzipped files
         file.remove(files_txt)
       }
       return(NULL)
-    },
-
-    #' @description
-    #' Help function that update historical data
-    #'
-    #' @return NULL
-    update_historical_data = function() {
-
-      library(httr)
-      url <- "https://firstratedata.com/_files/_deploy_weekly/stocks-complete_week-update_1-min_5adym1.zip"
-      GET(url, write_disk("C:/Users/Mislav/Downloads/test.zip", overwrite = TRUE))
     }
   )
 )

@@ -58,7 +58,8 @@ if (FALSE) {
     html_elements(x = _, "table") |>
     (`[[`)(3) |>
     html_table(x = _, fill = TRUE)
-  sp100_symbols <- c("SPY", "TLT", "GLD", "USO", sp100$Symbol)
+  sp100_symbols <- c("SPY", "TLT", "GLD", "USO", "SVXY", 
+                     sp100$Symbol)
 
   # SP500 symbols
   symbols <- fmp$get_sp500_symbols()
@@ -67,13 +68,27 @@ if (FALSE) {
 
   # merge
   symbols <- unique(union(sp100_symbols, symbols))
-
+  # symbols <- symbols[580:length(symbols)]
+  
   # get minute data from FMP cloud
+  # TODO download SVXY
+  system.time({
   fmp$get_minute_equities_tiledb(symbols = symbols,
                                  url = "s3://equity-usa-minute-fmpcloud",
                                  save_uri_hour = "s3://equity-usa-hour-fmpcloud",
                                  save_uri_daily = "s3://equity-usa-daily-fmpcloud",
+                                 deep_scan = FALSE,
+                                 hardcode_start_dates = as.character(Sys.Date() - 1),
+                                 hardcode_end_dates = as.character(Sys.Date() - 1))
+  })
+  
+  system.time({
+  fmp$get_minute_equities_tiledb(symbols = "SVXY",
+                                 url = "s3://equity-usa-minute-fmpcloud",
+                                 save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+                                 save_uri_daily = "s3://equity-usa-daily-fmpcloud",
                                  deep_scan = FALSE)
+  })
   
   # consolidate
   # tiledb:::libtiledb_array_consolidate(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
@@ -81,4 +96,15 @@ if (FALSE) {
 }
 ```
 
+```{r}
+if (FALSE) {
+  
+  arr <- tiledb_array("s3://equity-usa-hour-fmpcloud", as.data.frame = TRUE)
+  df <- arr[]
+  unique(df$symbol)
+  
+  symbols[1:10] %in% unique(df$symbol)
+  
+}
+```
 
