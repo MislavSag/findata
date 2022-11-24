@@ -10,19 +10,18 @@ InvestingCom = R6::R6Class(
 
   public = list(
 
-    #' @field azure_storage_endpoint Azure storate endpont
-    azure_storage_endpoint = NULL,
-
     #' @description
-    #' Create a new InvestingCom object.
+    #' Create a new FMP object.
     #'
-    #' @return A new `InvestingCom` object.
-    initialize = function() {
+    #' @param azure_storage_endpoint Azure storate endpont
+    #' @param context_with_config AWS S3 Tiledb config
+    #'
+    #' @return A new `FMP` object.
+    initialize = function(azure_storage_endpoint = NULL,
+                          context_with_config = NULL) {
 
       # endpoint
-      super$initialize(NULL)
-
-      print("Good")
+      super$initialize(azure_storage_endpoint, context_with_config)
     },
 
     #' @description Get complete earnings calendar from investing.com.
@@ -92,7 +91,7 @@ InvestingCom = R6::R6Class(
 
       # make POST request to invest.com earings calendar
       # print("POST request to investing.com")
-      p <- POST(
+      p <- RETRY("POST",
         url = "https://www.investing.com/earnings-calendar/Service/getCalendarFilteredData",
         body = list(
           "country[]" = "5",
@@ -107,7 +106,8 @@ InvestingCom = R6::R6Class(
           "User-Agent" = "Mozilla/5.0",
           "X-Requested-With" = "XMLHttpRequest"
         ),
-        encode = "form"
+        encode = "form",
+        times = 5L
       )
 
       # parse content
@@ -148,59 +148,83 @@ InvestingCom = R6::R6Class(
 
     #' @description Update earnings announcements data from investingcom website
     #'
-    #' @param days_history how long to the past to look
+    #' @param uri TileDB uri argument
+    #' @param start_date First date to scrape from.If NULL, takes last date from existing uri.
+    #' @param consolidate Consolidate and vacuum at the end.
     #'
     #' @return Get and update ea data from investingcom,
-    update_investingcom_earnings = function(days_history = 10) {
+    update_investingcom_earnings = function(uri, start_date = NULL, consolidate = TRUE) {
 
-      # define board
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "investingcom"),
-        path = "",
-        n_processes = 6L,
-        versioned = FALSE,
-        cache = NULL
-      )
+      # debug
+      # library(findata)
+      # library(data.table)
+      # library(httr)
+      # library(RcppQuantuccia)
+      # library(tiledb)
+      # library(lubridate)
+      # library(nanotime)
+      # self = InvestingCom$new()
+      # uri = "s3://equity-usa-earningsevents-investingcom"
 
-      # define container
-      blob_files <- pin_list(board)
-      file_exists_on_blob <- private$ea_file_name %in% blob_files
-      if (file_exists_on_blob) {
-        history <- pin_read(board, private$ea_file_name)
-        history <- as.data.table(history)
-        cols_factors <- names(history)[sapply(history, is.factor)]
-        history[, (cols_factors) := lapply(.SD, as.character), .SDcols = cols_factors]
-        history <- history[as.Date(substr(datetime, 1, 10)) < (Sys.Date() - days_history)] # there can be changes in the data in the last 10 days? Connservative approach.
-        date_ <- max(as.Date(substr(history$datetime, 1, 10)))
-      } else {
-        date_ <- as.Date("2014-01-01")
+      # check if uri exists
+      bucket_check <- tryCatch(tiledb_object_ls(uri), error = function(e) e)
+      if (length(bucket_check) < 2 && grepl("bucket does not exist", bucket_check)) {
+        stop("Bucket does not exist. Craete s3 bucket with uri name.")
+      }
+
+      # define start date
+      if (is.null(start_date)) {
+        if (tiledb_object_type(uri) == "ARRAY") {
+          arr <- tiledb_array(uri,
+                              as.data.frame = TRUE,
+                              selected_ranges = list(time = cbind(as.POSIXct(Sys.Date() - 10), Sys.time())))
+          dt_old <- arr[]
+          start_date <- min(dt_old$time, na.rm = TRUE)
+        } else {
+          start_date <- as.Date("2014-01-01")
+        }
       }
 
       # get new data
-      new <- self$get_investingcom_earnings_calendar_bulk(date_) # new <- get_investingcom_earnings_calendar_bulk(date_)
+      dt <- self$get_investingcom_earnings_calendar_bulk(start_date)
 
       # check if there are data available for timespan
-      if (nrow(new) == 0) {
+      if (nrow(dt) == 0) {
         print("No data for earning announcements.")
         return(NULL)
       }
 
       # clean data
-      if (pin_exists(board, private$ea_file_name)) {
-        results <- rbind(history, new)
+      dt <- unique(dt)
+      setorder(dt, "datetime")
+      setnames(dt, "datetime", "time")
+      dt[, time := as.POSIXct(time, tz = "America/New_York")]
+      dt[, time := with_tz(time, tzone = "UTC")]
+      dt <- unique(dt, by = c("symbol", "time"))
+
+      # save to AWS S3
+      if (tiledb_object_type(uri) != "ARRAY") {
+        fromDataFrame(
+          obj = dt,
+          uri = uri,
+          col_index = c("symbol", "time"),
+          sparse = TRUE,
+          tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                  as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+          allows_dups = FALSE
+        )
       } else {
-        results <- copy(new)
+        # save to tiledb
+        arr <- tiledb_array(uri, as.data.frame = TRUE)
+        arr[] <- dt
+        tiledb_array_close(arr)
       }
-      results <- unique(results)
-      setorder(results, "datetime")
 
-      # save file to Azure blob if blob_file is not NA
-      pin_write(board, results, name = private$ea_file_name, type = "csv")
-
-      return(new)
+      # consolidate
+      if (consolidate) {
+        tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr, uri = uri)
+        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr, uri = uri)
+      }
     }
-  ),
-  private = list(
-    ea_file_name = "EarningAnnouncementsInvestingCom"
   )
 )

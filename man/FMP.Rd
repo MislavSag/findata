@@ -30,10 +30,12 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
 \item \href{#method-FMP-create_start_end_dates}{\code{FMP$create_start_end_dates()}}
 \item \href{#method-FMP-get_minute_equities_tiledb}{\code{FMP$get_minute_equities_tiledb()}}
+\item \href{#method-FMP-get_minute_equities_tiledb_faster}{\code{FMP$get_minute_equities_tiledb_faster()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
 \item \href{#method-FMP-get_factor_file_tiledb}{\code{FMP$get_factor_file_tiledb()}}
 \item \href{#method-FMP-get_factor_file}{\code{FMP$get_factor_file()}}
 \item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
+\item \href{#method-FMP-get_ipo_calendar_confirmed}{\code{FMP$get_ipo_calendar_confirmed()}}
 \item \href{#method-FMP-get_fi_statement}{\code{FMP$get_fi_statement()}}
 \item \href{#method-FMP-get_financial_metrics}{\code{FMP$get_financial_metrics()}}
 \item \href{#method-FMP-get_stock_splits}{\code{FMP$get_stock_splits()}}
@@ -87,13 +89,17 @@ A new `FMP` object.
 \subsection{Method \code{get_earning_announcements()}}{
 Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_earning_announcements(days_history = 10)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_earning_announcements(uri, start_date = NULL, consolidate = TRUE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{days_history}}{how long to the past to look}
+\item{\code{uri}}{TileDB uri argument}
+
+\item{\code{start_date}}{First date to scrape from.If NULL, takes last date from existing uri.}
+
+\item{\code{consolidate}}{Consolidate and vacuum at the end.}
 }
 \if{html}{\out{</div>}}
 }
@@ -197,13 +203,13 @@ Scrap all daily data
 \subsection{Method \code{get_daily_tiledb()}}{
 get daily data from FMP cloud for all stocks
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_tiledb(url = "s3://equity-usa-daily-fmp")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_tiledb(uri = "s3://equity-usa-daily-fmp")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{url}}{AWS S3 url.}
+\item{\code{uri}}{AWS S3 url.}
 }
 \if{html}{\out{</div>}}
 }
@@ -338,6 +344,47 @@ Data saved to Azure blob.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_minute_equities_tiledb_faster"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_minute_equities_tiledb_faster}{}}}
+\subsection{Method \code{get_minute_equities_tiledb_faster()}}{
+Get hour data for all history from fmp cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute_equities_tiledb_faster(
+  symbols,
+  url = "s3://equity-usa-minute-fmpcloud",
+  save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+  save_uri_daily = "s3://equity-usa-daily-fmpcloud",
+  deep_scan = FALSE,
+  hardcode_start_dates = NULL,
+  hardcode_end_dates = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Symbol of the stock.}
+
+\item{\code{url}}{AWS S3 bucket url.}
+
+\item{\code{save_uri_hour}}{AWS S3 bucket uri for hour data.}
+
+\item{\code{save_uri_daily}}{AWS S3 bucket uri for daily data.}
+
+\item{\code{deep_scan}}{should we test for dates with low number od observation
+and try to scrap again.}
+
+\item{\code{hardcode_start_dates}}{Start dates to scrape from.}
+
+\item{\code{hardcode_end_dates}}{end_date to scrap from.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data saved to Azure blob.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_sp500_symbols"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_sp500_symbols}{}}}
 \subsection{Method \code{get_sp500_symbols()}}{
@@ -401,6 +448,26 @@ Get IPO date from fmp cloud
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{ticker}}{Stock ticker}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Stock IPO date.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_ipo_calendar_confirmed"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_ipo_calendar_confirmed}{}}}
+\subsection{Method \code{get_ipo_calendar_confirmed()}}{
+Get ipo-calendar-confirmed date from fmp cloud
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_ipo_calendar_confirmed(uri = "s3://equity-usa-ipo")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uri}}{TileDB uri argument}
 }
 \if{html}{\out{</div>}}
 }

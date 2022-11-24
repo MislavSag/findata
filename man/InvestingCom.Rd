@@ -9,13 +9,6 @@ Get data data from investing.com.
 \section{Super class}{
 \code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{InvestingCom}
 }
-\section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
-}
-\if{html}{\out{</div>}}
-}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -37,13 +30,22 @@ Get data data from investing.com.
 \if{html}{\out{<a id="method-InvestingCom-new"></a>}}
 \if{latex}{\out{\hypertarget{method-InvestingCom-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new InvestingCom object.
+Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+
+\item{\code{context_with_config}}{AWS S3 Tiledb config}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
-A new `InvestingCom` object.
+A new `FMP` object.
 }
 }
 \if{html}{\out{<hr>}}
@@ -94,13 +96,21 @@ Request to investing.com calendar
 \subsection{Method \code{update_investingcom_earnings()}}{
 Update earnings announcements data from investingcom website
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$update_investingcom_earnings(days_history = 10)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$update_investingcom_earnings(
+  uri,
+  start_date = NULL,
+  consolidate = TRUE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{days_history}}{how long to the past to look}
+\item{\code{uri}}{TileDB uri argument}
+
+\item{\code{start_date}}{First date to scrape from.If NULL, takes last date from existing uri.}
+
+\item{\code{consolidate}}{Consolidate and vacuum at the end.}
 }
 \if{html}{\out{</div>}}
 }

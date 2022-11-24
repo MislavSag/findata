@@ -8,7 +8,7 @@ Description: Collect data fro trading and financial ML.
     Data sources are FMP Cloud, Investing.com, Finam.
 License: GPL-3
 Encoding: UTF-8
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2
 Imports:
     R6,
     data.table,
