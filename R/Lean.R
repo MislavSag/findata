@@ -145,87 +145,78 @@ Lean = R6::R6Class(
     #' @description Convert FMP Cloud minute data to Quantconnect minute data.
     #'
     #' @param lean_data_path Quantconnect data equity minute folder path.
-    #' @param url S3 url.
+    #' @param uri TileDB uri argument.
+    #' @param uri_factor_files TileDB uri argument for factor files.
     #'
     #' @return No value returned.
     equity_minute_from_fmpcloud = function(lean_data_path = "D:/lean_projects/data/equity/usa/minute",
-                                           url = "s3://equity-usa-minute-fmp") {
+                                           uri = "D:/equity-usa-minute-fmpcloud",
+                                           uri_factor_files = "s3://equity-usa-factor-files") {
 
       # debug
       # library(data.table)
       # library(findata)
       # library(tiledb)
       # library(lubridate)
-      # library(nanotime)
+      # library(zip)
       # self = Lean$new()
+      # lean_data_path = "D:/lean_projects/data/equity/usa/minute"
+      # uri = "D:/equity-usa-minute-fmp"
+      # uri_factor_files = "s3://equity-usa-factor-files"
 
       options(scipen=999)
 
       # read factor files
-      arr_ff <- tiledb_array("s3://equity-usa-factor-files",
-                             as.data.frame = TRUE,
-                             ctx = self$context_with_config)
+      arr_ff <- tiledb_array(uri_factor_files, as.data.frame = TRUE)
       factor_files <- arr_ff[]
       tiledb_array_close(arr_ff)
       factor_files <- as.data.table(factor_files)
-      factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
       factor_files <- setorder(factor_files, symbol, date)
+      factor_files[, date := format.Date(date, format = "%Y%m%d")]
 
       # add factor files to Lean folder
+      folder <- file.path(gsub("/minute", "", lean_data_path), "factor_files")
       for (ff in unique(factor_files$symbol)) {
         sample_ <- factor_files[symbol == ff]
-        folder <- file.path("D:/lean_projects/data/equity/usa", "factor_files")
         file_name <- file.path(folder, paste0(tolower(ff), ".csv"))
         fwrite(sample_[, -1], file_name, col.names = FALSE)
       }
 
+      # define tiledb array object
+      arr <- tiledb_array(uri, as.data.frame = TRUE, query_layout = "UNORDERED")
+
       # add data to lean folder
+
       for (s in factor_files[, unique(symbol)]) {
 
         # debug
         print(s)
 
         # sample
-        arr <- tiledb_array(url,
-                            as.data.frame = TRUE,
-                            selected_ranges = list(symbol = cbind(s, s)))
-        sample_ <- arr[]
+        sample_ <- arr[s]
+        sample_ <- as.data.table(sample_)
 
         # set timezone and change posix to nanotime
-        sample_$date <- force_tz(sample_$date, tzone = "UTC")
+        sample_[, time := as.POSIXct(time,
+                                     origin = as.POSIXct("1970-01-01 00:00:00",
+                                                         tz = "UTC"),
+                                     tz = "UTC")]
 
         # Dt, timezone, unique
-        sample_ <- as.data.table(sample_)
-        sample_ <- unique(sample_, by = c("symbol", "date"))
-        sample_[, date := with_tz(date, tz = "America/New_York")]
+        sample_ <- unique(sample_, by = c("symbol", "time"))
+        sample_[, time := with_tz(time, tz = "America/New_York")]
 
         # keep trading hours
-        sample_ <- sample_[format.POSIXct(date, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
-
-        ######### NANOTIME TRY #########
-        # # set timezone and change posix to nanotime
-        # sample_$date <- force_tz(sample_$date, tzone = "UTC")
-        # sample_$date <- as.nanotime(sample_$date)
-        #
-        # # Dt, timezone, unique
-        # sample_ <- as.data.table(sample_)
-        # sample_ <- unique(sample_, by = c("symbol", "date"))
-        # sample_[, date_ := format(date, tz = "America/New_York")]
-        #
-        # # sample trading hours
-        # # sample_[format(date_, format = "%H:$M:%S") %between% c("09:30:00", "16:00:00")]
-        # as.nanoival("+T09:30:00 -> T16:00:00+")
-        # sample_[format(date_, format = "%H:$M:%S") %in% as.nanoival("+T09:30:00 -> T16:00:00+")]
-        ######### NANOTIME TRY #########
+        sample_ <- sample_[as.ITime(time) %between% c(as.ITime("09:30:00"), as.ITime("16:00:00"))]
 
         # convert to QC format
-        sample_[, `:=`(DateTime = (hour(date) * 3600 + minute(date) * 60 + second(date)) * 1000,
+        sample_[, `:=`(DateTime = (hour(time) * 3600 + minute(time) * 60 + second(time)) * 1000,
                        Open = open * 10000,
                        High = high * 10000,
                        Low = low * 10000,
                        Close = close * 10000,
                        Volume = volume)]
-        sample_ <- sample_[, .(symbol, date, DateTime, Open, High, Low, Close, Volume)]
+        sample_ <- sample_[, .(symbol, time, DateTime, Open, High, Low, Close, Volume)]
 
         # remove scientific notation
         # cols <- colnames(sample_)[3:ncol(sample_)]
@@ -233,7 +224,7 @@ Lean = R6::R6Class(
         # sample_ <- sample_[, lapply(.SD, sprintf, "%10d"), .SDcols = cols]
 
         # extract dates
-        dates_ <- unique(as.Date(sample_$date))
+        dates_ <- unique(as.Date(sample_$time))
 
         # path
         symbol_path <- file.path(lean_data_path, tolower(s))
@@ -250,12 +241,12 @@ Lean = R6::R6Class(
 
         # saving loop
         for (d in dates_) {
-          day_minute <- sample_[as.Date(date) == d]
+          day_minute <- sample_[as.Date(time) == d]
           if (is.null(day_minute)) {
             next()
           }
-          setorderv(day_minute, "date")
-          date_ <- gsub("-", "", as.character(as.Date(day_minute$date[1])))
+          setorderv(day_minute, "time")
+          date_ <- gsub("-", "", as.character(as.Date(day_minute$time[1])))
           day_minute <- day_minute[, .(DateTime, Open, High, Low, Close, Volume)]
           # day_minute[, DateTime := as.character(DateTime)]
 
@@ -267,7 +258,9 @@ Lean = R6::R6Class(
           file.remove(file_name)
           }
       }
-      # allow again scientific notation
+
+      # allow again scientific notation and close tiledb array
+      tiledb_array_close(arr)
       options(scipen=0)
     }
   )

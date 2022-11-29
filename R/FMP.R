@@ -620,7 +620,7 @@ FMP = R6::R6Class(
       # library(lubridate)
       # library(nanotime)
       # self = FMP$new()
-      # symbol = "CA"
+      # symbol = "AAPL"
       # url = "s3://equity-usa-minute-fmpcloud"
       # save_uri_hour = "s3://equity-usa-hour-fmpcloud"
       # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
@@ -661,14 +661,17 @@ FMP = R6::R6Class(
           start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
           # TODO: check BRK-b (BTK.B) and other symbols with -/.
 
-
           # read old data
           if (tiledb_object_type(url) == "ARRAY") {
             # read data for the symbol
             ranges <- list(
               symbol = cbind(symbol, symbol)
             )
-            arr <- tiledb_array(url, as.data.frame = TRUE, selected_ranges = ranges)
+            arr <- tiledb_array(url,
+                                as.data.frame = TRUE,
+                                selected_ranges = ranges,
+                                query_layout = "UNORDERED"
+                                )
             data_history <- arr[]
             tiledb_array_close(arr)
 
