@@ -624,9 +624,13 @@ FMP = R6::R6Class(
       # url = "s3://equity-usa-minute-fmpcloud"
       # save_uri_hour = "s3://equity-usa-hour-fmpcloud"
       # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
-      # hardcode_start_dates = Sys.Date() - 1
-      # hardcode_end_dates = Sys.Date() - 1
+      # hardcode_start_dates = Sys.Date() - 3
+      # hardcode_end_dates = Sys.Date() - 3
       # deep_scan = FALSE
+
+      # TODO: Pleasr consider using CRAN package 'qlcal' as an actively maintained light-weight
+      # QuantLib-calendaring package. 'RcppQuantuccia' is in maintenance mode and not being
+      # extended upstream or as a CRAN package -- but 'qlcal' remains current.
 
       # loop over all symbols
       for (symbol in symbols) {
@@ -775,10 +779,25 @@ FMP = R6::R6Class(
             allows_dups = FALSE
           )
         } else {
-          # save to tiledb
-          arr <- tiledb_array(url, as.data.frame = TRUE)
-          arr[] <- data_by_symbol
-          tiledb_array_close(arr)
+
+          # send to TileDB URI
+          tries = 0
+          repeat {
+            tiledb_check <- tryCatch({
+              arr <- tiledb_array(url, as.data.frame = TRUE)
+              # arr[] <- data_by_symbol
+              tiledb_array_close(arr)
+            }, error = function(e) NULL)
+
+            # if not NA break
+            if (!is.null(tiledb_check) | tries > 10) {
+              break()
+            } else {
+              Sys.sleep(10L)
+              print(paste0("Try ", tries))
+              tries <- tries + 1
+            }
+          }
         }
 
         # create hour data
@@ -849,11 +868,12 @@ FMP = R6::R6Class(
         }
       }
 
+      # TODO takes lots of time
       # consolidate and vacum hour data
-      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                           uri = save_uri_hour)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri_hour)
+      # tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+      #                                      uri = save_uri_hour)
+      # tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+      #                                 uri = save_uri_hour)
 
       # consolidate and vacum daily data
       tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
@@ -1195,7 +1215,9 @@ FMP = R6::R6Class(
       # TODO use dividends from stocksalysis andcheck aIG then. Dividend 3$ wrong
 
       # read daily unadjusted daily data
-      arr <- tiledb_array(prices_uri, as.data.frame = TRUE)
+      arr <- tiledb_array(prices_uri,
+                          as.data.frame = TRUE,
+                          query_layout = "UNORDERED")
       system.time(unadj_daily_data <- arr[])
 
       # delete object
@@ -1206,6 +1228,7 @@ FMP = R6::R6Class(
 
       # order by symbol and date
       DT <- as.data.table(unadj_daily_data)
+      DT <- unique(DT, by = c("symbol", "date"))
       setorder(DT, symbol, date)
       symbols <- unique(DT$symbol)
       DT <- DT[, .(symbol, date , close)]

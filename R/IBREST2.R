@@ -122,8 +122,8 @@ IBREST2 = R6::R6Class(
       if (keep_nytime_10_16) {
         # print("Change timezone to NY time.")
         # change timesone to NY
-        print(class(md$t))
-        print(md$t)
+        # print(class(md$t))
+        # print(md$t)
         md$t <- as.numeric(md$t)
         md[, datetime := as.POSIXct(t / 1000,
                                     origin = "1970-01-01",

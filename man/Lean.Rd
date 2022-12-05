@@ -98,7 +98,8 @@ Convert FMP Cloud minute data to Quantconnect minute data.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Lean$equity_minute_from_fmpcloud(
   lean_data_path = "D:/lean_projects/data/equity/usa/minute",
-  url = "s3://equity-usa-minute-fmp"
+  uri = "D:/equity-usa-minute-fmpcloud",
+  uri_factor_files = "s3://equity-usa-factor-files"
 )}\if{html}{\out{</div>}}
 }
 
@@ -107,7 +108,9 @@ Convert FMP Cloud minute data to Quantconnect minute data.
 \describe{
 \item{\code{lean_data_path}}{Quantconnect data equity minute folder path.}
 
-\item{\code{url}}{S3 url.}
+\item{\code{uri}}{TileDB uri argument.}
+
+\item{\code{uri_factor_files}}{TileDB uri argument for factor files.}
 }
 \if{html}{\out{</div>}}
 }

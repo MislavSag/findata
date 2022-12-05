@@ -161,13 +161,15 @@ Lean = R6::R6Class(
       # library(zip)
       # self = Lean$new()
       # lean_data_path = "D:/lean_projects/data/equity/usa/minute"
-      # uri = "D:/equity-usa-minute-fmp"
+      # uri = "D:/equity-usa-minute-fmpcloud"
       # uri_factor_files = "s3://equity-usa-factor-files"
 
       options(scipen=999)
 
       # read factor files
-      arr_ff <- tiledb_array(uri_factor_files, as.data.frame = TRUE)
+      arr_ff <- tiledb_array(uri_factor_files,
+                             as.data.frame = TRUE,
+                             query_layout = "UNORDERED")
       factor_files <- arr_ff[]
       tiledb_array_close(arr_ff)
       factor_files <- as.data.table(factor_files)
