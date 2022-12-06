@@ -26,70 +26,76 @@ Lean = R6::R6Class(
 
     #' @description Convert FMP Cloud daily data to Quantconnect daily data.
     #'
-    #' @param save_path Quantconnect data equity daily folder path.
+    #' @param lean_data_path Quantconnect data equity minute folder path.
+    #' @param uri TileDB uri argument.
     #'
-    #' @return No valuie returned.
-    equity_daily_from_fmpcloud = function(save_path = "D:/findata") {
+    #' @return No value returned.
+    equity_daily_from_fmpcloud = function(lean_data_path = "D:/lean_projects/data/equity/usa/daily",
+                                          uri = "D:/equity-usa-daily-fmp") {
 
-      # crate pin board
-      board <- board_azure(
-        container = storage_container(azure_storage_endpoint, "fmpcloud-daily"),
-        path = "",
-        n_processes = 2L,
-        versioned = FALSE,
-        cache = save_path
-      )
-      blob_dir <- pin_list(board)
+      # debug
+      # library(data.table)
+      # library(findata)
+      # library(tiledb)
+      # library(lubridate)
+      # library(zip)
+      # self = Lean$new()
+      # lean_data_path = "D:/lean_projects/data/equity/usa/daily"
+      # uri = "D:/equity-usa-daily-fmp"
 
-      # downlaod new data if available
-      files_new <- setdiff(blob_dir, list.files(save_path))
-      lapply(files_new, pin_download, board = board)
-      files_local <- vapply(file.path(CACHEDIR, blob_dir),
-                            list.files, recursive = TRUE, pattern = "\\.csv", full.names = TRUE,
-                            FUN.VALUE = character(1))
-      prices_l <- lapply(files_local, fread)
-      prices <- prices_l[vapply(prices_l, function(x) nrow(x) > 0, FUN.VALUE = logical(1))]
-      prices <- rbindlist(prices)
+      # remove scientific notation
+      options(scipen=999)
 
+      # get all symbols from FMP cloud
+      fmp = FMP$new()
+      stock_list <- fmp$get_stock_list()
+      exchanges <- c("AMEX", "NASDAQ", "NYSE", "ETF", "OTC", "BATS")
+      stock_list <- stock_list[exchangeShortName %in% exchanges]
+
+      # import all daily data
+      arr <- tiledb_array(uri, as.data.frame = TRUE, query_layout = "UNORDERED")
+      system.time(daily_data <- arr[])
+      tiledb_array_close(arr)
+      daily_data <- as.data.table(daily_data)
+      daily_data <- daily_data[symbol %in% unique(stock_list$symbol)]
+      setorder(daily_data, symbol, date)
+
+      # example for data
       # 19980102 00:00	136300	162500	135000	162500	6315000
       # 19980105 00:00	165000	165600	151900	160000	5677300
       # 19980106 00:00	159400	205000	147500	190000	16064600
       # 19980107 00:00	188100	192500	173100	174400	9122300
 
       # change every file to quantconnect like file and add to destination
-      for (symbol in blob_dir) {
-        # debug
-        print(symbol)
+      symbols_ <- unique(daily_data$symbol)
+      which(symbols_ == "PRN")
+      for (s in symbols_[11022:length(symbols_)]) {
 
-        # load data
-        data_ <- pin_read(board, tolower(symbol))
-        data_ <- as.data.table(data_)
+        # sample data by symbol
+        print(s)
+        data_ <- daily_data[symbol == s]
 
         # convert to lean format
         data_[, `:=`(
-          DateTime = as.POSIXct(formated, format = "%Y-%m-%d %H:%M:%S", tz = "EST"),
-          Open = o * 1000,
-          High = h * 1000,
-          Low = l * 1000,
-          Close = c * 1000,
-          Volume = v
+          DateTime = paste0(date, " 00:00"),
+          Open = open * 1000,
+          High = high * 1000,
+          Low = low * 1000,
+          Close = close * 1000,
+          Volume = volume
         )]
-        data_ <- data_[format(DateTime, "%H:%M:%S") %between% c("10:00:00", "16:01:00")]
-        data_[, DateTime := format.POSIXct(DateTime, format = "%Y%m%d %H:%M")]
         data_qc <- data_[, .(DateTime, Open, High, Low, Close, Volume)]
-        data_qc[, DateTime := as.character(DateTime)]
-        cols <- colnames(data_qc)[2:ncol(data_qc)]
-        data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+        # cols <- colnames(data_qc)[2:ncol(data_qc)]
+        # data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
 
         # save to destination
-        file_name_csv <- paste0(tolower(symbol), ".csv")
-        fwrite(data_qc, file.path(save_path, file_name_csv), col.names = FALSE)
-        zip_file <- file.path(save_path, paste0(tolower(symbol), ".zip"))
-        zipr(zip_file, file.path(save_path, file_name_csv))
-        file.remove(file.path(save_path, file_name_csv))
+        file_name_csv <- paste0(tolower(s), ".csv")
+        fwrite(data_qc, file.path(lean_data_path, file_name_csv), col.names = FALSE, )
+        zip_file <- file.path(lean_data_path, paste0(tolower(s), ".zip"))
+        zipr(zip_file, file.path(lean_data_path, file_name_csv))
+        file.remove(file.path(lean_data_path, file_name_csv))
       }
     },
-
 
     #' @description Convert FMP Cloud hour data to Quantconnect hour data.
     #'
