@@ -1694,6 +1694,26 @@ FMP = R6::R6Class(
       res <- rbindlist(res, fill = TRUE)
       return(res)
     },
+    #' @description Get symbol changes.
+    #'
+    #' @return data.table with symbol changes data.
+    get_symbol_changes = function() {
+      url <- "https://financialmodelingprep.com/api/v4/symbol_change"
+      p <- RETRY("GET", url, query = list(apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    #' @description Get delisted companies.
+    #'
+    #' @return data.table with delisted companies data.
+    get_delisted_companies = function() {
+      url <- "https://financialmodelingprep.com/api/v3/delisted-companies"
+      p <- RETRY("GET", url, query = list(apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
 
     #' @description Get available traded list.
     #'
