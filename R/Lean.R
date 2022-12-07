@@ -30,7 +30,7 @@ Lean = R6::R6Class(
     #' @param uri TileDB uri argument.
     #'
     #' @return No value returned.
-    equity_daily_from_fmpcloud = function(lean_data_path = "D:/lean_projects/data/equity/usa/daily",
+    equity_daily_from_fmpcloud = function(lean_data_path = "D:/lean/data/equity/usa/daily",
                                           uri = "D:/equity-usa-daily-fmp") {
 
       # debug
@@ -40,7 +40,7 @@ Lean = R6::R6Class(
       # library(lubridate)
       # library(zip)
       # self = Lean$new()
-      # lean_data_path = "D:/lean_projects/data/equity/usa/daily"
+      # lean_data_path = "D:/lean/data/equity/usa/daily"
       # uri = "D:/equity-usa-daily-fmp"
 
       # remove scientific notation
@@ -68,16 +68,23 @@ Lean = R6::R6Class(
 
       # change every file to quantconnect like file and add to destination
       symbols_ <- unique(daily_data$symbol)
-      which(symbols_ == "PRN")
-      for (s in symbols_[11022:length(symbols_)]) {
+      for (s in symbols_[11031:length(symbols_)]) {
+
+        # error
+        if (s == "PRN") {
+          next()
+        }
 
         # sample data by symbol
         print(s)
         data_ <- daily_data[symbol == s]
 
+        # format date
+        data_[, date_ := paste0(format.Date(date, format = "%Y%m%d"), " 00:00")]
+
         # convert to lean format
         data_[, `:=`(
-          DateTime = paste0(date, " 00:00"),
+          DateTime = date_,
           Open = open * 1000,
           High = high * 1000,
           Low = low * 1000,
@@ -85,8 +92,8 @@ Lean = R6::R6Class(
           Volume = volume
         )]
         data_qc <- data_[, .(DateTime, Open, High, Low, Close, Volume)]
-        # cols <- colnames(data_qc)[2:ncol(data_qc)]
-        # data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
+        cols <- colnames(data_qc)[2:ncol(data_qc)]
+        data_qc <- data_qc[, (cols) := lapply(.SD, format, scientific = FALSE), .SDcols = cols]
 
         # save to destination
         file_name_csv <- paste0(tolower(s), ".csv")

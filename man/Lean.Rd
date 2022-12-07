@@ -55,7 +55,7 @@ A new `Lean` object.
 Convert FMP Cloud daily data to Quantconnect daily data.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Lean$equity_daily_from_fmpcloud(
-  lean_data_path = "D:/lean_projects/data/equity/usa/daily",
+  lean_data_path = "D:/lean/data/equity/usa/daily",
   uri = "D:/equity-usa-daily-fmp"
 )}\if{html}{\out{</div>}}
 }

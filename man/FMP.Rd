@@ -42,6 +42,8 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_market_cap}{\code{FMP$get_market_cap()}}
 \item \href{#method-FMP-get_market_cap_bulk}{\code{FMP$get_market_cap_bulk()}}
 \item \href{#method-FMP-get_stock_list}{\code{FMP$get_stock_list()}}
+\item \href{#method-FMP-get_symbol_changes}{\code{FMP$get_symbol_changes()}}
+\item \href{#method-FMP-get_delisted_companies}{\code{FMP$get_delisted_companies()}}
 \item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
 \item \href{#method-FMP-get_sp500_constituent}{\code{FMP$get_sp500_constituent()}}
 \item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
@@ -599,6 +601,32 @@ Get stock list.
 
 \subsection{Returns}{
 data.table with stock list data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_symbol_changes"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_symbol_changes}{}}}
+\subsection{Method \code{get_symbol_changes()}}{
+Get symbol changes.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_symbol_changes()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with symbol changes data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_delisted_companies"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_delisted_companies}{}}}
+\subsection{Method \code{get_delisted_companies()}}{
+Get delisted companies.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_delisted_companies()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table with delisted companies data.
 }
 }
 \if{html}{\out{<hr>}}
