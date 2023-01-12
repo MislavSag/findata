@@ -47,6 +47,9 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
 \item \href{#method-FMP-get_sp500_constituent}{\code{FMP$get_sp500_constituent()}}
 \item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
+\item \href{#method-FMP-get_grades}{\code{FMP$get_grades()}}
+\item \href{#method-FMP-get_targets}{\code{FMP$get_targets()}}
+\item \href{#method-FMP-get_ratings}{\code{FMP$get_ratings()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -117,22 +120,19 @@ Get Earning Call Transcript from FMP cloud.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_transcripts(
   symbols,
-  years = 1992:2021,
-  blob_cont = "transcripts",
-  save_files = FALSE
+  years = 1992:2023,
+  save_uri = "s3://equity-usa-transcripts"
 )}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{symbols}}{stock symbols}
+\item{\code{symbols}}{stock symbols. If tiledburi, import symbols from FMP events.}
 
 \item{\code{years}}{years to extract data from.}
 
-\item{\code{blob_cont}}{blob container}
-
-\item{\code{save_files}}{should transcripts be saved.}
+\item{\code{save_uri}}{Tiledb uri.}
 }
 \if{html}{\out{</div>}}
 }
@@ -687,6 +687,78 @@ Get Financial Statements data
 }
 \subsection{Returns}{
 data.table of financial reports.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_grades"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_grades}{}}}
+\subsection{Method \code{get_grades()}}{
+Get Upgrades and Downgrades from FMP cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_grades(symbols, save_uri = "s3://equity-usa-grades", update = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{stock symbols. If tiledburi, import symbols from FMP events.}
+
+\item{\code{save_uri}}{Tiledb uri.}
+
+\item{\code{update}}{Should we scrape all data od jut the new one.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Result of GET request
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_targets"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_targets}{}}}
+\subsection{Method \code{get_targets()}}{
+Get Price Targest from FMP cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_targets(symbols, save_uri = "s3://equity-usa-targets", update = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{stock symbols. If tiledburi, import symbols from FMP events.}
+
+\item{\code{save_uri}}{Tiledb uri.}
+
+\item{\code{update}}{Should we scrape all data od jut the new one.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Result of GET request
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_ratings"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_ratings}{}}}
+\subsection{Method \code{get_ratings()}}{
+Get Ratings from FMP cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_ratings(symbols, save_uri = "s3://equity-usa-ratings", update = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{stock symbols. If tiledburi, import symbols from FMP events.}
+
+\item{\code{save_uri}}{Tiledb uri.}
+
+\item{\code{update}}{Should we scrape all data od jut the new one.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Result of GET request
 }
 }
 \if{html}{\out{<hr>}}

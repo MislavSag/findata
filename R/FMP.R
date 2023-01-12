@@ -130,41 +130,151 @@ FMP = R6::R6Class(
 
     #' @description Get Earning Call Transcript from FMP cloud.
     #'
-    #' @param symbols stock symbols
+    #' @param symbols stock symbols. If tiledburi, import symbols from FMP events.
     #' @param years years to extract data from.
-    #' @param blob_cont blob container
-    #' @param save_files should transcripts be saved.
+    #' @param save_uri Tiledb uri.
     #'
     #' @return Result of GET request
     get_transcripts = function(symbols,
-                                years = 1992:2021,
-                                blob_cont = "transcripts",
-                                save_files = FALSE) {
-      # overwrite_existing_files = FALSE) {
+                               years = 1992:2023,
+                               save_uri = "s3://equity-usa-transcripts") {
 
-      # remove downloaded files
-      # if (!overwrite_existing_files & save_files) {
-      #   existing_files <- gsub("\\.rds", "", get_all_blob_files(blob_cont)[, 1])
-      #   symbols <- setdiff(symbols, existing_files)
-      # }
+      # debug
+      # library(data.table)
+      # library(httr)
+      # library(findata)
+      # library(tiledb)
+      # library(lubridate)
+      # fmp = FMP$new()
+      # private = list(
+      #   ea_file_name = "EarningAnnouncements",
+      #   transcripts_file_name = "earnings-calendar.rds",
+      #   prices_file_name = "prices.csv",
+      #   market_cap_file_name = "MarketCap",
+      #
+      #   fmpv_path = function(path = "earning_calendar", v = "v3", ...) {
+      #
+      #     # query params
+      #     query_params <- list(...)
+      #
+      #     # define url
+      #     url <- paste0("https://financialmodelingprep.com/api/", v, "/", path)
+      #
+      #     # get data
+      #     p <- RETRY("GET", url, query = query_params, times = 5)
+      #     result <- suppressWarnings(rbindlist(httr::content(p), fill = TRUE))
+      #
+      #     return(result)
+      #   }
+      # )
+      # self = list()
+      # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
+      # years = 1992:2022
+      # save_uri = "s3://equity-usa-transcripts"
+      # arr <- tiledb_array("s3://equity-usa-earningsevents", as.data.frame = TRUE)
+      # events <- arr[]
+      # events <- as.data.table(events)
+      # events <- events[date < Sys.Date()]                 # remove announcements for today
+      # events <- unique(events, by = c("symbol", "date"))  # remove duplicated symobl / date pair
+      # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
+      # url <- modify_url("https://financialmodelingprep.com/", path = "api/v3/available-traded/list",
+      #                   query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD") ))
+      # stocks <- rbindlist(content(GET(url)))
+      # usa_symbols <- stocks[exchangeShortName %in% c("AMEX", "NASDAQ", "NYSE", "OTC")]
+      # events <- events[symbol %in% usa_symbols$symbo]
+      # symbols <- unique(events$symbol)
+
+      # import transcripts metadata for all symbols
+      url <- "https://financialmodelingprep.com/api/v4/earning_call_transcript"
+      print("Get all transcripts for symbols")
+      all_transcripts_l <- lapply(symbols, function(x) {
+        p <- GET(url, query = list(symbol = x, apikey = Sys.getenv("APIKEY-FMPCLOUD")))
+        p <- rbindlist(content(p))
+        if (nrow(p) > 0) return(cbind.data.frame(symbol = x, p)) else return(NULL)
+      })
+      all_transcripts <- rbindlist(all_transcripts_l)
+      setnames(all_transcripts, c("symbol", "quarter", "year", "date"))
+      all_transcripts[, date := as.POSIXct(date, tz = "America/New_York")]
+      all_transcripts[, date := with_tz(date, tzone = "UTC")]
+
+      # import existing data on transcripts
+      if (tiledb_object_type(save_uri) == "ARRAY") {
+        arr <- tiledb_array(save_uri,
+                            as.data.frame = TRUE,
+                            query_layout = "UNORDERED",
+                            attrs = c("year")
+        )
+        transcripts_old_raw <- arr[]
+        tiledb_array_close(arr)
+        transcripts_old_raw <- as.data.table(transcripts_old_raw)
+
+        # get new dates
+        transcripts_new <- data.table::fsetdiff(all_transcripts[, .(symbol, date)], transcripts_old_raw[, .(symbol, date)])
+
+        if (length(transcripts_new) > 0 && nrow(transcripts_new) > 0) {
+          symbols <- unique(transcripts_new$symbol)
+        }
+      }
 
       # get data
+      s <- Sys.time()
       transcripts_list <- lapply(symbols, function(s) {
-        inner <- lapply(years, function(y) {
+
+        # debug
+        print(s)
+
+        # get missing years
+        years_ <- transcripts_new[symbol == s, unique(data.table::year(date))]
+
+        # get new
+        inner <- lapply(years_, function(y) {
           private$fmpv_path(paste0("batch_earning_call_transcript/", s), v = "v4", year = y, apikey = self$api_key)
-          # fmpv_path(paste0("batch_earning_call_transcript/", s), v = "v4", year = y, apikey = Sys.getenv("APIKEY-FMPCLOUD"))
         })
         inner <- rbindlist(inner)
         if (nrow(inner) > 0) {
-          inner$date <- as.POSIXct(inner$date, tz = "EST")
-          # if (save_files) save_blob_files(inner, file_name = paste0(s, ".rds"), container = blob_cont)
+          inner$date <- as.POSIXct(inner$date, tz = "America/New_York")
         } else {
           print("There are no transcripts data.")
         }
         inner
       })
+      e <- Sys.time()
+      e - s
       transcripts <- rbindlist(transcripts_list)
-      return(transcripts)
+      transcripts[, date := with_tz(date, tzone = "UTC")]
+      transcripts <- na.omit(transcripts)
+      transcripts <- unique(transcripts, by = c("symbol", "date"))
+
+      # remove existing transcirpts
+      dates_keep <- data.table::fsetdiff(transcripts[, .(symbol, date)], transcripts_old_raw[, .(symbol, date)])
+      transcripts <- dates_keep[, index := 1][transcripts, on = c("symbol", "date")]
+      transcripts <- transcripts[index == 1]
+      transcripts[, index := NULL]
+
+      # check object size
+      if (nrow(transcripts) == 0) {
+        return(NULL)
+      }
+
+      # save to AWS S3
+      if (tiledb_object_type(save_uri) != "ARRAY") {
+        fromDataFrame(
+          obj = transcripts,
+          uri = save_uri,
+          col_index = c("symbol", "date"),
+          sparse = TRUE,
+          tile_domain=list(date=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                  as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+          allows_dups = FALSE
+        )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+        arr[] <- transcripts
+        tiledb_array_close(arr)
+      }
+
+      return(NULL)
     },
 
     #' @description Update earnings announcements data from FMP cloud
@@ -180,6 +290,7 @@ FMP = R6::R6Class(
       # cont <- storage_container(storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), key=Sys.getenv("BLOB-KEY")), "transcripts")
 
       # import transcripts metadata for all symbols
+      s <- Sys.time()
       url <- "https://financialmodelingprep.com/api/v4/earning_call_transcript"
       print("Get all transcripts for symbols")
       all_transcripts_l <- lapply(symbols, function(x) {
@@ -190,6 +301,8 @@ FMP = R6::R6Class(
       all_transcripts <- rbindlist(all_transcripts_l)
       setnames(all_transcripts, c("symbol", "quarter", "year", "date"))
       all_transcripts <- all_transcripts[year %in% check_years]
+      e <- Sys.time()
+      e - s
 
       # main loop
       print("Get missing transcripts")
@@ -338,7 +451,7 @@ FMP = R6::R6Class(
       } else {
         # get scraped dates
         arr <- tiledb_array(uri, as.data.frame = TRUE, query_layout = "UNORDERED")
-        selected_ranges(arr) <- list(symbol = cbind("AAPL", "AAPL"))
+        selected_ranges(arr) <- list(symbol = cbind("SPY", "SPY"))
         old_data <- arr[]
         tiledb_array_close(arr)
         seq_date <- as.Date(setdiff(seq_date_all, old_data$date), origin = "1970-01-01")
@@ -685,22 +798,22 @@ FMP = R6::R6Class(
               data_history <- as.data.table(data_history)
               data_history <- unique(data_history, by = "time")
               setorder(data_history, time)
-              # data_history[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
 
               # missing freq
               if (deep_scan) {
 
                 # create date column
                 data_history_tz <- copy(data_history)
-                data_history_tz[, date := with_tz(date, tz = "America/New_York")]
-                data_history_tz[, date_ := as.Date(date, tz = "America/New_York")]
+                data_history_tz[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
+                data_history_tz[, time := with_tz(time, tz = "America/New_York")]
+                data_history_tz[, date_ := as.Date(time, tz = "America/New_York")]
                 data_history_tz[, date_n := .N, by = date_]
 
                 # define dates we will try to scrap again
                 observation_per_day <- 60 * 6
                 try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
                 start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
-                end_dates <- start_dates + 1
+                end_dates <- start_dates
 
               } else {
 
@@ -870,10 +983,10 @@ FMP = R6::R6Class(
 
       # TODO takes lots of time
       # consolidate and vacum hour data
-      # tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-      #                                      uri = save_uri_hour)
-      # tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-      #                                 uri = save_uri_hour)
+      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                           uri = save_uri_hour)
+      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                      uri = save_uri_hour)
 
       # consolidate and vacum daily data
       tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
@@ -1769,7 +1882,7 @@ FMP = R6::R6Class(
       # period = "quarter"
       # self <- FMP$new()
       # save_path = "D:/fundamental_data/FS"
-      # save_uri = "s3://equity-usa-fundamentals"
+      # save_uri = "ratios-bulk"
 
       # define save_uri
       save_uri = paste0("equity-usa-", statement)
@@ -1777,6 +1890,15 @@ FMP = R6::R6Class(
       # prepare donwload data
       url <- "https://financialmodelingprep.com/api/v4"
       url <- paste(url, statement, sep = "/")
+
+      # i all years already scraped download only
+      years_scraped <- list.files(save_path, pattern = statement)
+      years_scraped <- as.integer(gsub(".*-|\\.csv", "", years_scraped))
+      if (all(years %in% years_scraped)) {
+        years_ <- data.table::year(Sys.Date())
+      } else {
+        years_ <- years
+      }
 
       # donwload data
       lapply(years, function(year) {
@@ -1801,6 +1923,8 @@ FMP = R6::R6Class(
       fs_data_l <- lapply(fs_data_l, function(df) {
         if ("acceptedDate" %in% colnames(df)) {
           df[, acceptedDate := as.character(acceptedDate)]
+        } else {
+          df
         }
       })
       fs_data <- rbindlist(fs_data_l, fill = TRUE)
@@ -1815,13 +1939,297 @@ FMP = R6::R6Class(
       # save to tiledb.
       fromDataFrame(
         obj = fs_data,
-        uri = save_uri,
+        uri = paste0("s3://", save_uri),
         col_index = c("symbol", "date"),
         sparse = TRUE,
         tile_domain=list(date = cbind(as.Date("1970-01-01"),
                                       as.Date("2099-12-31"))),
         allows_dups = FALSE
         )
+    },
+
+    #' @description Get Upgrades and Downgrades from FMP cloud.
+    #'
+    #' @param symbols stock symbols. If tiledburi, import symbols from FMP events.
+    #' @param save_uri Tiledb uri.
+    #' @param update Should we scrape all data od jut the new one.
+    #'
+    #' @return Result of GET request
+    get_grades = function(symbols,
+                          save_uri = "s3://equity-usa-grades",
+                          update = FALSE) {
+
+      # get new data if update is FALSE
+      if (update == FALSE) {
+        system.time({
+          all_ud_l <- lapply(symbols, function(s) {
+            private$fmpv_path(path = "upgrades-downgrades",
+                              v = "v4",
+                              symbol = s,
+                              apikey = fmp$api_key)
+          })
+        })
+        all_ud <- rbindlist(all_ud_l)
+        all_ud[, publishedDate := as.POSIXct(publishedDate,
+                                             format = "%Y-%m-%dT%H:%M:%OSZ",
+                                             tz = "UTC")]
+      } else {
+
+        # import existing data
+        arr <- tiledb_array(save_uri,
+                            as.data.frame = TRUE,
+                            query_layout = "UNORDERED"
+        )
+        ud_raw <- arr[]
+        tiledb_array_close(arr)
+        ud_raw <- as.data.table(ud_raw)
+
+        # get new data
+        system.time({
+          all_udu_l <- lapply(1:20, function(i) {
+            private$fmpv_path(path = "upgrades-downgrades-rss-feed",
+                              v = "v4",
+                              page = i,
+                              apikey = fmp$api_key)
+          })
+        })
+        all_ud <- rbindlist(all_udu_l)
+        all_ud <- all_ud[symbol %in% symbols]
+        all_ud[, publishedDate := as.POSIXct(publishedDate,
+                                             format = "%Y-%m-%dT%H:%M:%OSZ",
+                                             tz = "UTC")]
+
+        # get new data
+        cols_ <- colnames(ud_raw)
+        all_ud <- data.table::fsetdiff(all_ud[, ..cols_], ud_raw)
+
+        # check if ther is new data
+        if (nrow(all_ud) == 0) {
+          return(NULL)
+        }
+      }
+
+      # clean data
+      all_ud <- na.omit(all_ud, c("symbol", "publishedDate"))
+      all_ud <- unique(all_ud, by = c("symbol", "publishedDate", "gradingCompany",
+                                      "newGrade", "action"))
+
+      # check object size
+      if (nrow(all_ud) == 0) {
+        return(NULL)
+      }
+
+      # save to AWS S3
+      if (tiledb_object_type(save_uri) != "ARRAY") {
+        fromDataFrame(
+          obj = all_ud,
+          uri = save_uri,
+          col_index = c("symbol", "publishedDate", "gradingCompany",
+                        "newGrade", "action"),
+          sparse = TRUE,
+          tile_domain=list(publishedDate=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                           as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+          allows_dups = FALSE
+        )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+        arr[] <- all_ud
+        tiledb_array_close(arr)
+      }
+
+      return(NULL)
+    },
+
+    #' @description Get Price Targest from FMP cloud.
+    #'
+    #' @param symbols stock symbols. If tiledburi, import symbols from FMP events.
+    #' @param save_uri Tiledb uri.
+    #' @param update Should we scrape all data od jut the new one.
+    #'
+    #' @return Result of GET request
+    get_targets = function(symbols,
+                           save_uri = "s3://equity-usa-targets",
+                           update = FALSE) {
+
+      # get new data if update is FALSE
+      if (update == FALSE) {
+        system.time({
+          targets_l <- lapply(symbols, function(s) {
+            private$fmpv_path(path = "price-target",
+                              v = "v4",
+                              symbol = s,
+                              apikey = fmp$api_key)
+          })
+        })
+        targets <- rbindlist(targets_l)
+        targets[, publishedDate := as.POSIXct(publishedDate,
+                                              format = "%Y-%m-%dT%H:%M:%OSZ",
+                                              tz = "UTC")]
+      } else {
+
+        # import existing data
+        arr <- tiledb_array(save_uri,
+                            as.data.frame = TRUE,
+                            query_layout = "UNORDERED"
+        )
+        targets_raw <- arr[]
+        tiledb_array_close(arr)
+        targets_raw <- as.data.table(targets_raw)
+
+        # get new data
+        system.time({
+          targetsu_l <- lapply(1:20, function(i) {
+            private$fmpv_path(path = "price-target-rss-feed",
+                              v = "v4",
+                              page = i,
+                              apikey = fmp$api_key)
+          })
+        })
+        targets <- rbindlist(targetsu_l)
+        targets <- targets[symbol %in% symbols]
+        targets[, publishedDate := as.POSIXct(publishedDate,
+                                              format = "%Y-%m-%dT%H:%M:%OSZ",
+                                              tz = "UTC")]
+
+        # get new data
+        cols_ <- colnames(targets_raw)
+        targets <- data.table::fsetdiff(targets[, ..cols_], targets_raw)
+
+        # check if ther is new data
+        if (nrow(targets) == 0) {
+          return(NULL)
+        }
+      }
+
+      # clean data
+      targets <- na.omit(targets, c("symbol", "publishedDate"))
+      targets <- unique(targets)
+
+      # check object size
+      if (nrow(targets) == 0) {
+        return(NULL)
+      }
+
+      # save to AWS S3
+      if (tiledb_object_type(save_uri) != "ARRAY") {
+        fromDataFrame(
+          obj = targets,
+          uri = save_uri,
+          col_index = c("symbol", "publishedDate"),
+          sparse = TRUE,
+          tile_domain=list(publishedDate=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
+                                           as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
+          allows_dups = TRUE
+        )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+        arr[] <- targets
+        tiledb_array_close(arr)
+      }
+
+      return(NULL)
+    },
+
+    #' @description Get Ratings from FMP cloud.
+    #'
+    #' @param symbols stock symbols. If tiledburi, import symbols from FMP events.
+    #' @param save_uri Tiledb uri.
+    #' @param update Should we scrape all data od jut the new one.
+    #'
+    #' @return Result of GET request
+    get_ratings = function(symbols,
+                           save_uri = "s3://equity-usa-ratings",
+                           update = FALSE) {
+
+      # get new data if update is FALSE
+      if (update == FALSE) {
+        system.time({
+          ratings_l <- lapply(symbols, function(s) {
+            private$fmpv_path(path = paste0("historical-rating/", s),
+                              v = "v3",
+                              limit = 10000,
+                              apikey = fmp$api_key)
+          })
+        }) # 2601
+        ratings <- rbindlist(ratings_l)
+        ratings[, date := as.Date(date)]
+
+        # keep only numeric columns, without description
+        cols_ <- c("symbol", "date", "rating",
+                   colnames(ratings)[grep("Score", colnames(ratings))])
+        ratings <- ratings[, ..cols_]
+
+      } else {
+
+        # import existing data
+        arr <- tiledb_array(save_uri,
+                            as.data.frame = TRUE,
+                            query_layout = "UNORDERED",
+                            # selected_ranges = list(date = cbind(Sys.Date() - 30,
+                            #                                     Sys.Date()))
+        )
+        ratings_raw <- arr[]
+        tiledb_array_close(arr)
+        ratings_raw <- as.data.table(ratings_raw)
+
+        # get new data
+        system.time({
+          ratingsu_l <- lapply(symbols, function(s) {
+            private$fmpv_path(path = paste0("historical-rating/", s),
+                              v = "v3",
+                              limit = 30,
+                              apikey = fmp$api_key)
+          })
+        })
+        ratings <- rbindlist(ratingsu_l)
+        ratings <- ratings[symbol %in% symbols]
+        ratings[, date := as.Date(date)]
+
+        # keep only numeric columns, without description
+        cols_ <- c("symbol", "date", "rating",
+                   colnames(ratings)[grep("Score", colnames(ratings))])
+        ratings <- ratings[, ..cols_]
+
+        # get new data
+        cols_ <- colnames(ratings_raw)
+        ratings <- data.table::fsetdiff(ratings[, ..cols_], ratings_raw)
+
+        # check if ther is new data
+        if (nrow(ratings) == 0) {
+          return(NULL)
+        }
+      }
+
+      # clean data
+      ratings <- na.omit(ratings, c("symbol", "date"))
+      ratings <- unique(ratings)
+
+      # check object size
+      if (nrow(ratings) == 0) {
+        return(NULL)
+      }
+
+      # save to AWS S3
+      if (tiledb_object_type(save_uri) != "ARRAY") {
+        fromDataFrame(
+          obj = ratings,
+          uri = save_uri,
+          col_index = c("symbol", "date"),
+          sparse = TRUE,
+          tile_domain=list(date=c(as.Date("1970-01-01", tz = "UTC"),
+                                  as.Date("2099-12-31", tz = "UTC"))),
+          allows_dups = FALSE
+        )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(save_uri, as.data.frame = TRUE)
+        arr[] <- ratings
+        tiledb_array_close(arr)
+      }
+
+      return(NULL)
     }
   ),
 

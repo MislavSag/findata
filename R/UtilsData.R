@@ -206,11 +206,6 @@ UtilsData = R6::R6Class(
       # save_uri = "D:/equity-usa-minute-fmpcloud-adjusted"
       # minute_uri = "D:/equity-usa-minute-fmpcloud"
 
-      # delete uri
-      tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
-      save_uri_hour <- gsub("minute", "hour", save_uri)
-      tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
-
       # factor files
       arr_ff <- tiledb_array("s3://equity-usa-factor-files", as.data.frame = TRUE)
       factor_files <- arr_ff[]
@@ -233,8 +228,14 @@ UtilsData = R6::R6Class(
       ipo_dates_dt[, ipo_dates := as.Date(ipo_dates)]
       ipo_dates_dt[, symbol := toupper(gsub("\\.csv", "", symbol))]
 
+      # delete uri
+      tryCatch({tiledb_object_rm(save_uri, self$context_with_config)}, error = function(e) NA)
+      save_uri_hour <- gsub("minute", "hour", save_uri)
+      tryCatch({tiledb_object_rm(save_uri_hour, self$context_with_config)}, error = function(e) NA)
+
       # loop that import unadjusted data and adjust them
-      for (symbol in unique(factor_files$symbol)) {
+      loop_symbols <- unique(factor_files$symbol)
+      for (symbol in loop_symbols) {
 
         # debug
         print(symbol)
@@ -242,6 +243,7 @@ UtilsData = R6::R6Class(
         # import minute data
         arr <- tiledb_array(minute_uri,
                             as.data.frame = TRUE,
+                            query_layout = "UNORDERED",
                             selected_ranges = list(symbol = cbind(symbol, symbol)))
         system.time(unadjusted_data <- arr[])
         tiledb_array_close(arr)
