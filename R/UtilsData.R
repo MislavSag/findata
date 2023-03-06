@@ -76,117 +76,6 @@ UtilsData = R6::R6Class(
 
     #' @description Adjusted instraday data for splits and dividends
     #'
-    #' @param freq Frequency, can be hour or minute.
-    #'
-    #' @return Adjusted data saved to Azure blob
-    adjust_intraday_data = function(freq = c("hour", "minute")) {
-
-      # delete cached pins
-      # cache_prune(days=0)
-
-      # define board for factor files
-      board_factors <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "factor-file"),
-        path = "",
-        n_processes = 2,
-        versioned = FALSE,
-        cache = NULL
-      )
-      factor_files <- lapply(pin_list(board_factors), function(x) {
-        print(x)
-        pin_read(x, board = board_factors)
-      })
-      names(factor_files) <- toupper(pin_list(board_factors))
-      factor_files <- rbindlist(factor_files, idcol = "symbol")
-      factor_files[, date := as.Date(as.character(date), "%Y%m%d")]
-
-      # get only data from IPO
-      fmp_ipo <- FMP$new()
-      ipo_dates <- vapply(unique(factor_files$symbol), function(x) {
-        y <- fmp_ipo$get_ipo_date(x)
-        if (is.null(y)) {
-          return("2004-01-02")
-        } else {
-          return(y)
-        }
-      }, character(1))
-      ipo_dates_dt <- as.data.table(ipo_dates, keep.rownames = TRUE)
-      setnames(ipo_dates_dt, "rn", "symbol")
-      ipo_dates_dt[, ipo_dates := as.Date(ipo_dates)]
-      ipo_dates_dt[, symbol := toupper(gsub("\\.csv", "", symbol))]
-
-      # board for market data
-      storage_name <- paste0("equity-usa-", freq, "-trades-fmplcoud")
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, storage_name),
-        path = "",
-        n_processes = 10,
-        versioned = FALSE,
-        cache = NULL
-      )
-      board_files <- pin_list(board)
-
-      # board for market adjusted data
-        storage_name_adjusted <- paste0(storage_name, "-adjusted")
-        board_adjusted <- board_azure(
-          container = storage_container(self$azure_storage_endpoint, storage_name_adjusted),
-          path = "",
-          n_processes = 10,
-          versioned = FALSE,
-          cache = NULL
-        )
-
-      # market data adjusments
-      for (f in board_files) {
-
-        # for debbiging
-        print(f)
-
-        # get hourly data from blob
-        market_data <- pin_read(board, f)
-        if (nrow(market_data) == 0) next()
-        market_data <- as.data.table(market_data)
-        market_data[, datetime := as.POSIXct(as.character(formated), tz = "America/New_York")]
-        if (freq == "hour") {
-          market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:01:00")]
-        } else if(freq == "minute") {
-          market_data <- market_data[format.POSIXct(datetime, format = "%H:%M:%S") %between% c("09:30:00", "16:00:00")]
-        }
-        ##### TEST #####
-        min(format.POSIXct(market_data$datetime, format = "%H:%M:%S"))
-        max(format.POSIXct(market_data$datetime, format = "%H:%M:%S"))
-        ##### TEST #####
-        market_data[, symbol := toupper(f)]
-        market_data <- market_data[, .(symbol, datetime, o, h, l, c, v)]
-        setnames(market_data, c("symbol", "datetime", "open", "high", "low", "close", "volume"))
-
-        # extract only data after IPO
-        market_data_new <- ipo_dates_dt[market_data, on = "symbol"]
-        market_data_new <- market_data_new[as.Date(datetime) >= ipo_dates]
-        market_data_new_daily <- market_data_new[, .SD[.N], by = .(symbol, date = as.Date(datetime))]
-        market_data_new_daily$ipo_dates <- NULL
-
-        # adjust
-        df <- market_data_new[toupper(f) %in% unique(factor_files$symbol)]
-        df[, date:= as.Date(datetime)]
-        df <- merge(df, factor_files, by = c("symbol", "date"), all.x = TRUE, all.y = FALSE)
-        df[, `:=`(split_factor = na.locf(split_factor, na.rm = FALSE, rev = TRUE),
-                  price_factor = na.locf(price_factor, na.rm = FALSE, rev = TRUE)), by = symbol]
-        df[, `:=`(split_factor = ifelse(is.na(split_factor), 1, split_factor),
-                  price_factor = ifelse(is.na(price_factor), 1, price_factor))]
-        cols_change <- c("open", "high", "low", "close")
-        df[, (cols_change) := lapply(.SD, function(x) {x * price_factor * split_factor}), .SDcols = cols_change]
-        df <- df[, .(datetime, open, high, low, close, volume)]
-        setorder(df, datetime)
-        df <- unique(df)
-
-        # save factor file to blob
-        pin_write(board_adjusted, df, name = f, type = "csv", versioned = FALSE)
-      }
-    },
-
-    #' @description Adjusted instraday data for splits and dividends
-    #'
     #' @param save_uri TileDB uri for saving
     #' @param minute_uri TileDB uri with unadjusted minute data.
     #'
@@ -235,7 +124,7 @@ UtilsData = R6::R6Class(
 
       # loop that import unadjusted data and adjust them
       loop_symbols <- unique(factor_files$symbol)
-      for (symbol in loop_symbols) {
+      lapply(loop_symbols, function(symbol) {
 
         # debug
         print(symbol)
@@ -250,11 +139,12 @@ UtilsData = R6::R6Class(
 
         # if there is no data next
         if (nrow(unadjusted_data) == 0) {
-          next()
+          return(NULL)
         }
 
         # change timezone
         unadjusted_data <- as.data.table(unadjusted_data)
+        setorder(unadjusted_data, symbol, time)
         unadjusted_data[, time := as.POSIXct(time, "UTC",
                                              origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"))]
 
@@ -282,7 +172,7 @@ UtilsData = R6::R6Class(
         setorder(df, symbol, time)
         df <- unique(df)
         if (nrow(df) == 0) {
-          next()
+          return(NULL)
         }
 
         # Check if the array already exists.
@@ -315,7 +205,6 @@ UtilsData = R6::R6Class(
                         by = .(symbol, time = nano_ceiling(time, as.nanoduration("01:00:00")))]
         hour_data[, time := as.POSIXct(time, tz = "UTC")]
 
-
         # save hour data
         if (tiledb_object_type(save_uri_hour) != "ARRAY") {
           system.time({
@@ -335,9 +224,8 @@ UtilsData = R6::R6Class(
           arr[] <- as.data.frame(hour_data)
           tiledb_array_close(arr)
         }
-      }
-
-      return(NULL)
+        return(NULL)
+      })
     },
 
     #' @description Get SP500 stocks for every date.
@@ -460,7 +348,15 @@ UtilsData = R6::R6Class(
 
       return(market_data)
     },
-    get_map_files_tiledb = function(save_uri = 's3://equity-usa-mapfiles', symbol_uri = "https://en.wikipedia.org/wiki/S%26P_100"){
+
+    #' @description Help function to get map files.
+    #'
+    #' @param save_uri TileDB uri.
+    #' @param symbol_uri TileDB uri for saved files
+    #'
+    #' @return Maped files.
+    get_map_files_tiledb = function(save_uri = 's3://equity-usa-mapfiles',
+                                    symbol_uri = "https://en.wikipedia.org/wiki/S%26P_100"){
 
       print("Downloading symbols...")
       # SP100

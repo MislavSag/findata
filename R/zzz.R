@@ -2,7 +2,7 @@
 #' @import data.table
 #' @import checkmate
 #' @import AzureStor
-#' @import RcppQuantuccia
+#' @import qlcal
 #' @import rvest
 #' @import stringr
 #' @import AzureStor
@@ -13,9 +13,10 @@
 #' @import nanotime
 #' @import bit64
 #' @import timechange
+#' @import future.apply
+#' @import fredr
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url
 #' @importFrom zip zipr
-#' @importFrom zoo na.locf
 #' @importFrom lubridate force_tz with_tz
 "_PACKAGE"

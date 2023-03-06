@@ -25,7 +25,7 @@ DataAbstract = R6::R6Class(
                           context_with_config = NULL) {
 
       # set calendar for RcppQuantuccia package
-      setCalendar("UnitedStates::NYSE")
+      qlcal::setCalendar("UnitedStates/NYSE")
 
       # Azure storage endpoint
       if (is.null(azure_storage_endpoint) & Sys.getenv("BLOB-ENDPOINT") != "") {
@@ -40,6 +40,9 @@ DataAbstract = R6::R6Class(
       config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
       config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
       self$context_with_config <- tiledb_ctx(config)
+
+      # set fred apikey
+      fredr::fredr_set_key(Sys.getenv("FRED-KEY"))
     },
 
     #' @description Save files bob. It automaticly saves files as csv and rds objects

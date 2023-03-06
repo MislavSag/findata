@@ -15,11 +15,11 @@ Various help data.
 \item \href{#method-UtilsData-new}{\code{UtilsData$new()}}
 \item \href{#method-UtilsData-get_ticker_data}{\code{UtilsData$get_ticker_data()}}
 \item \href{#method-UtilsData-get_split_factor}{\code{UtilsData$get_split_factor()}}
-\item \href{#method-UtilsData-adjust_intraday_data}{\code{UtilsData$adjust_intraday_data()}}
 \item \href{#method-UtilsData-adjust_fm_tiledb}{\code{UtilsData$adjust_fm_tiledb()}}
 \item \href{#method-UtilsData-sp500_history}{\code{UtilsData$sp500_history()}}
 \item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
 \item \href{#method-UtilsData-adjust_market_data}{\code{UtilsData$adjust_market_data()}}
+\item \href{#method-UtilsData-get_map_files_tiledb}{\code{UtilsData$get_map_files_tiledb()}}
 \item \href{#method-UtilsData-clone}{\code{UtilsData$clone()}}
 }
 }
@@ -90,26 +90,6 @@ Get split data from the web and calculate split factors.
 }
 \subsection{Returns}{
 Stock splits
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-UtilsData-adjust_intraday_data"></a>}}
-\if{latex}{\out{\hypertarget{method-UtilsData-adjust_intraday_data}{}}}
-\subsection{Method \code{adjust_intraday_data()}}{
-Adjusted instraday data for splits and dividends
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_intraday_data(freq = c("hour", "minute"))}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{freq}}{Frequency, can be hour or minute.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Adjusted data saved to Azure blob
 }
 }
 \if{html}{\out{<hr>}}
@@ -205,6 +185,31 @@ adjust market data for splits and/or dividends
 }
 \subsection{Returns}{
 Data table with adjusted market prices.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-get_map_files_tiledb"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_map_files_tiledb}{}}}
+\subsection{Method \code{get_map_files_tiledb()}}{
+Help function to get map files.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$get_map_files_tiledb(
+  save_uri = "s3://equity-usa-mapfiles",
+  symbol_uri = "https://en.wikipedia.org/wiki/S\%26P_100"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{save_uri}}{TileDB uri.}
+
+\item{\code{symbol_uri}}{TileDB uri for saved files}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Maped files.
 }
 }
 \if{html}{\out{<hr>}}

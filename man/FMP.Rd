@@ -22,18 +22,12 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-new}{\code{FMP$new()}}
 \item \href{#method-FMP-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
 \item \href{#method-FMP-get_transcripts}{\code{FMP$get_transcripts()}}
-\item \href{#method-FMP-update_transcripts}{\code{FMP$update_transcripts()}}
-\item \href{#method-FMP-get_daily}{\code{FMP$get_daily()}}
-\item \href{#method-FMP-get_daily_batch}{\code{FMP$get_daily_batch()}}
 \item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
-\item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
 \item \href{#method-FMP-create_start_end_dates}{\code{FMP$create_start_end_dates()}}
-\item \href{#method-FMP-get_minute_equities_tiledb}{\code{FMP$get_minute_equities_tiledb()}}
-\item \href{#method-FMP-get_minute_equities_tiledb_faster}{\code{FMP$get_minute_equities_tiledb_faster()}}
+\item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
-\item \href{#method-FMP-get_factor_file_tiledb}{\code{FMP$get_factor_file_tiledb()}}
-\item \href{#method-FMP-get_factor_file}{\code{FMP$get_factor_file()}}
+\item \href{#method-FMP-get_factor_files}{\code{FMP$get_factor_files()}}
 \item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
 \item \href{#method-FMP-get_ipo_calendar_confirmed}{\code{FMP$get_ipo_calendar_confirmed()}}
 \item \href{#method-FMP-get_fi_statement}{\code{FMP$get_fi_statement()}}
@@ -50,6 +44,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_grades}{\code{FMP$get_grades()}}
 \item \href{#method-FMP-get_targets}{\code{FMP$get_targets()}}
 \item \href{#method-FMP-get_ratings}{\code{FMP$get_ratings()}}
+\item \href{#method-FMP-get_historical_dividends}{\code{FMP$get_historical_dividends()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -141,65 +136,6 @@ Result of GET request
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-update_transcripts"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-update_transcripts}{}}}
-\subsection{Method \code{update_transcripts()}}{
-Update earnings announcements data from FMP cloud
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$update_transcripts(symbols, check_years = c(2021, 2022))}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{symbols}}{Sybmols}
-
-\item{\code{check_years}}{Which years to check when updatingcheck_years}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Return transcripts from FMP cloud.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_daily"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_daily}{}}}
-\subsection{Method \code{get_daily()}}{
-get daily data from FMP cloud
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily(symbols, date_start, date_end)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{symbols}}{Symbols.}
-
-\item{\code{date_start}}{Start date.}
-
-\item{\code{date_end}}{End date.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Return transcripts from FMP cloud.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_daily_batch"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_daily_batch}{}}}
-\subsection{Method \code{get_daily_batch()}}{
-get daily data from FMP cloud for all stocks
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_batch()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-Scrap all daily data
-}
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_daily_tiledb"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_daily_tiledb}{}}}
 \subsection{Method \code{get_daily_tiledb()}}{
@@ -254,35 +190,6 @@ Data frame with ohlcv data.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_intraday_equities_batch"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities_batch}{}}}
-\subsection{Method \code{get_intraday_equities_batch()}}{
-Get hour data for all history from fmp cloud.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(
-  symbols,
-  freq = c("hour", "minute"),
-  deep_scan = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{symbols}}{Symbol of the stock.}
-
-\item{\code{freq}}{frequency (hour or minute)}
-
-\item{\code{deep_scan}}{should we test for dates with low number od observation
-and try to scrap again.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Data saved to Azure blob.
-}
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-create_start_end_dates"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-create_start_end_dates}{}}}
 \subsection{Method \code{create_start_end_dates()}}{
@@ -305,53 +212,12 @@ list of start and end dates
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_minute_equities_tiledb"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_minute_equities_tiledb}{}}}
-\subsection{Method \code{get_minute_equities_tiledb()}}{
+\if{html}{\out{<a id="method-FMP-get_intraday_equities_batch"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities_batch}{}}}
+\subsection{Method \code{get_intraday_equities_batch()}}{
 Get hour data for all history from fmp cloud.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute_equities_tiledb(
-  symbols,
-  url = "s3://equity-usa-minute-fmpcloud",
-  save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-  save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-  deep_scan = FALSE,
-  hardcode_start_dates = NULL,
-  hardcode_end_dates = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{symbols}}{Symbol of the stock.}
-
-\item{\code{url}}{AWS S3 bucket url.}
-
-\item{\code{save_uri_hour}}{AWS S3 bucket uri for hour data.}
-
-\item{\code{save_uri_daily}}{AWS S3 bucket uri for daily data.}
-
-\item{\code{deep_scan}}{should we test for dates with low number od observation
-and try to scrap again.}
-
-\item{\code{hardcode_start_dates}}{Start dates to scrape from.}
-
-\item{\code{hardcode_end_dates}}{end_date to scrap from.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Data saved to Azure blob.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_minute_equities_tiledb_faster"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_minute_equities_tiledb_faster}{}}}
-\subsection{Method \code{get_minute_equities_tiledb_faster()}}{
-Get hour data for all history from fmp cloud.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute_equities_tiledb_faster(
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(
   symbols,
   url = "s3://equity-usa-minute-fmpcloud",
   save_uri_hour = "s3://equity-usa-hour-fmpcloud",
@@ -400,12 +266,12 @@ Vector of SP500 symbols.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_factor_file_tiledb"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_factor_file_tiledb}{}}}
-\subsection{Method \code{get_factor_file_tiledb()}}{
+\if{html}{\out{<a id="method-FMP-get_factor_files"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_factor_files}{}}}
+\subsection{Method \code{get_factor_files()}}{
 Create factor files for calculating adjusted prices (adjusted for splits and dividends).
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file_tiledb(
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_files(
   save_uri = "s3://equity-usa-factor-files",
   prices_uri = "s3://equity-usa-daily-fmpcloud"
 )}\if{html}{\out{</div>}}
@@ -420,19 +286,6 @@ Create factor files for calculating adjusted prices (adjusted for splits and div
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Returns}{
-Factor files saved to "factor-file" blob.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_factor_file"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_factor_file}{}}}
-\subsection{Method \code{get_factor_file()}}{
-Create factor files for calculating adjusted prices (adjusted for splits and dividends).
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_factor_file()}\if{html}{\out{</div>}}
-}
-
 \subsection{Returns}{
 Factor files saved to "factor-file" blob.
 }
@@ -583,9 +436,16 @@ data.table with market cap data.
 \subsection{Method \code{get_market_cap_bulk()}}{
 Get market cap data from FMP cloud Prep - bulk.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_market_cap_bulk()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_market_cap_bulk(uri = "s3://equity-usa-market-cap")}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uri}}{TileDb uri.}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 data.table with market cap data.
 }
@@ -662,7 +522,6 @@ data.table with SP500 tocks.
 Get Financial Statements data
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_fi_statement_bulk(
-  save_path,
   years = 1999:(data.table::year(Sys.Date())),
   statement = c("income-statement-bulk", "balance-sheet-statement-bulk",
     "cash-flow-statement-bulk", "ratios-bulk", "key-metrics-bulk",
@@ -675,8 +534,6 @@ Get Financial Statements data
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{save_path}}{Path to save csv file.}
-
 \item{\code{years}}{Get statement for specific year.}
 
 \item{\code{statement}}{quarter or annual.}
@@ -759,6 +616,26 @@ Get Ratings from FMP cloud.
 }
 \subsection{Returns}{
 Result of GET request
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_historical_dividends"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_historical_dividends}{}}}
+\subsection{Method \code{get_historical_dividends()}}{
+Get Historical dividends from FMP cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_historical_dividends(symbols)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Vector of stock symbols.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with historical dividends for symbol.
 }
 }
 \if{html}{\out{<hr>}}

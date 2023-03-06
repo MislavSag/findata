@@ -277,146 +277,6 @@ FMP = R6::R6Class(
       return(NULL)
     },
 
-    #' @description Update earnings announcements data from FMP cloud
-    #'
-    #' @param symbols Sybmols
-    #' @param check_years Which years to check when updatingcheck_years
-    #'
-    #' @return Return transcripts from FMP cloud.
-    update_transcripts = function(symbols, check_years = c(2021, 2022)) {
-
-      # set up container
-      cont <- storage_container(self$azure_storage_endpoint, "transcripts")
-      # cont <- storage_container(storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), key=Sys.getenv("BLOB-KEY")), "transcripts")
-
-      # import transcripts metadata for all symbols
-      s <- Sys.time()
-      url <- "https://financialmodelingprep.com/api/v4/earning_call_transcript"
-      print("Get all transcripts for symbols")
-      all_transcripts_l <- lapply(symbols, function(x) {
-        p <- GET(url, query = list(symbol = x, apikey = Sys.getenv("APIKEY-FMPCLOUD")))
-        p <- rbindlist(content(p))
-        if (nrow(p) > 0) return(cbind.data.frame(symbol = x, p)) else return(NULL)
-      })
-      all_transcripts <- rbindlist(all_transcripts_l)
-      setnames(all_transcripts, c("symbol", "quarter", "year", "date"))
-      all_transcripts <- all_transcripts[year %in% check_years]
-      e <- Sys.time()
-      e - s
-
-      # main loop
-      print("Get missing transcripts")
-      for (s in unique(all_transcripts$symbol)) {
-        print(s)
-        file_name_ <- paste0(s, ".rds")
-        # history <- tryCatch({AzureStor::download_blob(cont, file_name_)}, error = function(e) NULL)
-        history <- tryCatch({storage_load_rds(cont, file_name_)}, error = function(e) NULL)
-        sample_stranscripts <- all_transcripts[symbol == s]
-        cols <- c("quarter", "year")
-        if (is.null(history) & nrow(sample_stranscripts) > 0) {
-          transcript_diff <- sample_stranscripts
-        } else {
-          transcript_diff <- fsetdiff(sample_stranscripts[, .SD, .SDcols = cols], history[, .SD, .SDcols = cols])
-        }
-
-        # get new data if necessary
-        if (nrow(transcript_diff) == 0) {
-          history_unique <- unique(history)
-          print("No transcript data.")
-          if (!(identical(history_unique, history))) {
-            print(paste0("Data saved to blob file ", file_name_))
-            super$save_blob_files(history_unique, file_name = file_name_, "transcripts")
-          }
-        } else {
-
-          # get new data
-          new <- self$get_transcripts(
-            s,
-            unique(transcript_diff$year),
-            save_files = FALSE
-          )
-
-          # check if there are data available for timespan
-          if (nrow(new) == 0) {
-            print("No data for earning announcements.")
-            return(NULL)
-          }
-
-          # clean data
-          new_transcrupts_s <- rbind(new, history)
-          setorder(new_transcrupts_s, "date")
-
-          # save to blob file
-          print(paste0("Data saved to blob file ", file_name_))
-          super$save_blob_files(new_transcrupts_s, file_name = file_name_, "transcripts")
-        }
-      }
-    },
-
-    #' @description get daily data from FMP cloud
-    #'
-    #' @param symbols Symbols.
-    #' @param date_start Start date.
-    #' @param date_end End date.
-    #'
-    #' @return Return transcripts from FMP cloud.
-    get_daily = function(symbols, date_start, date_end) {
-
-      # define container
-      cont <- storage_container(self$azure_storage_endpoint, "fmpcloud")
-
-      # get daily data from FMP cloud
-      result <- lapply(symbols, function(x) {
-        url_fmp = paste0("https://financialmodelingprep.com/api/v3/historical-price-full/", x)
-        q <- GET(url_fmp, query = list(from = date_start, to = date_end, apikey = Sys.getenv("APIKEY-FMPCLOUD")))
-        result <- content(q)
-        DT <- rbindlist(result$historical, fill = TRUE)
-        DT[, symbol := result$symbol]
-      })
-      result <- rbindlist(result, fill = TRUE)
-
-      # save file to Azure blob if blob_file is not NA
-      super$save_blob_files(results, file_name = private$prices_file_name)
-      print(paste0("Data saved to blob file ", private$ea_file_name))
-
-      return(result)
-    },
-
-    #' @description get daily data from FMP cloud for all stocks
-    #'
-    #' @return Scrap all daily data
-    get_daily_batch = function() {
-
-      # date sequence
-      seq_date <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 1)
-
-      # create board for saving files
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "fmpcloud-daily"),
-        path = "",
-        n_processes = 6L,
-        versioned = FALSE,
-        cache = NULL
-      )
-
-      # # list pins
-      blob_files <- pin_list(board)
-      if (length(blob_files) == 0) {
-        print("scrap for the first time!")
-      } else {
-        seq_date <- as.Date(setdiff(seq_date, as.Date(blob_files)), origin = "1970-01-01")
-      }
-
-      # get daily with batch and save to azure blob
-      url_base <- "https://financialmodelingprep.com/api/v4/batch-request-end-of-day-prices"
-      lapply(seq_date, function(x) {
-        p <- RETRY("GET", url_base, query = list(date = x, apikey = self$api_key), times = 5L)
-        data_ <- content(p)
-        pin_write(board, data_, type = "csv", name = as.character(x), versioned = FALSE)
-        return(NULL)
-      })
-    },
-
     #' @description get daily data from FMP cloud for all stocks
     #'
     #' @param uri AWS S3 url.
@@ -432,7 +292,7 @@ FMP = R6::R6Class(
       # library(tiledb)
       # library(lubridate)
       # library(nanotime)
-      # setCalendar("UnitedStates::NYSE")
+      # setCalendar("UnitedStates/NYSE")
       # self = FMP$new()
       # symbol = "CA"
       # uri = "s3://equity-usa-daily-fmp"
@@ -553,129 +413,6 @@ FMP = R6::R6Class(
       }
     },
 
-    #' @description Get hour data for all history from fmp cloud.
-    #'
-    #' @param symbols Symbol of the stock.
-    #' @param freq frequency (hour or minute)
-    #' @param deep_scan should we test for dates with low number od observation
-    #'     and try to scrap again.
-    #'
-    #' @return Data saved to Azure blob.
-    get_intraday_equities_batch = function(symbols,
-                                           freq = c("hour", "minute"),
-                                           deep_scan = FALSE) {
-
-
-      # loop over all symbols
-      for (symbol in symbols) {
-
-        # DEBUG
-        print(symbol)
-
-        # define start_dates
-        start_dates <- seq.Date(as.Date('2004-01-01'), Sys.Date() - 1, by = 1)
-        start_dates <- start_dates[isBusinessDay(start_dates)]
-
-        # get trading days from daily data
-        print("get daily data")
-        # cache_prune(days=0) not sure where to put this !!!
-        daily_data <- self$get_intraday_equities(symbol,
-                                                 multiply = 1,
-                                                 time = 'day',
-                                                 from = as.character(as.Date('2004-01-01')),
-                                                 to = as.character(Sys.Date() - 1))
-        if (is.null(daily_data)) next()
-        start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
-
-        # define board
-        storage_name <- paste0("equity-usa-", freq, "-trades-fmplcoud")
-        board <- board_azure(
-          container = storage_container(self$azure_storage_endpoint, storage_name), # HERE CHANGE WHEN MINUTE DATA !!!
-          path = "",
-          n_processes = 4,
-          versioned = FALSE,
-          cache = NULL
-        )
-
-        # read old data
-        if (pin_exists(board, tolower(symbol))) {
-          # read minute data for szmbol and conver to DT with no duplicates
-          data_history <- pin_read(board, tolower(symbol))
-          if (length(data_history) == 0) next()
-          data_history <- as.data.table(data_history)
-          data_history <- unique(data_history, by = "formated")
-          setorder(data_history, t)
-
-          # check missing freq
-          data_history[, date := as.Date(formated)]
-          data_history[, date_n := .N, by = date]
-
-          # define dates we will try to scrap again
-          if (freq == "minutes") {
-            observation_per_day <- 60 * 6
-          } else {
-            observation_per_day <- 7
-          }
-          try_again <- unique(data_history[date_n < observation_per_day, date])
-
-          # define dates to scrap
-          if (deep_scan) {
-            data_history_date <- as.Date(setdiff(as.Date(data_history$formated),
-                                                 try_again),
-                                         origin = "1970-01-01")
-          } else {
-            data_history_date <- as.Date(data_history$formated)
-          }
-          start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-
-          data_history[, `:=`(date = NULL, date_n = NULL)]
-        }
-
-        # create sequence of dates for GET requests
-        end_dates <- start_dates + 1
-        # if (all(start_dates >= Sys.Date())) {
-        #   next()
-        # } else if (freq == "hour") {
-        #   end_dates <- start_dates + 1
-        # } else if (freq == "minute") {
-        #   end_dates <- start_dates + 1
-        # }
-
-        # get data
-        data_slice <- list()
-        for (i in seq_along(start_dates)) {
-          data_slice[[i]] <- self$get_intraday_equities(symbol,
-                                                        multiply = 1,
-                                                        time = freq,
-                                                        from = start_dates[i],
-                                                        to = end_dates[i])
-        }
-        data_by_symbol <- rbindlist(data_slice)
-
-        # if there is no data next
-        if (nrow(data_by_symbol) == 0) {
-          print(paste0("No data for symbol ", symbol))
-          next
-        }
-
-        # convert to numeric (not sure why I put these, but it have sense I believe).
-        data_by_symbol[, 1:5] <- lapply(data_by_symbol[, 1:5],
-                                        as.numeric)
-
-        # add to old data if there is an old data
-        if (pin_exists(board, tolower(symbol))) {
-          data_by_symbol <- rbind(data_history, data_by_symbol)
-        }
-
-        # clean data
-        data_by_symbol <- unique(data_by_symbol, by = c("formated"))
-        setorder(data_by_symbol, "t")
-
-        # save locally
-        pin_write(board, data_by_symbol, name = tolower(symbol), type = "csv", versioned = FALSE)
-      }
-    },
-
     #' @description Help function for calculating start and end dates
     #'
     #' @param start_dates Sequence of start dates.
@@ -716,13 +453,13 @@ FMP = R6::R6Class(
     #' @param hardcode_end_dates end_date to scrap from.
     #'
     #' @return Data saved to Azure blob.
-    get_minute_equities_tiledb = function(symbols,
-                                          url = "s3://equity-usa-minute-fmpcloud",
-                                          save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-                                          save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-                                          deep_scan = FALSE,
-                                          hardcode_start_dates = NULL,
-                                          hardcode_end_dates = NULL) {
+    get_intraday_equities_batch = function(symbols,
+                                           url = "s3://equity-usa-minute-fmpcloud",
+                                           save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+                                           save_uri_daily = "s3://equity-usa-daily-fmpcloud",
+                                           deep_scan = FALSE,
+                                           hardcode_start_dates = NULL,
+                                           hardcode_end_dates = NULL) {
 
       # debug
       # library(findata)
@@ -732,307 +469,14 @@ FMP = R6::R6Class(
       # library(tiledb)
       # library(lubridate)
       # library(nanotime)
-      # self = FMP$new()
-      # symbol = "AAPL"
-      # url = "s3://equity-usa-minute-fmpcloud"
-      # save_uri_hour = "s3://equity-usa-hour-fmpcloud"
-      # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
-      # hardcode_start_dates = Sys.Date() - 3
-      # hardcode_end_dates = Sys.Date() - 3
-      # deep_scan = FALSE
-
-      # TODO: Pleasr consider using CRAN package 'qlcal' as an actively maintained light-weight
-      # QuantLib-calendaring package. 'RcppQuantuccia' is in maintenance mode and not being
-      # extended upstream or as a CRAN package -- but 'qlcal' remains current.
-
-      # loop over all symbols
-      for (symbol in symbols) {
-
-        # DEBUG
-        print(symbol)
-
-        # use start and end dates from arguments if exists
-        if (!is.null(hardcode_start_dates) & !is.null(hardcode_end_dates)) {
-          start_dates <- hardcode_start_dates
-          end_dates <- hardcode_end_dates
-          daily_data <- tryCatch({
-            self$get_intraday_equities(symbol, multiply = 1, time = 'day')
-          }, error = function(e) NULL)
-          if (length(daily_data) == 0) next()
-          data_history <- data.table()
-        } else {
-          # define start_dates
-          start_dates <- seq.Date(as.Date("2004-01-01"), Sys.Date() - 1, by = 1)
-          start_dates <- start_dates[isBusinessDay(start_dates)]
-
-          # get trading days from daily data
-          print("get daily data")
-          daily_data <- tryCatch({
-            self$get_intraday_equities(symbol,
-                                       multiply = 1,
-                                       time = 'day',
-                                       from = as.character(as.Date("2004-01-01")),
-                                       to = as.character(Sys.Date() - 1))
-          }, error = function(e) NULL)
-          if (length(daily_data) == 0) next()
-          start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
-          # TODO: check BRK-b (BTK.B) and other symbols with -/.
-
-          # read old data
-          if (tiledb_object_type(url) == "ARRAY") {
-            # read data for the symbol
-            ranges <- list(
-              symbol = cbind(symbol, symbol)
-            )
-            arr <- tiledb_array(url,
-                                as.data.frame = TRUE,
-                                selected_ranges = ranges,
-                                query_layout = "UNORDERED"
-                                )
-            data_history <- arr[]
-            tiledb_array_close(arr)
-
-            # cont if there is history data
-            if (length(data_history$symbol) > 0) {
-              # basic clean
-              data_history <- as.data.table(data_history)
-              data_history <- unique(data_history, by = "time")
-              setorder(data_history, time)
-
-              # missing freq
-              if (deep_scan) {
-
-                # create date column
-                data_history_tz <- copy(data_history)
-                data_history_tz[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
-                data_history_tz[, time := with_tz(time, tz = "America/New_York")]
-                data_history_tz[, date_ := as.Date(time, tz = "America/New_York")]
-                data_history_tz[, date_n := .N, by = date_]
-
-                # define dates we will try to scrap again
-                observation_per_day <- 60 * 6
-                try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
-                start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
-                end_dates <- start_dates
-
-              } else {
-
-                # define dates to scrap
-                time_utc <- as.POSIXct(data_history$time,
-                                       origin = as.POSIXct("1970-01-01 00:00:00",
-                                                           tz = "UTC"),
-                                       tz = "UTC")
-                data_history_date <- unique(as.Date(time_utc, tz = "America/New_York"))
-
-                # get final dates to scrap
-                start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-                end_dates <- start_dates
-              }
-
-            } else {
-              dates <- self$create_start_end_dates(start_dates)
-              start_dates <- dates$start_dates
-              end_dates <- dates$end_dates
-            }
-          } else {
-
-            dates <- self$create_start_end_dates(start_dates)
-            start_dates <- dates$start_dates
-            end_dates <- dates$end_dates
-          }
-        }
-
-        # if there is no dates next
-        if (length(start_dates) == 0) {
-          print(paste0("No data for symbol ", symbol))
-          next
-        }
-
-        # get data
-        data_slice <- list()
-        for (i in seq_along(start_dates)) {
-          if (end_dates[i] >= Sys.Date()) end_dates[i] <- Sys.Date() - 1
-          data_slice[[i]] <- self$get_intraday_equities(symbol,
-                                                        multiply = 1,
-                                                        time = "minute",
-                                                        from = start_dates[i],
-                                                        to = end_dates[i])
-        }
-        if (any(unlist(sapply(data_slice, nrow)) > 4999)) {
-          stop("More than 4999 rows!")
-        }
-        data_by_symbol <- rbindlist(data_slice)
-
-        # if there is no data next
-        if (nrow(data_by_symbol) == 0) {
-          print(paste0("No data for symbol ", symbol))
-          next
-        }
-
-        # convert to numeric (not sure why I put these, but it have sense I believe).
-        cols <- colnames(data_by_symbol)[1:5]
-        data_by_symbol[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
-
-        # clean data
-        data_by_symbol <- unique(data_by_symbol, by = c("formated"))
-        setorder(data_by_symbol, "t")
-        data_by_symbol[, symbol := toupper(symbol)]
-        data_by_symbol <- data_by_symbol[, .(symbol, t / 1000, o, h, l, c, v)]
-        setnames(data_by_symbol, c("symbol", "time", "open", "high", "low", "close", "volume"))
-
-        # Check if the array already exists.
-        if (tiledb_object_type(url) != "ARRAY") {
-          fromDataFrame(
-            obj = data_by_symbol,
-            uri = url,
-            col_index = c("symbol", "time"),
-            sparse = TRUE,
-            tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
-                                    as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
-            allows_dups = FALSE
-          )
-        } else {
-
-          # send to TileDB URI
-          tries = 0
-          repeat {
-            tiledb_check <- tryCatch({
-              arr <- tiledb_array(url, as.data.frame = TRUE)
-              # arr[] <- data_by_symbol
-              tiledb_array_close(arr)
-            }, error = function(e) NULL)
-
-            # if not NA break
-            if (!is.null(tiledb_check) | tries > 10) {
-              break()
-            } else {
-              Sys.sleep(10L)
-              print(paste0("Try ", tries))
-              tries <- tries + 1
-            }
-          }
-        }
-
-        # create hour data
-        if (nrow(data_history) > 0 & length(start_dates) == 0) {
-          new_data <- copy(data_history)
-        } else if (nrow(data_history) > 0 & length(start_dates) > 0) {
-          new_data <- rbind(data_history, data_by_symbol)
-        } else if (nrow(data_history) == 0 & length(start_dates) > 0) {
-          new_data <- copy(data_by_symbol)
-        } else {
-          return(NULL)
-        }
-        new_data[, date := as.nanotime(time * 1000000000)]
-        hour_data <- new_data[, .(open = head(open, 1),
-                                  high = max(high, na.rm = TRUE),
-                                  low = min(low, na.rm = TRUE),
-                                  close = tail(close, 1),
-                                  volume = sum(volume, na.rm = TRUE)),
-                              by = .(symbol,
-                                     time = nano_ceiling(date, as.nanoduration("01:00:00")))]
-        hour_data[, time := as.POSIXct(time, tz = "UTC")]
-
-        # save hour data
-        if (tiledb_object_type(save_uri_hour) != "ARRAY") {
-          fromDataFrame(
-            as.data.frame(hour_data),
-            uri = save_uri_hour,
-            col_index = c("symbol", "time"),
-            sparse = TRUE,
-            allows_dups = FALSE,
-            tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
-                                    as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
-          )
-        } else {
-          # save to tiledb
-          arr <- tiledb_array(save_uri_hour, as.data.frame = TRUE)
-          arr[] <- as.data.frame(hour_data)
-          tiledb_array_close(arr)
-        }
-
-        # daily data
-        daily_data <- copy(hour_data)
-        daily_data[, time_ny := format.POSIXct(time, tz = "America/New_York")]
-        daily_data <- daily_data[substr(time_ny, 12, 19) %between% c("09:30:00", "16:00:00")]
-        daily_data <- daily_data[, .(open = head(open, 1),
-                                     high = max(high, na.rm = TRUE),
-                                     low = min(low, na.rm = TRUE),
-                                     close = tail(close, 1),
-                                     volume = sum(volume, na.rm = TRUE)),
-                                 by = .(symbol, date = as.Date(time_ny))]
-
-        # save daily data
-        if (tiledb_object_type(save_uri_daily) != "ARRAY") {
-          fromDataFrame(
-            as.data.frame(daily_data),
-            uri = save_uri_daily,
-            col_index = c("symbol", "date"),
-            sparse = TRUE,
-            allows_dups = FALSE,
-            tile_domain=list(date=cbind(as.numeric(as.Date("1970-01-01", tz = "UTC")),
-                                        as.numeric(as.Date("2099-12-31"), tz = "UTC"))),
-          )
-        } else {
-          # save to tiledb
-          arr <- tiledb_array(save_uri_daily, as.data.frame = TRUE)
-          arr[] <- as.data.frame(daily_data)
-          tiledb_array_close(arr)
-        }
-      }
-
-      # TODO takes lots of time
-      # consolidate and vacum hour data
-      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                           uri = save_uri_hour)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri_hour)
-
-      # consolidate and vacum daily data
-      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                           uri = save_uri_daily)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri_daily)
-
-
-      return(NULL)
-    },
-
-    #' @description Get hour data for all history from fmp cloud.
-    #'
-    #' @param symbols Symbol of the stock.
-    #' @param url AWS S3 bucket url.
-    #' @param save_uri_hour AWS S3 bucket uri for hour data.
-    #' @param save_uri_daily AWS S3 bucket uri for daily data.
-    #' @param deep_scan should we test for dates with low number od observation
-    #'     and try to scrap again.
-    #' @param hardcode_start_dates Start dates to scrape from.
-    #' @param hardcode_end_dates end_date to scrap from.
-    #'
-    #' @return Data saved to Azure blob.
-    get_minute_equities_tiledb_faster = function(symbols,
-                                                 url = "s3://equity-usa-minute-fmpcloud",
-                                                 save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-                                                 save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-                                                 deep_scan = FALSE,
-                                                 hardcode_start_dates = NULL,
-                                                 hardcode_end_dates = NULL) {
-
-      # debug
-      # library(findata)
-      # library(data.table)
-      # library(httr)
-      # library(RcppQuantuccia)
-      # library(tiledb)
-      # library(lubridate)
-      # library(nanotime)
+      # library(future.apply)
       # self = FMP$new()
       # symbols = c("AAPL", "SPY")
       # url = "s3://equity-usa-minute-fmpcloud"
       # save_uri_hour = "s3://equity-usa-hour-fmpcloud"
       # save_uri_daily = "s3://equity-usa-daily-fmpcloud"
-      # hardcode_start_dates = Sys.Date() - 1
-      # hardcode_end_dates = Sys.Date() - 1
+      # hardcode_start_dates = as.Date(Sys.Date() - 4)
+      # hardcode_end_dates =   as.Date(Sys.Date() - 4)
       # deep_scan = FALSE
       # fmp = FMP$new()
       # library(rvest)
@@ -1048,23 +492,20 @@ FMP = R6::R6Class(
       # symbols <- unique(union(sp100_symbols, symbols))
 
       # loop over all symbols
-      minute_data_l <- list()
-      for (i in seq_along(symbols)) {
+      minute_data_l <- future_lapply(symbols, function(s){
 
-        # create symbol
-        symbol = symbols[i]
-        print(symbol)
+        # debug
+        print(s)
 
         # use start and end dates from arguments if exists
         if (!is.null(hardcode_start_dates) & !is.null(hardcode_end_dates)) {
           start_dates <- hardcode_start_dates
           end_dates <- hardcode_end_dates
           daily_data <- tryCatch({
-            self$get_intraday_equities(symbol, multiply = 1, time = 'day')
+            self$get_intraday_equities(s, multiply = 1, time = 'day', from = hardcode_start_dates)
           }, error = function(e) NULL)
           if (length(daily_data) == 0) {
-            minute_data_l[[i]] <- NULL
-            next()
+            return(NULL)
           }
           data_history <- data.table()
         } else {
@@ -1073,31 +514,46 @@ FMP = R6::R6Class(
           start_dates <- start_dates[isBusinessDay(start_dates)]
 
           # get trading days from daily data
-          print("get daily data")
-          daily_data <- tryCatch({
-            self$get_intraday_equities(symbol,
-                                       multiply = 1,
-                                       time = 'day',
-                                       from = as.character(as.Date("2004-01-01")),
-                                       to = as.character(Sys.Date() - 1))
-          }, error = function(e) NULL)
-          if (length(daily_data) == 0) next()
+          print("Get daily data")
+          daily_start <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 365 * 4)
+          daily_end <- c(daily_start[-1], Sys.Date())
+          daily_data <- lapply(seq_along(daily_start), function(i) {
+            daily_data <- tryCatch({
+              self$get_intraday_equities(s,
+                                         multiply = 1,
+                                         time = 'day',
+                                         from = daily_start[i],
+                                         to = daily_end[i])
+            }, error = function(e) NULL)
+          })
+          daily_data <- rbindlist(daily_data)
+          if (length(daily_data) == 0) return(NULL)
           start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
           # TODO: check BRK-b (BTK.B) and other symbols with -/.
-
 
           # read old data
           if (tiledb_object_type(url) == "ARRAY") {
             # read data for the symbol
-            ranges <- list(
-              symbol = cbind(symbol, symbol)
+            print("Get minute data")
+            arr <- tiledb_array(url,
+                                as.data.frame = TRUE,
+                                query_layout = "UNORDERED",
+                                selected_points = list(symbol = s)
             )
-            arr <- tiledb_array(url, as.data.frame = TRUE, selected_ranges = ranges)
-            data_history <- arr[]
+            tryCatch({data_history <- arr[]}, error = function(e) NULL)
             tiledb_array_close(arr)
 
+            # try read again if error
+            tries <- 0
+            while (is.null(data_history) & tries > 10) {
+              print("Error in tiledb miunte read")
+              tryCatch({data_history <- arr[]}, error = function(e) NULL)
+              tries <- tries + 1
+              Sys.sleep(10L)
+            }
+
             # cont if there is history data
-            if (length(data_history$symbol) > 0) {
+            if (length(data_history$s) > 0) {
               # basic clean
               data_history <- as.data.table(data_history)
               data_history <- unique(data_history, by = "time")
@@ -1109,15 +565,16 @@ FMP = R6::R6Class(
 
                 # create date column
                 data_history_tz <- copy(data_history)
-                data_history_tz[, date := with_tz(date, tz = "America/New_York")]
-                data_history_tz[, date_ := as.Date(date, tz = "America/New_York")]
-                data_history_tz[, date_n := .N, by = date_]
+                data_history_tz[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
+                data_history_tz[, time := with_tz(time, tz = "America/New_York")]
+                data_history_tz[, time_ := as.Date(time, tz = "America/New_York")]
+                data_history_tz[, time_n := .N, by = time_]
 
                 # define dates we will try to scrap again
                 observation_per_day <- 60 * 6
-                try_again <- unique(data_history_tz[date_n < observation_per_day, date_])
+                try_again <- unique(data_history_tz[time_n < observation_per_day, time_])
                 start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
-                end_dates <- start_dates + 1
+                end_dates <- start_dates
 
               } else {
 
@@ -1148,16 +605,16 @@ FMP = R6::R6Class(
 
         # if there is no dates next
         if (length(start_dates) == 0) {
-          minute_data_l[[i]] <- NULL
-          print(paste0("No data for symbol ", symbol))
-          next
+          print(paste0("No data for symbol ", s))
+          return(NULL)
         }
 
         # get data
+        print("Get new minute data")
         data_slice <- list()
         for (d in seq_along(start_dates)) {
           if (end_dates[d] >= Sys.Date()) end_dates[d] <- Sys.Date() - 1
-          data_slice[[d]] <- self$get_intraday_equities(symbol,
+          data_slice[[d]] <- self$get_intraday_equities(s,
                                                         multiply = 1,
                                                         time = "minute",
                                                         from = start_dates[d],
@@ -1170,24 +627,24 @@ FMP = R6::R6Class(
 
         # if there is no data next
         if (nrow(data_by_symbol) == 0) {
-          print(paste0("No data for symbol ", symbol))
-          next
+          print(paste0("No data for symbol ", s))
+          return(NULL)
         }
 
         # convert to numeric (not sure why I put these, but it have sense I believe).
-        cols <- colnames(data_by_symbol)[1:5]
+        cols <- c("o", "h", "l", "c", "v")
         data_by_symbol[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
 
         # clean data
         data_by_symbol <- unique(data_by_symbol, by = c("formated"))
         setorder(data_by_symbol, "t")
-        data_by_symbol[, symbol := toupper(symbol)]
+        data_by_symbol[, symbol := toupper(s)]
         data_by_symbol <- data_by_symbol[, .(symbol, t / 1000, o, h, l, c, v)]
         setnames(data_by_symbol, c("symbol", "time", "open", "high", "low", "close", "volume"))
 
-        # save object to list
-        minute_data_l[[i]] <- data_by_symbol
-      }
+        return(data_by_symbol)
+
+      })
       minute_data <- rbindlist(minute_data_l)
 
       # add minute data to tiledb.
@@ -1268,16 +725,20 @@ FMP = R6::R6Class(
       }
 
       # consolidate and vacum hour data
-      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                           uri = save_uri_hour)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri_hour)
+      system.time({
+        tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                             uri = save_uri_hour)
+        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                        uri = save_uri_hour)
+      })
 
       # consolidate and vacum daily data
-      tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                           uri = save_uri_daily)
-      tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                      uri = save_uri_daily)
+      system.time({
+        tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                             uri = save_uri_daily)
+        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                        uri = save_uri_daily)
+      })
 
       return(NULL)
     },
@@ -1309,8 +770,8 @@ FMP = R6::R6Class(
     #' @param prices_uri Uri to import prices from.
     #'
     #' @return Factor files saved to "factor-file" blob.
-    get_factor_file_tiledb = function(save_uri = "s3://equity-usa-factor-files",
-                                      prices_uri = "s3://equity-usa-daily-fmpcloud") {
+    get_factor_files = function(save_uri = "s3://equity-usa-factor-files",
+                                prices_uri = "s3://equity-usa-daily-fmpcloud") {
 
       # DEBUG
       # library(httr)
@@ -1462,257 +923,105 @@ FMP = R6::R6Class(
       return(factor_files)
     },
 
-    #' @description Create factor files for calculating adjusted prices (adjusted for splits and dividends).
+    #' @description Get IPO date from fmp cloud
     #'
-    #' @return Factor files saved to "factor-file" blob.
-    get_factor_file = function() {
-
-      # DEBUG
-      # library(httr)
-      # library(findata)
-      # library(data.table)
-      # library(pins)
-      # library(AzureStor)
-      # self = list()
-      # self$azure_storage_endpoint = storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
-      # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
-      # DEBUG
-
-      # define board
-      storage_name <- paste0("equity-usa-hour-trades-fmplcoud")
-      board <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, storage_name),
-        path = "",
-        n_processes = 10,
-        versioned = FALSE,
-        cache = NULL
-      )
-      board_files <- pin_list(board)
-
-      # define board for factor files
-      board_factors <- board_azure(
-        container = storage_container(self$azure_storage_endpoint, "factor-file"),
-        path = "",
-        n_processes = 10,
-        versioned = FALSE,
-        cache = NULL
-      )
-
-      # main loop
-      for (f in board_files) {
-
-        # DEBUG
-        print(f)
-
-        # get data from blob
-        market_data_hour <- pin_read(board, f)
-        if (length(market_data_hour) == 0) next()
-        market_data_hour <- as.data.table(market_data_hour)
-        market_data_hour[, formated := as.POSIXct(formated, tz = "America/New_York")]
-        market_data_hour <- market_data_hour[format.POSIXct(formated, format = "%H:%D:%M") %between% c("09:30:00", "16:01:00")]
-        tail(market_data_hour, 100)
-
-        market_data_daily <- market_data_hour[, .SD[.N], by = .(date = as.Date(formated))]
-        market_data_daily[,symbol := toupper(f)]
-        setnames(market_data_daily, c("date", "open", "high", "close", "low", "volume", "t", "symbol"))
-        df <- market_data_daily[, .(date, close)] # take needed columns
-
-        # splits
-        utils <- UtilsData$new()
-        splits <- utils$get_split_factor(f)
-        splits <- as.data.table(splits)
-        if (all(is.na(splits))) {
-          df[, `:=`(split_factor, NA)]
-        } else {
-          df <- splits[df, on = "date"]
-          df$ratio <- NULL
-        }
-
-        # dividends
-        url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
-        dividends <- RETRY("GET", url = paste0(url, toupper(f)), query = list(apikey = self$api_key), times = 5L)
-        dividends <- content(dividends)
-        dividends <- rbindlist(dividends$historical, fill = TRUE)
-        # dividends <- fmpc_security_dividends(symbol, startDate = "2004-01-01")
-        # dividends <- as.data.table(dividends)
-        if (all(is.na(dividends))) {
-          df[, `:=`(dividend, NA)]
-        } else {
-          dividends[, date := as.Date(date)]
-          dividends <- dividends[date > as.Date("2004-01-01")]
-          if (!("dividend" %in% names(dividends))) {
-            dividends[, `:=`(dividend, adjDividend)]
-          }
-          dividends <- dividends[, `:=`(dividend, ifelse(is.na(dividend) &
-                                                           adjDividend > 0, adjDividend, dividend))]
-          dividends <- dividends[, .(date, dividend)]
-          df <- dividends[df, on = "date"]
-        }
-
-        # if not div and splits return factor file
-        if (length(dividends) == 0 & nrow(splits) == 0) {
-          factor_file <- data.table(date = c("20040102",
-                                             "20500101"), price_factor = c(1, 1), split_factor = c(1,
-                                                                                                   1), lag_close = c(df$close[1], 0))
-          # save factor file to blob
-          pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
-
-          next()
-        }
-
-        # else if there are no dividends or splits after 20040102
-        df[, `:=`(lag_close = shift(close), date = shift(date))]
-        df <- df[!is.na(date)]
-        factor_file <- df[(!is.na(dividend) & dividend != 0) | !is.na(split_factor),
-                          .(date, dividend, split_factor, lag_close)]
-        if (nrow(factor_file) == 0) {
-          factor_file <- data.table(date = c("20040102",
-                                             "20500101"), price_factor = c(1, 1), split_factor = c(1,
-                                                                                                   1), lag_close = c(df$close[1], 0))
-          # save factor file to blob
-          pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
-
-          next()
-        }
-
-        # else create factor file
-        factor_file <- unique(factor_file)
-        factor_file[, `:=`(split_factor, na.locf(split_factor,
-                                                 fromLast = TRUE, na.rm = FALSE))]
-        factor_file <- factor_file[is.na(split_factor), `:=`(split_factor, 1)]
-        factor_file <- rbind(factor_file, data.table(date = as.Date("2050-01-01"),
-                                                     dividend = NA, lag_close = 0, split_factor = 1))
-        price_factor <- vector("numeric", nrow(factor_file))
-        lag_close <- factor_file$lag_close
-        split_factor <- factor_file$split_factor
-        dividend <- factor_file$dividend
-        for (i in nrow(factor_file):1) {
-          if (i == nrow(factor_file)) {
-            price_factor[i] <- (lag_close[i - 1] - dividend[i -
-                                                              1])/lag_close[i - 1] * 1
-          }
-          else if (i == 1) {
-            price_factor[i] <- NA
-          }
-          else if (is.na(dividend[i - 1])) {
-            price_factor[i] <- price_factor[i + 1]
-          }
-          else {
-            price_factor[i] <- ((lag_close[i - 1] - dividend[i -
-                                                               1])/lag_close[i - 1]) * price_factor[i + 1]
-          }
-        }
-        price_factor <- c(price_factor[-1], NA)
-        price_factor[is.na(price_factor)] <- 1
-        factor_file[, `:=`(price_factor, price_factor)]
-        factor_file[, `:=`(date, format.Date(date, "%Y%m%d"))]
-        factor_file <- factor_file[, .(date, price_factor, split_factor,
-                                       lag_close)]
-
-        # save factor file to blob
-        pin_write(board_factors, factor_file, name = f, type = "csv", versioned = FALSE)
+    #' @param ticker Stock ticker
+    #'
+    #' @return Stock IPO date.
+    get_ipo_date = function(ticker) {
+      url <- "https://financialmodelingprep.com/api/v4/company-outlook"
+      p <- content(GET(url, query = list(symbol = ticker, apikey = self$api_key)))
+      if ("error" %in% names(p)) {
+        return("2004-01-01")
+      } else {
+        return(p$profile$ipoDate)
       }
-      },
+    },
 
-      #' @description Get IPO date from fmp cloud
-      #'
-      #' @param ticker Stock ticker
-      #'
-      #' @return Stock IPO date.
-      get_ipo_date = function(ticker) {
-        url <- "https://financialmodelingprep.com/api/v4/company-outlook"
-        p <- content(GET(url, query = list(symbol = ticker, apikey = self$api_key)))
-        if ("error" %in% names(p)) {
-          return("2004-01-01")
-        } else {
-          return(p$profile$ipoDate)
-        }
-      },
+    #' @description Get ipo-calendar-confirmed date from fmp cloud
+    #'
+    #' @param uri TileDB uri argument
+    #'
+    #' @return Stock IPO date.
+    get_ipo_calendar_confirmed = function(uri = "s3://equity-usa-ipo") {
 
-      #' @description Get ipo-calendar-confirmed date from fmp cloud
-      #'
-      #' @param uri TileDB uri argument
-      #'
-      #' @return Stock IPO date.
-      get_ipo_calendar_confirmed = function(uri = "s3://equity-usa-ipo") {
+      # debug
+      self = FMP$new()
 
-        # debug
-        self = FMP$new()
+      # meta
+      url <- "https://financialmodelingprep.com/api/v4/ipo-calendar-confirmed"
+      seq_date_start <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 20)
+      seq_date_end <- seq_date_start[2:length(seq_date_start)]
+      seq_date_start <- seq_date_start[-length(seq_date_start)]
 
-        # meta
-        url <- "https://financialmodelingprep.com/api/v4/ipo-calendar-confirmed"
-        seq_date_start <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 20)
-        seq_date_end <- seq_date_start[2:length(seq_date_start)]
-        seq_date_start <- seq_date_start[-length(seq_date_start)]
+      # get ipo data for every data span
+      ipos <- lapply(seq_along(seq_date_start), function(i) {
+        content(GET(url, query = list(from = seq_date_start[i],
+                                      to = seq_date_end[i],
+                                      apikey = self$api_key)))
+      })
 
-        # get ipo data for every data span
-        ipos <- lapply(seq_along(seq_date_start), function(i) {
-          content(GET(url, query = list(from = seq_date_start[i],
-                                        to = seq_date_end[i],
-                                        apikey = self$api_key)))
-        })
+      # merge and clean data
+      ipo_data <- lapply(ipos, rbindlist)
+      ipo_data <- rbindlist(ipo_data)
+      ipo_data[, `:=`(filingDate = as.Date(filingDate),
+                      acceptedDate = as.POSIXct(acceptedDate, tz = "America/New_York"),
+                      effectivenessDate = as.Date(effectivenessDate))]
+      ipo_data[, acceptedDate := with_tz(acceptedDate, tzone = "UTC")]
+      ipo_data <- unique(ipo_data)
 
-        # merge and clean data
-        ipo_data <- lapply(ipos, rbindlist)
-        ipo_data <- rbindlist(ipo_data)
-        ipo_data[, `:=`(filingDate = as.Date(filingDate),
-                       acceptedDate = as.POSIXct(acceptedDate, tz = "America/New_York"),
-                       effectivenessDate = as.Date(effectivenessDate))]
-        ipo_data[, acceptedDate := with_tz(acceptedDate, tzone = "UTC")]
-        ipo_data <- unique(ipo_data)
+      # add to tiledb
+      if (tiledb_object_type(uri) != "ARRAY") {
+        fromDataFrame(
+          obj = as.data.frame(ipo_data),
+          uri = uri,
+          col_index = c("symbol", "filingDate"),
+          sparse = TRUE,
+          allows_dups = FALSE
+        )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(uri, as.data.frame = TRUE)
+        arr[] <- as.data.frame(ipo_data)
+        tiledb_array_close(arr)
+      }
+    },
 
-        # add to tiledb
-        if (tiledb_object_type(uri) != "ARRAY") {
-          fromDataFrame(
-            obj = as.data.frame(ipo_data),
-            uri = uri,
-            col_index = c("symbol", "filingDate"),
-            sparse = TRUE,
-            allows_dups = FALSE
-          )
-        } else {
-          # save to tiledb
-          arr <- tiledb_array(uri, as.data.frame = TRUE)
-          arr[] <- as.data.frame(ipo_data)
-          tiledb_array_close(arr)
-        }
-      },
+    #' @description Get FI data.
+    #'
+    #' @param symbol Stock symbol.
+    #' @param statement Stock statement.
+    #' @param period Stock period.
+    #'
+    #' @return data.table of financial reports.
+    get_fi_statement = function(symbol,
+                                statement = c("income-statement", "balance-sheet-statement", "cash-flow-statement"),
+                                period = c("annual", "quarter")) {
+      url <- "https://financialmodelingprep.com/api/v3"
+      url <- paste(url, statement, symbol, sep = "/")
+      p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
+      res <- content(p)
+      res <- rbindlist(res)
+      return(res)
+    },
 
-      #' @description Get FI data.
-      #'
-      #' @param symbol Stock symbol.
-      #' @param statement Stock statement.
-      #' @param period Stock period.
-      #'
-      #' @return data.table of financial reports.
-      get_fi_statement = function(symbol,
-                                       statement = c("income-statement", "balance-sheet-statement", "cash-flow-statement"),
-                                       period = c("annual", "quarter")) {
-        url <- "https://financialmodelingprep.com/api/v3"
-        url <- paste(url, statement, symbol, sep = "/")
-        p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
-        res <- content(p)
-        res <- rbindlist(res)
-        return(res)
-      },
-
-      #' @description Get financial ratios, company key metrics.
-      #'
-      #' @param symbol Stock symbol.
-      #' @param type Type of fundamental analysis.
-      #' @param period Stock period.
-      #'
-      #' @return data.table of financial reports.
-      get_financial_metrics = function(symbol,
-                                       type = c("ratios", "key-metrics", "financial-growth"),
-                                       period = c("annual", "quarter")) {
-        url <- "https://financialmodelingprep.com/api/v3"
-        url <- paste(url, type, symbol, sep = "/")
-        p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
-        res <- content(p)
-        res <- rbindlist(res, fill = TRUE)
-        return(res)
-      },
+    #' @description Get financial ratios, company key metrics.
+    #'
+    #' @param symbol Stock symbol.
+    #' @param type Type of fundamental analysis.
+    #' @param period Stock period.
+    #'
+    #' @return data.table of financial reports.
+    get_financial_metrics = function(symbol,
+                                     type = c("ratios", "key-metrics", "financial-growth"),
+                                     period = c("annual", "quarter")) {
+      url <- "https://financialmodelingprep.com/api/v3"
+      url <- paste(url, type, symbol, sep = "/")
+      p <- RETRY("GET", url, query = list(period = period, apikey = self$api_key, limit = 10000))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    },
 
     #' @description Get stock splits data from FMP cloud Prep.
     #'
@@ -1748,53 +1057,61 @@ FMP = R6::R6Class(
 
     #' @description Get market cap data from FMP cloud Prep - bulk.
     #'
+    #' @param uri TileDb uri.
+    #'
     #' @return data.table with market cap data.
-    get_market_cap_bulk = function() {
+    get_market_cap_bulk = function(uri = "s3://equity-usa-market-cap") {
 
-      # DEBUG
       # fmp <- FMP$new()
-      # tickers <- fmp$get_available_traded_list()
-      # tickers <- tickers[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "ETF", "OTC")]
-      # tickers <- unique(tickers$symbol)
-      # limit = 50000
+      securities <- self$get_stock_list()
+      securities <- securities[exchangeShortName %in% c("AMES", "NASDAQ", "NYSE", "OTC")]
+      securities <- securities[type == "stock"]
+      tickers <- unique(securities$symbol)
+
+      # get all existing data
+      system.time({
+        if (tiledb_object_type(uri) == "ARRAY") {
+          arr <- tiledb_array(uri,
+                              as.data.frame = TRUE,
+                              query_layout = "UNORDERED")
+          dt <- arr[]
+          tiledb_array_close(arr)
+          dt <- as.data.table(dt)
+        }
+      })
 
       # get history data if exists
-      if (tiledb_object_type(url) != "ARRAY") {
-        arr <- tiledb_array("s3://equity-usa-market-cap",
-                            as.data.frame = TRUE,
-                            selected_ranges = list(symbol = cbind("AAPL", "AAPL")))
-        aapl_market_cap <- arr[]
-        max_date <- max(aapl_market_cap$date, na.rm = TRUE)
-        limit <- as.integer(Sys.Date() - max_date + 2)
-      } else {
-        limit = 50000
-      }
+      max_date_dt <- dt[, max(date, na.rm = TRUE), by = symbol]
+      limits <- max_date_dt[data.table(symbol = tickers), on = "symbol"]
+      limits[, limit := as.integer(Sys.Date() - V1)]
+      limits[is.na(V1), limit := 20000]
 
       # get new data
       print("Get new data")
-      data_ <- lapply(tickers, self$get_market_cap, limit = limit)
+      system.time({data_ <- future_mapply(self$get_market_cap,
+                                          ticker = limits[, symbol][1:1000],
+                                          limit = limits[, limit][1:1000],
+                                          SIMPLIFY = FALSE)})
       DT <- rbindlist(data_)
       DT[, date := as.Date(date)]
-      DT <- DT[date > max_date]
 
       # save data to array
-      # tiledb_vfs_create_bucket("s3://equity-usa-market-cap")
-      if (tiledb_object_type(url) != "ARRAY") {
+      if (tiledb_object_type(uri) != "ARRAY") {
         fromDataFrame(
           obj = DT,
-          uri = "s3://equity-usa-market-cap",
+          uri = uri,
           col_index = c("symbol"),
           sparse = TRUE,
           allows_dups = TRUE
         )
       } else {
         # save to tiledb
-        arr <- tiledb_array("s3://equity-usa-market-cap", as.data.frame = TRUE)
+        arr <- tiledb_array(uri, as.data.frame = TRUE)
         arr[] <- DT
         tiledb_array_close(arr)
       }
 
-      return(DT)
+      return(NULL)
     },
 
     #' @description Get stock list.
@@ -1852,14 +1169,12 @@ FMP = R6::R6Class(
 
     #' @description Get Financial Statements data
     #'
-    #' @param save_path Path to save csv file.
     #' @param years Get statement for specific year.
     #' @param statement quarter or annual.
     #' @param period quarter or annual.
     #'
     #' @return data.table of financial reports.
-    get_fi_statement_bulk = function(save_path,
-                                     years = 1999:(data.table::year(Sys.Date())),
+    get_fi_statement_bulk = function(years = 1999:(data.table::year(Sys.Date())),
                                      statement = c("income-statement-bulk",
                                                    "balance-sheet-statement-bulk",
                                                    "cash-flow-statement-bulk",
@@ -1870,7 +1185,7 @@ FMP = R6::R6Class(
                                                    "balance-sheet-statement-growth-bulk",
                                                    "cash-flow-statement-growth-bulk"),
                                      period = c("annual", "quarter")
-                                     ) {
+    ) {
 
       # DEBUG
       # library(findata)
@@ -1878,42 +1193,56 @@ FMP = R6::R6Class(
       # library(data.table)
       # library(tiledb)
       # years = 1990:(data.table::year(Sys.Date()))
-      # statement = "financial-growth-bulk"
+      # statement ="ratios-bulk"
       # period = "quarter"
       # self <- FMP$new()
-      # save_path = "D:/fundamental_data/FS"
-      # save_uri = "ratios-bulk"
 
       # define save_uri
       save_uri = paste0("equity-usa-", statement)
+      save_uri_s3 <- paste0("s3://", save_uri)
+      # tiledb_object_rm(save_uri_s3)
 
       # prepare donwload data
       url <- "https://financialmodelingprep.com/api/v4"
       url <- paste(url, statement, sep = "/")
 
       # i all years already scraped download only
-      years_scraped <- list.files(save_path, pattern = statement)
-      years_scraped <- as.integer(gsub(".*-|\\.csv", "", years_scraped))
-      if (all(years %in% years_scraped)) {
-        years_ <- data.table::year(Sys.Date())
+      if (tiledb_object_type(save_uri_s3) == "ARRAY") {
+        arr <- tiledb_array(save_uri_s3,
+                            as.data.frame = TRUE,
+                            query_layout = "UNORDERED",
+                            attrs = "period")
+        old_fs_data <- arr[]
+        years_scraped <- unique(data.table::year(old_fs_data$date))
+        if (all(years %in% years_scraped)) {
+          years_ <- data.table::year(Sys.Date())
+        } else {
+          years_ <- years
+          tiledb_object_rm(paste0("s3://", save_uri))
+        }
       } else {
         years_ <- years
       }
 
       # donwload data
-      lapply(years, function(year) {
+      file_names_l <- lapply(years_, function(year) {
         print(year)
-        file_name <- file.path(save_path, paste0(statement, "-", year, ".csv"))
+        file_name <- tempfile(fileext = ".csv")
         RETRY("GET",
               url,
               query = list(year = year, period = period, apikey = self$api_key),
               write_disk(file_name, overwrite = TRUE))
+        file_name
       })
+
+      # check
+      if (length(file_names_l) == 1 && is.null(file_names_l[[1]])) {
+        return(NULL)
+      }
 
       # import tables
       fs_data_l <- lapply(
-        file.path(save_path, paste0(statement, "-", years, ".csv")),
-        function(x) {
+        file_names_l, function(x) {
           df <- fread(x)
           if (any(duplicated(df[, c("symbol", "date")]))) {
             stop("Duplicates in (symbol, date) tuple.")
@@ -1927,25 +1256,46 @@ FMP = R6::R6Class(
           df
         }
       })
+      fs_data_l <- lapply(fs_data_l, function(df) {
+        df[, date := as.Date(date)]
+        if ("acceptedDate" %in% colnames(df)) {
+          df[, fillingDate := as.Date(fillingDate)]
+        }
+        df
+      })
       fs_data <- rbindlist(fs_data_l, fill = TRUE)
       fs_data <- fs_data[, lapply(fs_data, function(x) {
         if ("IDate" %in% class(x)) {
           x <- as.Date(x)
         }
         return(x)
-        })]
+      })]
+      fs_data = na.omit(fs_data, cols = c("symbol", "date"))
       fs_data <- as.data.frame(fs_data)
+      fs_data$finalLink <- NULL
+      fs_data$link <- NULL
 
-      # save to tiledb.
-      fromDataFrame(
-        obj = fs_data,
-        uri = paste0("s3://", save_uri),
-        col_index = c("symbol", "date"),
-        sparse = TRUE,
-        tile_domain=list(date = cbind(as.Date("1970-01-01"),
-                                      as.Date("2099-12-31"))),
-        allows_dups = FALSE
+      # save to tiledb
+      if (tiledb_object_type(save_uri_s3) != "ARRAY") {
+        fromDataFrame(
+          obj = fs_data,
+          uri = paste0("s3://", save_uri),
+          col_index = c("symbol", "date"),
+          sparse = TRUE,
+          tile_domain=list(date = cbind(as.Date("1970-01-01"),
+                                        as.Date("2099-12-31"))),
+          allows_dups = FALSE
         )
+      } else {
+        # save to tiledb
+        arr <- tiledb_array(save_uri_s3, as.data.frame = TRUE)
+        arr[] <- fs_data
+        tiledb_array_close(arr)
+        tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr,
+                                             uri = save_uri_s3)
+        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                        uri = save_uri_s3)
+      }
     },
 
     #' @description Get Upgrades and Downgrades from FMP cloud.
@@ -2230,6 +1580,26 @@ FMP = R6::R6Class(
       }
 
       return(NULL)
+    },
+
+    #' @description Get Historical dividends from FMP cloud.
+    #'
+    #' @param symbols Vector of stock symbols.
+    #'
+    #' @return Data table with historical dividends for symbol.
+    get_historical_dividends = function(symbols) {
+
+      # dividends
+      urls <- paste0("https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/",
+                     symbols)
+      dividends_l <- lapply(urls, function(x) {
+        p <- RETRY("GET", x, query = list(apikey = self$api_key))
+        res <- httr::content(p)
+        div <- rbindlist(res$historical)
+        cbind(symbol = res$symbol, div)
+      })
+      dividends <- rbindlist(dividends_l, fill = TRUE)
+      return(dividends)
     }
   ),
 

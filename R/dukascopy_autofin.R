@@ -5,8 +5,10 @@
 # library(lubridate)
 #
 #
-# #
+# # init Dukascopy (dc)
 # dc = Dukascopy$new()
+#
+# # get dc symbols
 # dc_symbols <- dc$get_symbols()
 # dc_symbols[grep("SPY", dc_symbols$symbols), ]
 #
