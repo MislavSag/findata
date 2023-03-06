@@ -56,7 +56,8 @@ Convert FMP Cloud daily data to Quantconnect daily data.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Lean$equity_daily_from_fmpcloud(
   lean_data_path = "D:/lean/data/equity/usa/daily",
-  uri = "D:/equity-usa-daily-fmp"
+  uri = "D:/equity-usa-daily-fmp",
+  fast = TRUE
 )}\if{html}{\out{</div>}}
 }
 
@@ -66,6 +67,9 @@ Convert FMP Cloud daily data to Quantconnect daily data.
 \item{\code{lean_data_path}}{Quantconnect data equity minute folder path.}
 
 \item{\code{uri}}{TileDB uri argument.}
+
+\item{\code{fast}}{If TRUE, all daily data is readed in RAM.
+You should have at least 32 GB RAM to use this option for all US.}
 }
 \if{html}{\out{</div>}}
 }
