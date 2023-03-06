@@ -28,10 +28,13 @@ Lean = R6::R6Class(
     #'
     #' @param lean_data_path Quantconnect data equity minute folder path.
     #' @param uri TileDB uri argument.
+    #' @param fast If TRUE, all daily data is readed in RAM.
+    #'     You should have at least 32 GB RAM to use this option for all US.
     #'
     #' @return No value returned.
     equity_daily_from_fmpcloud = function(lean_data_path = "D:/lean/data/equity/usa/daily",
-                                          uri = "D:/equity-usa-daily-fmp") {
+                                          uri = "D:/equity-usa-daily-fmp",
+                                          fast = TRUE) {
 
       # debug
       # library(data.table)
@@ -68,7 +71,7 @@ Lean = R6::R6Class(
 
       # change every file to quantconnect like file and add to destination
       symbols_ <- unique(daily_data$symbol)
-      for (s in symbols_[11031:length(symbols_)]) {
+      for (s in symbols_) {
 
         # error
         if (s == "PRN") {
