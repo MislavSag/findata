@@ -381,7 +381,7 @@ Factors = R6::R6Class(
           dividends_ <- rbindlist(res$historical, fill = TRUE)
           cbind(symbol = res$symbol, dividends_)
         })
-        dividends <- rbindlist(dividends_l)
+        dividends <- rbindlist(dividends_l, fill = TRUE)
         dividends[, date := as.Date(date)]
         dividends <- na.omit(dividends, cols = c("adjDividend", "date"))
         # dividends <- unique(dividends, by = c("symbol", "date"))
