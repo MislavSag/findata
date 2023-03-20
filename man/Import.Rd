@@ -57,7 +57,8 @@ Function imports all relevant data for USA stocks from FMP Prep.
   uri_bs = "s3://equity-usa-balance-sheet-statement-bulk",
   uri_fg = "s3://equity-usa-financial-growth-bulk",
   uri_metrics = "s3://equity-usa-key-metrics-bulk",
-  uri_prices = "D:/equity-usa-daily-fmp"
+  uri_prices = "D:/equity-usa-daily-fmp",
+  first_date = NA
 )}\if{html}{\out{</div>}}
 }
 
@@ -77,6 +78,9 @@ Function imports all relevant data for USA stocks from FMP Prep.
 \item{\code{uri_metrics}}{Tiledb uri for key metrics.}
 
 \item{\code{uri_prices}}{Tiledb uri for daily OHLCV prices.}
+
+\item{\code{first_date}}{if NA, keep all. Otherwise, keep only data from
+first_date.}
 }
 \if{html}{\out{</div>}}
 }

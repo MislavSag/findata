@@ -33,6 +33,8 @@ Import = R6::R6Class(
     #' @param uri_fg Tiledb uri for financial growth.
     #' @param uri_metrics Tiledb uri for key metrics.
     #' @param uri_prices Tiledb uri for daily OHLCV prices.
+    #' @param first_date if NA, keep all. Otherwise, keep only data from
+    #'     first_date.
     #'
     #' @return Data.table with factors.
     get_data_fmp = function(uri_market_cap = "s3://equity-usa-market-cap",
@@ -41,7 +43,8 @@ Import = R6::R6Class(
                             uri_bs = "s3://equity-usa-balance-sheet-statement-bulk",
                             uri_fg = "s3://equity-usa-financial-growth-bulk",
                             uri_metrics = "s3://equity-usa-key-metrics-bulk",
-                            uri_prices = "D:/equity-usa-daily-fmp") {
+                            uri_prices = "D:/equity-usa-daily-fmp",
+                            first_date = NA) {
 
         # UNIVERSE ----------------------------------------------------------------
         # universe consists of US stocks
@@ -89,7 +92,7 @@ Import = R6::R6Class(
 
         # FUNDAMENTAL DATA --------------------------------------------------------
         # income statement data
-        arr <- tiledb_array(uri_pl, as.data.frame = TRUE, query_layout = "UNORDERED")
+        arr <- tiledb_array(uri_pl, as.data.frame = TRUE, query_layout = "UNORDERED",)
         system.time(pl <- arr[])
         tiledb_array_close(arr)
         pl <- as.data.table(pl)
@@ -129,7 +132,12 @@ Import = R6::R6Class(
 
         # MARKET DATA -------------------------------------------------------------
         # market daily data
-        arr <- tiledb_array(uri_prices, as.data.frame = TRUE, query_layout = "UNORDERED")
+        if (is.na(first_date)) {
+          arr <- tiledb_array(uri_prices, as.data.frame = TRUE, query_layout = "UNORDERED")
+        } else {
+          arr <- tiledb_array(uri_prices, as.data.frame = TRUE, query_layout = "UNORDERED",
+                              selected_ranges = list(date = cbind(first_date, Sys.Date())))
+        }
         system.time(prices <- arr[])
         tiledb_array_close(arr)
         prices <- as.data.table(prices)
@@ -137,7 +145,7 @@ Import = R6::R6Class(
         # keep only US securites
         prices <- prices[symbol %in% c("SPY", symbols_list)]
 
-        # remove duplicated values an non business dazys
+        # remove duplicated values an non business days
         prices_dt <- unique(prices, by = c("symbol", "date")) # remove duplicates if they exists
         prices_dt <- prices_dt[date %in% qlcal::getBusinessDays(min(date, na.rm = TRUE),
                                                                 max(date, na.rm = TRUE))]

@@ -36,7 +36,7 @@ Finam = R6::R6Class(
                                  save_uri = "s3://equity-usa-tick-finam") {
 
       # debug
-      # library(RcppQuantuccia)
+      # library(qlcal)
       # library(QuantTools)
       # library(lubridate)
       # library(tiledb)
@@ -45,6 +45,7 @@ Finam = R6::R6Class(
       # config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
       # config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
       # context_with_config <- tiledb_ctx(config)
+      # qlcal::setCalendar("UnitedStates/NYSE")
       # symbols <- c("SPY", "AAPL")
       # days = getBusinessDays(as.Date("2011-01-01"), Sys.Date() - 1)
       # save_uri = "s3://equity-usa-tick-finam"
@@ -58,14 +59,17 @@ Finam = R6::R6Class(
         # main loop
         tick_data_l <- lapply(days, function(d) {
 
-          # DEBUG and fair scraping
+          # debug
+          # d = days[2001] # 3123
+
+          # fair scraping
           Sys.sleep(1L)
 
           # get data
           tries <- 1
           repeat {
 
-            tick_data <- tryCatch({get_finam_data(s, d, d, period = "tick")},
+            tick_data <- tryCatch(get_finam_data(s, d, d, period = "tick"),
                                   error = function(e) NULL)
 
             # test for errors

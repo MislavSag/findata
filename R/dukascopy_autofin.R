@@ -20,7 +20,7 @@
 #
 # # raw data to data.table
 # files <- list.files("D:/dukascopy", full.names = TRUE, recursive  = TRUE)
-# quotes_data_clean <- raw_to_dt(files)
+# quotes_data_clean <- dc$raw_to_dt(files)
 #
 # # configure s3
 # config <- tiledb_config()
