@@ -22,7 +22,6 @@ Imports:
     pins,
     zip,
     lubridate,
-    QuantTools,
     tiledb,
     nanotime,
     bit64,
