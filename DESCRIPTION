@@ -28,8 +28,6 @@ Imports:
     timechange,
     future.apply,
     fredr
-Remotes:
-    bitbucket::quanttools/quanttools
 Suggests: 
     rmarkdown,
     knitr,
