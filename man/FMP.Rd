@@ -224,7 +224,8 @@ Get hour data for all history from fmp cloud.
   save_uri_daily = "s3://equity-usa-daily-fmpcloud",
   deep_scan = FALSE,
   hardcode_start_dates = NULL,
-  hardcode_end_dates = NULL
+  hardcode_end_dates = NULL,
+  consolidate = FALSE
 )}\if{html}{\out{</div>}}
 }
 
@@ -245,6 +246,8 @@ and try to scrap again.}
 \item{\code{hardcode_start_dates}}{Start dates to scrape from.}
 
 \item{\code{hardcode_end_dates}}{end_date to scrap from.}
+
+\item{\code{consolidate}}{Consolidate hour and daily data at the end.}
 }
 \if{html}{\out{</div>}}
 }

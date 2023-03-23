@@ -451,6 +451,7 @@ FMP = R6::R6Class(
     #'     and try to scrap again.
     #' @param hardcode_start_dates Start dates to scrape from.
     #' @param hardcode_end_dates end_date to scrap from.
+    #' @param consolidate Consolidate hour and daily data at the end.
     #'
     #' @return Data saved to Azure blob.
     get_intraday_equities_batch = function(symbols,
@@ -459,7 +460,8 @@ FMP = R6::R6Class(
                                            save_uri_daily = "s3://equity-usa-daily-fmpcloud",
                                            deep_scan = FALSE,
                                            hardcode_start_dates = NULL,
-                                           hardcode_end_dates = NULL) {
+                                           hardcode_end_dates = NULL,
+                                           consolidate = FALSE) {
 
       # debug
       # library(findata)
@@ -725,20 +727,22 @@ FMP = R6::R6Class(
       }
 
       # consolidate and vacum hour data
-      system.time({
-        tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                             uri = save_uri_hour)
-        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                        uri = save_uri_hour)
-      })
+      if (consolidate) {
+        system.time({
+          tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                               uri = save_uri_hour)
+          tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                          uri = save_uri_hour)
+        })
 
-      # consolidate and vacum daily data
-      system.time({
-        tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
-                                             uri = save_uri_daily)
-        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
-                                        uri = save_uri_daily)
-      })
+        # consolidate and vacum daily data
+        system.time({
+          tiledb:::libtiledb_array_consolidate(self$context_with_config@ptr,
+                                               uri = save_uri_daily)
+          tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr,
+                                          uri = save_uri_daily)
+        })
+      }
 
       return(NULL)
     },
