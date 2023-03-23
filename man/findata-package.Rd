@@ -6,5 +6,5 @@
 \alias{findata-package}
 \title{findata: Collect data fro trading and financial ML}
 \description{
-Collect data fro trading and financial ML. Data sources are FMP Cloud, Investing.com, Finam.
+Collect data for trading and financial ML. Data sources are FMP Cloud, Investing.com, Finam.ru, Dukascopy, FRED.
 }
