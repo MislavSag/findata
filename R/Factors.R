@@ -42,8 +42,10 @@ Factors = R6::R6Class(
     #' @description
     #' Main function that calculates factors.
     #'
+    #' @param ... Arguemnts of get_data_fmp method of Import class.
+    #'
     #' @return Data.table with factors.
-    get_factors = function() {
+    get_factors = function(...) {
 
       # help functions and variables
       future_return <- function(x, n) {
@@ -69,16 +71,7 @@ Factors = R6::R6Class(
 
         # FMP DATA ----------------------------------------------------------------
         # import fmp data
-        system.time({
-          fmp_data = self$import$get_data_fmp(
-            uri_market_cap = "s3://equity-usa-market-cap",
-            uri_earning_announcements = "s3://equity-usa-earningsevents",
-            uri_pl = "s3://equity-usa-income-statement-bulk",
-            uri_bs = "s3://equity-usa-balance-sheet-statement-bulk",
-            uri_fg = "s3://equity-usa-financial-growth-bulk",
-            uri_metrics = "s3://equity-usa-key-metrics-bulk",
-            uri_prices = "D:/equity-usa-daily-fmp")
-        })
+        fmp_data = self$import$get_data_fmp(...)
         events <- fmp_data$events
         fmp_data$events <- NULL
         fundamentals <- fmp_data$fundamentals

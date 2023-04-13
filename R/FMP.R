@@ -1249,7 +1249,8 @@ FMP = R6::R6Class(
         file_names_l, function(x) {
           df <- fread(x)
           if (any(duplicated(df[, c("symbol", "date")]))) {
-            stop("Duplicates in (symbol, date) tuple.")
+            warning("Duplicates in (symbol, date) tuple.")
+            df[!duplicated(df[, .(symbol, date)])]
           }
           return(df)
         })

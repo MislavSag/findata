@@ -62,9 +62,16 @@ A new `Factors` object.
 \subsection{Method \code{get_factors()}}{
 Main function that calculates factors.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Factors$get_factors()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Factors$get_factors(...)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{...}}{Arguemnts of get_data_fmp method of Import class.}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Data.table with factors.
 }
