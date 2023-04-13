@@ -1197,7 +1197,7 @@ FMP = R6::R6Class(
       # library(data.table)
       # library(tiledb)
       # years = 1990:(data.table::year(Sys.Date()))
-      # statement ="ratios-bulk"
+      # statement ="income-statement-bulk"
       # period = "quarter"
       # self <- FMP$new()
 
@@ -1250,7 +1250,7 @@ FMP = R6::R6Class(
           df <- fread(x)
           if (any(duplicated(df[, c("symbol", "date")]))) {
             warning("Duplicates in (symbol, date) tuple.")
-            df[!duplicated(df[, .(symbol, date)])]
+            df = df[!duplicated(df[, .(symbol, date)])]
           }
           return(df)
         })
@@ -1279,11 +1279,13 @@ FMP = R6::R6Class(
       fs_data <- as.data.frame(fs_data)
       fs_data$finalLink <- NULL
       fs_data$link <- NULL
+      fs_data = as.data.table(fs_data)
+      fs_data = unique(fs_data, by = c("symbol", "date"))
 
       # save to tiledb
       if (tiledb_object_type(save_uri_s3) != "ARRAY") {
         fromDataFrame(
-          obj = fs_data,
+          obj = as.data.frame(fs_data),
           uri = paste0("s3://", save_uri),
           col_index = c("symbol", "date"),
           sparse = TRUE,
