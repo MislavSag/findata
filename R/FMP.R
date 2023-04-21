@@ -98,7 +98,7 @@ FMP = R6::R6Class(
       }
 
       # clean data
-      dt <- unique(dt)
+      dt <- unique(dt, by = c("symbol", "date"))
       dt[, date := as.Date(date)]
       dt[, fiscalDateEnding := as.Date(fiscalDateEnding)]
       dt[, updatedFromDate := as.Date(updatedFromDate)]
@@ -1197,7 +1197,7 @@ FMP = R6::R6Class(
       # library(data.table)
       # library(tiledb)
       # years = 1990:(data.table::year(Sys.Date()))
-      # statement ="income-statement-bulk"
+      # statement ="ratios-bulk"
       # period = "quarter"
       # self <- FMP$new()
 

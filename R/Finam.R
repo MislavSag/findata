@@ -60,7 +60,7 @@ Finam = R6::R6Class(
         tick_data_l <- lapply(days, function(d) {
 
           # debug
-          # d = days[2001] # 3123
+          # d = days[2002] # 3123
 
           # fair scraping
           Sys.sleep(1L)

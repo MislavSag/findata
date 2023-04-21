@@ -48,6 +48,7 @@ Import = R6::R6Class(
 
         # UNIVERSE ----------------------------------------------------------------
         # universe consists of US stocks
+        print("Universe")
         securities <- self$fmp$get_stock_list()
         stocks_us <- securities[type == "stock" &
                                   exchangeShortName %in% c("AMEX", "NASDAQ", "NYSE", "OTC")]
@@ -55,17 +56,27 @@ Import = R6::R6Class(
 
 
         # PROFILES ----------------------------------------------------------------
+        print("Profiles")
         tmp_file <- tempfile(fileext = ".csv")
-        p <- GET("https://financialmodelingprep.com//api/v4/profile/all",
-                 query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD")),
-                 write_disk(tmp_file, overwrite = TRUE))
-        profiles <- fread(tmp_file)
+        GET(
+          "https://financialmodelingprep.com//api/v4/profile/all",
+          query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD")),
+          write_disk(tmp_file, overwrite = TRUE)
+        )
+        # profiles <- fread(tmp_file)
+        # Error in fread(tmp_file) :
+        #   Single column input contains invalid quotes. Self healing only effective when ncol>1
+        # In addition: Warning message:
+        #   In rbindlist(res, fill = TRUE) :
+        #   Column 2 ['name'] of item 40499 is length 0. This (and 721 others like it) has been filled with NA (NULL for list columns) to make each item uniform.
+        profiles <- as.data.table(read.csv(tmp_file))
         profiles <- profiles[country == "US"]
         setnames(profiles, tolower(colnames(profiles)))
 
 
         # MARKET CAP --------------------------------------------------------------
         # market cap data
+        print("Market Cap")
         arr <- tiledb_array(uri_market_cap,
                             as.data.frame = TRUE,
                             query_layout = "UNORDERED")
@@ -79,6 +90,7 @@ Import = R6::R6Class(
 
         # EARNING ANNOUNCEMENTS ---------------------------------------------------
         # get earning announcmenet evetns data from FMP
+        print("Earnings announcements")
         arr <- tiledb_array(uri_earning_announcements,
                             as.data.frame = TRUE,
                             query_layout = "UNORDERED")
@@ -92,6 +104,7 @@ Import = R6::R6Class(
 
         # FUNDAMENTAL DATA --------------------------------------------------------
         # income statement data
+        print("Income data")
         arr <- tiledb_array(uri_pl, as.data.frame = TRUE, query_layout = "UNORDERED",)
         system.time(pl <- arr[])
         tiledb_array_close(arr)
@@ -100,6 +113,7 @@ Import = R6::R6Class(
                   acceptedDate = as.Date(acceptedDate, format = "%Y-%m-%d %H:%M:%S", tz = "America/New_York"))]
 
         # balance sheet data
+        print("Balance sheet data")
         arr <- tiledb_array(uri_bs, as.data.frame = TRUE, query_layout = "UNORDERED")
         system.time(bs <- arr[])
         tiledb_array_close(arr)
@@ -108,12 +122,14 @@ Import = R6::R6Class(
                   acceptedDate = as.Date(acceptedDate, format = "%Y-%m-%d %H:%M:%S", tz = "America/New_York"))]
 
         # financial growth
+        print("Financial growth data")
         arr <- tiledb_array(uri_fg, as.data.frame = TRUE, query_layout = "UNORDERED")
         system.time(fin_growth <- arr[])
         tiledb_array_close(arr)
         fin_growth <- as.data.table(fin_growth)
 
         # financial ratios
+        print("Financial ratio data")
         arr <- tiledb_array(uri_metrics, as.data.frame = TRUE, query_layout = "UNORDERED")
         system.time(fin_ratios <- arr[])
         tiledb_array_close(arr)
@@ -132,6 +148,7 @@ Import = R6::R6Class(
 
         # MARKET DATA -------------------------------------------------------------
         # market daily data
+        print("Daily market data")
         if (is.na(first_date)) {
           arr <- tiledb_array(uri_prices, as.data.frame = TRUE, query_layout = "UNORDERED")
         } else {

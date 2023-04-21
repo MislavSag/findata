@@ -52,9 +52,9 @@ Dukascopy = R6::R6Class(
     #'
     #' @references \url{https://www.interactivebrokers.com/api/doc.html}
     #' @return GET response.
-    download_raw = function(save_path = "D:/market_data/equity/usa/quotes",
-                            symbols = c("AAPLUSUSD", "AMZNUSUSD"),
-                            start_date = as.Date("2020-01-01"),
+    download_raw = function(save_path = "D:/dukascopy",
+                            symbols = "SPYUSUSD",
+                            start_date = as.Date("2017-01-01"),
                             end_date = Sys.Date() - 1) {
 
 
@@ -78,13 +78,15 @@ Dukascopy = R6::R6Class(
                           sep = "/")
       save_paths <- gsub("\\.bi5", "\\.lzma", save_paths)
 
-      # create directories
-      lapply(unique(dirname(save_paths)), dir.create, recursive = TRUE)
-
       # remove urls and paths already scraped
       remove_indecies <- which(file.exists(save_paths))
-      save_paths <- save_paths[-remove_indecies]
-      urls <- urls[-remove_indecies]
+      if (length(remove_indecies) > 0) {
+        save_paths <- save_paths[-remove_indecies]
+        urls <- urls[-remove_indecies]
+        }
+
+      # create directories
+      lapply(unique(dirname(save_paths)), dir.create, recursive = TRUE)
 
       # scraping loop
       for (i in seq_along(urls)) {

@@ -290,6 +290,7 @@ Factors = R6::R6Class(
 
         # MACRO -------------------------------------------------------------------
         # fred help function
+        print("Macro data")
         get_fred <- function(id = "VIXCLS", name = "vix", calculate_returns = FALSE) {
           x <- fredr_series_observations(
             series_id = id,
@@ -367,6 +368,7 @@ Factors = R6::R6Class(
                                               (1 + frollapply(vwretx, trading_year*3, function(x) prod(1+x)-1)))]
 
         # dividend to price for all market
+        print("Dividend data")
         url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
         dividends_l <- lapply(sp500_symbols, function(s){
           p <- GET(paste0(url, s), query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD")))
@@ -394,6 +396,7 @@ Factors = R6::R6Class(
         welch_goyal <- dividends_sp500[welch_goyal, on = "date"]
 
         # series without vintage days
+        print("FRED data")
         sp500 <- get_fred("SP500", "sp500", TRUE)
         oil <- get_fred("DCOILWTICO", "oil", TRUE)
         vix <- get_fred(id = "VIXCLS", name = "vix")
