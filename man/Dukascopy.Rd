@@ -19,6 +19,7 @@ Get data data from Dukascopy.
 \item \href{#method-Dukascopy-get_symbols}{\code{Dukascopy$get_symbols()}}
 \item \href{#method-Dukascopy-download_raw}{\code{Dukascopy$download_raw()}}
 \item \href{#method-Dukascopy-raw_to_dt}{\code{Dukascopy$raw_to_dt()}}
+\item \href{#method-Dukascopy-dukascopy_node_get}{\code{Dukascopy$dukascopy_node_get()}}
 \item \href{#method-Dukascopy-clone}{\code{Dukascopy$clone()}}
 }
 }
@@ -71,9 +72,9 @@ Vector of symbols.
 IB GET object
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Dukascopy$download_raw(
-  save_path = "D:/market_data/equity/usa/quotes",
-  symbols = c("AAPLUSUSD", "AMZNUSUSD"),
-  start_date = as.Date("2020-01-01"),
+  save_path = "D:/dukascopy",
+  symbols = "SPYUSUSD",
+  start_date = as.Date("2017-01-01"),
   end_date = Sys.Date() - 1
 )}\if{html}{\out{</div>}}
 }
@@ -114,6 +115,55 @@ localy.}
 }
 \subsection{Returns}{
 Data.table with ask and bid prices and volumes.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Dukascopy-dukascopy_node_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Dukascopy-dukascopy_node_get}{}}}
+\subsection{Method \code{dukascopy_node_get()}}{
+Get Dukascopy data using https://github.com/Leo4815162342/dukascopy-node
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Dukascopy$dukascopy_node_get(
+  dir_location,
+  instrument,
+  from,
+  to = "now",
+  timeframe = "tick",
+  volumes = "true",
+  format = "csv",
+  batch_size = 5,
+  batch_pause = 2500,
+  cache = "true"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{dir_location}}{Location where files are saved.}
+
+\item{\code{instrument}}{Instrument.}
+
+\item{\code{from}}{Date from.}
+
+\item{\code{to}}{Date to.}
+
+\item{\code{timeframe}}{Timeframe aggregation (tick, s1, m1, m5, m15, m30, h1, h4, d1, mn1).}
+
+\item{\code{volumes}}{Include volumes.}
+
+\item{\code{format}}{Output format (csv, json, array).}
+
+\item{\code{batch_size}}{Batch size.}
+
+\item{\code{batch_pause}}{Batch pause.}
+
+\item{\code{cache}}{Use cache.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+NULL or error.
 }
 }
 \if{html}{\out{<hr>}}

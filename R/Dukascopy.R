@@ -183,7 +183,77 @@ Dukascopy = R6::R6Class(
       file.remove(gsub("\\.lzma", "", files))
 
       return(quotes_data_clean)
+  },
+
+  #' @description
+  #' Get Dukascopy data using https://github.com/Leo4815162342/dukascopy-node
+  #'
+  #' @param dir_location Location where files are saved.
+  #' @param instrument Instrument.
+  #' @param from Date from.
+  #' @param to Date to.
+  #' @param timeframe Timeframe aggregation (tick, s1, m1, m5, m15, m30, h1, h4, d1, mn1).
+  #' @param volumes Include volumes.
+  #' @param format Output format (csv, json, array).
+  #' @param cache Use cache.
+  #' @param batch_size Batch size.
+  #' @param batch_pause Batch pause.
+  #'
+  #' @return NULL or error.
+  dukascopy_node_get = function(dir_location,
+                                instrument,
+                                from,
+                                to = "now",
+                                timeframe = "tick",
+                                volumes = "true",
+                                format = "csv",
+                                batch_size = 5,
+                                batch_pause = 2500,
+                                cache = "true") {
+
+    # debug
+    # dir_location = "D:/dukas"
+    # instrument = "aaplususd"
+    # from = as.character(Sys.Date() - 60)
+    # to = "now"
+    # timeframe = "tick"
+    # volumes = "true"
+    # format = "csv"
+    # cache = "true"
+
+    # create command
+    command = paste(
+      "npx dukascopy-node",
+      "-i", instrument,
+      "-from", from,
+      "--date-to", to,
+      "--timeframe", timeframe,
+      "--volumes", volumes,
+      "--format", format,
+      "--batch-size", batch_size,
+      "--batch-pause", batch_pause,
+      "--cache", cache,
+      sep = " "
+    )
+
+    # remove existing file
+    files_remove = list.files(file.path(dir_location, "download"),
+                              pattern = instrument,
+                              full.names = TRUE)
+    file.remove(files_remove)
+
+    # execute command
+    setwd(dir_location)
+    res = system(command, intern = TRUE)
+
+    # check for error
+    success = any(grepl("File saved", res))
+    if (success) {
+      return(NULL)
+    } else {
+      stop("There is no File saved in output.")
     }
+  }
   )
 )
 
