@@ -280,6 +280,64 @@ Lean = R6::R6Class(
       # allow again scientific notation and close tiledb array
       tiledb_array_close(arr)
       options(scipen=0)
+    },
+
+    #' @description Adjust bough QuantConnect. Use map_files and factor_files
+    #'     to adjust OHLCV data.
+    #'
+    #' @param path_market_data Path to daily / hourly data.
+    #' @param path_map_files Path to map files.
+    #' @param path_factor_files Path to factor files.
+    #'
+    #' @return Data table with adjusted QC data.
+    adjusted_qc_data = function(path_market_data,
+                              path_map_files,
+                              path_factor_files) {
+
+      # debug
+      path_market_data = "C:/Users/Mislav/Documents/qcdata/qcdaily.csv"
+      path_map_files = "C:/Users/Mislav/lean/data/equity/usa/map_files"
+      path_factor_files = "C:/Users/Mislav/lean/data/equity/usa/factor_files"
+
+      # import daily / hourly market data
+      dt = fread(path_market_data)
+
+      # convert date to Date or PoOSIXct
+      dt[, date := as.IDate(as.Date(substr(time, 1, 8), format = "%Y%m%d"))]
+
+      # import map files
+      map_files = list.files(path_map_files, pattern = "csv", full.names = TRUE)
+      symbols = gsub(".*/|.csv", "", map_files)
+      maps_l = lapply(map_files, fread)
+      names(maps_l) = symbols
+      maps = rbindlist(maps_l, idcol = "symbol", fill = TRUE)
+      setnames(maps, c("symbol_input", "date", "symbol", "exc"))
+      maps[, date := as.IDate(as.Date(as.character(date), format = "%Y%m%d"))]
+
+      # merge mapped files and data
+      maped_dt = maps[dt, on = c("symbol", "date"), roll = -Inf]
+      setnames(maped_dt, c("symbol_input", "symbol"), c("symbol", "symbol_map"))
+
+      # import factor files
+      factor_files = list.files(
+        path_factor_files,
+        pattern = "csv",
+        full.names = TRUE
+      )
+      symbols = gsub(".*/|.csv", "", factor_files)
+      factors_l = lapply(factor_files, fread)
+      names(factors_l) = symbols
+      factors = rbindlist(factors_l, idcol = "symbol")
+      setnames(factors, c("symbol", "date", "div", "split", "prev_close"))
+      factors[, date := as.IDate(as.Date(as.character(date), "%Y%m%d"))]
+
+      # adjust data
+      dtadj = factors[maped_dt, on = c("symbol", "date"), roll = -Inf]
+      setorder(dtadj, symbol, date)
+      dtadj[, close_adj := close * split * div]
+
+      # return final adjusted data
+      return(dtadj)
     }
   )
 )
