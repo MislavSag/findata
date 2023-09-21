@@ -96,21 +96,17 @@ Request to investing.com calendar
 \subsection{Method \code{update_investingcom_earnings()}}{
 Update earnings announcements data from investingcom website
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$update_investingcom_earnings(
-  uri,
-  start_date = NULL,
-  consolidate = TRUE
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$update_investingcom_earnings(path, start_date, update = TRUE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{uri}}{TileDB uri argument}
+\item{\code{path}}{to save output DT.}
 
 \item{\code{start_date}}{First date to scrape from.If NULL, takes last date from existing uri.}
 
-\item{\code{consolidate}}{Consolidate and vacuum at the end.}
+\item{\code{update}}{existing uri.}
 }
 \if{html}{\out{</div>}}
 }

@@ -58,9 +58,16 @@ A new `Dukascopy` object.
 \subsection{Method \code{get_symbols()}}{
 Get all symbols from Dukascopy
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Dukascopy$get_symbols()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Dukascopy$get_symbols(tag = "us")}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{tag}}{url tag option. See here: https://www.dukascopy-node.app/instruments}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Vector of symbols.
 }
@@ -72,8 +79,8 @@ Vector of symbols.
 IB GET object
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Dukascopy$download_raw(
-  save_path = "D:/dukascopy",
-  symbols = "SPYUSUSD",
+  save_path = "F:/equity/usa/tick/quotes",
+  symbols = "spyususd",
   start_date = as.Date("2017-01-01"),
   end_date = Sys.Date() - 1
 )}\if{html}{\out{</div>}}

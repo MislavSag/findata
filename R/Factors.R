@@ -20,6 +20,12 @@ Factors = R6::R6Class(
     #' @field import Help field to hold Import class.
     import = NULL,
 
+    #' @field utilsdata Help field to hold Import class.
+    utilsdata = NULL,
+    
+    #' @field sp500_symbols Path to QuantConnect SPY file.
+    sp500_symbols = NULL,
+    
     # DEBUG
     # self = list()
     # self$fmp = FMP$new()
@@ -28,15 +34,18 @@ Factors = R6::R6Class(
     #' @description
     #' Create a new Factors object.
     #'
+    #' @param sp500_symbols Path to QuantConnect SPY file.
     #' @param source Data source for calculating factors.
     #'
     #' @return A new `Factors` object.
-    initialize = function(source = "fmp") {
+    initialize = function(sp500_symbols, source = "fmp") {
       self$source = source
 
       # initiate findata classes
       self$fmp = FMP$new()
       self$import = Import$new()
+      self$utilsdata = UtilsData$new()
+      self$sp500_symbols = sp500_symbols
     },
 
     #' @description
@@ -46,7 +55,7 @@ Factors = R6::R6Class(
     #'
     #' @return Data.table with factors.
     get_factors = function(...) {
-
+      
       # help functions and variables
       future_return <- function(x, n) {
         (data.table::shift(x, n, type = 'lead') - x) / x
@@ -70,8 +79,45 @@ Factors = R6::R6Class(
       if (self$source == "fmp") {
 
         # FMP DATA ----------------------------------------------------------------
+        # debug
+        # library(data.table)
+        # library(findata)
+        # library(arrow)
+        # library(httr)
+        # self = list()
+        # self$fmp = FMP$new()
+        # securities <- self$fmp$get_stock_list()
+        # exchanges = c("AMEX", "NASDAQ", "NYSE", "OTC")
+        # stocks_us <- securities[type == "stock" & exchangeShortName %in% exchanges]
+        # symbols_us <- stocks_us[, unique(symbol)]
+        # events = read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
+        # events = as.data.table(events)
+        # events <- events[date < Sys.Date()]                 # remove announcements for today
+        # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
+        # securities = self$fmp$get_stock_list()
+        # stocks <- securities[type == "stock" & exchangeShortName %in% c("AMEX", "NASDAQ", "NYSE", "OTC")]
+        # events <- events[symbol %in% stocks$symbol]
+        # symbols_events <- unique(events$symbol)
+        # symbols = unique(c(symbols_us, symbols_events))
+        # symbols = c("SPY", symbols)
+        # self = Factors$new("F:/lean_root/data/equity/usa/universes/etf/spy")
+        # fmp_data = self$import$get_data_fmp(
+        #   symbols = symbols,
+        #   uri_market_cap = "F:/equity/usa/fundamentals/market_cap.parquet",
+        #   uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
+        #   uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
+        #   uri_prices = "F:/equity/daily_fmp_all.csv"
+        # )
+        # sp500_symbols = self$utilsdata$sp500_history("F:/lean_root/data/equity/usa/universes/etf/spy")
+        # sp500_symbols = sp500_symbols$symbols
+        
+        # add SPY to symbols
+        symbols = c("SPY", symbols)
+        
         # import fmp data
         fmp_data = self$import$get_data_fmp(...)
+        
+        # divide and concuer
         events <- fmp_data$events
         fmp_data$events <- NULL
         fundamentals <- fmp_data$fundamentals
@@ -80,34 +126,28 @@ Factors = R6::R6Class(
         fmp_data$prices <- NULL
 
         # free memory
-        # rm(fmp_data)
+        rm(fmp_data)
         gc()
-
-        # sp500 historical universe cleaned
-        fmp = FMP$new()
-        sp500_symbols = fmp$get_sp500_symbols()
-
 
         # CLEAN PRICES ------------------------------------------------------------
         # remove observations with extreme prices
-        prices_dt <- unique(prices, by = c("symbol", "date"))
-        setorder(prices_dt, symbol, date)
-        prices_dt <- prices_dt[returns < 0.8 & returns > -0.8]
-        prices_dt[, high_return := high / shift(high) - 1, by = symbol]
-        prices_dt <- prices_dt[high_return < 0.8 & high_return > -0.8]
-        prices_dt[, low_return := low / shift(low) - 1, by = symbol]
-        prices_dt <- prices_dt[low_return < 0.8 & low_return > -0.8]
-        prices_dt[, `:=`(low_return = NULL, high_return = NULL)]
+        prices <- unique(prices, by = c("symbol", "date"))
+        setorder(prices, symbol, date)
+        prices <- prices[returns < 0.9 & returns > -0.9]
+        prices[, high_return := high / shift(high) - 1, by = symbol]
+        prices <- prices[high_return < 0.9 & high_return > -0.9]
+        prices[, low_return := low / shift(low) - 1, by = symbol]
+        prices <- prices[low_return < 0.9 & low_return > -0.9]
+        prices[, `:=`(low_return = NULL, high_return = NULL)]
 
-        # remove observation with less than 3 years of data
-        prices_n <- prices_dt[, .N, by = symbol]
+        # remove observation with less than 2 years of data
+        prices_n <- prices[, .N, by = symbol]
         prices_n <- prices_n[N > (trading_year * 2)]  # remove prices with only 700 or less observations
-        prices_dt <- prices_dt[symbol %in% prices_n[, symbol]]
-        setorder(prices_dt, symbol, date)
+        prices <- prices[symbol %in% prices_n[, symbol]]
+        setorder(prices, symbol, date)
 
         # spy
-        spy <- prices_dt[symbol == "SPY"]
-
+        spy <- prices[symbol == "SPY"]
 
         # PREDICTORS EARNING ANNOUNCEMENTS ----------------------------------------
         # create predictors from earnings announcements
@@ -119,38 +159,37 @@ Factors = R6::R6Class(
           eps_diff = (eps - epsEstimated + 0.00001) / (epsEstimated + 0.00001)
         ), by = symbol]
 
-
         # OHLCV PREDICTORS --------------------------------------------------------
         # momentum
-        setorder(prices_dt, "symbol", "date") # order, to be sure
-        prices_dt[, mom1w := close / shift(close, 5) - 1, by = symbol]
-        prices_dt[, mom1w_lag := shift(close, 10) / shift(close, 5) - 1, by = symbol]
-        prices_dt[, mom1m := close / shift(close, 22) - 1, by = symbol]
-        prices_dt[, mom1m_lag := shift(close, 22) / shift(close, 44) - 1, by = symbol]
-        prices_dt[, mom6m := close / shift(close, 22 * 6) - 1, by = symbol]
-        prices_dt[, mom6m_lag := shift(close, 22) / shift(close, 22 * 7) - 1, by = symbol]
-        prices_dt[, mom12m := close / shift(close, 22 * 12) - 1, by = symbol]
-        prices_dt[, mom12m_lag := shift(close, 22) / shift(close, 22 * 13) - 1, by = symbol]
-        prices_dt[, mom36m := close / shift(close, 22 * 36) - 1, by = symbol]
-        prices_dt[, mom36m_lag := shift(close, 22) / shift(close, 22 * 37) - 1, by = symbol]
-        prices_dt[, chmom := mom6m / shift(mom6m, 22) - 1, by = symbol]
-        prices_dt[, chmom_lag := shift(mom6m, 22) / shift(mom6m, 44) - 1, by = symbol]
+        setorder(prices, "symbol", "date") # order, to be sure
+        prices[, mom1w := close / shift(close, 5) - 1, by = symbol]
+        prices[, mom1w_lag := shift(close, 10) / shift(close, 5) - 1, by = symbol]
+        prices[, mom1m := close / shift(close, 22) - 1, by = symbol]
+        prices[, mom1m_lag := shift(close, 22) / shift(close, 44) - 1, by = symbol]
+        prices[, mom6m := close / shift(close, 22 * 6) - 1, by = symbol]
+        prices[, mom6m_lag := shift(close, 22) / shift(close, 22 * 7) - 1, by = symbol]
+        prices[, mom12m := close / shift(close, 22 * 12) - 1, by = symbol]
+        prices[, mom12m_lag := shift(close, 22) / shift(close, 22 * 13) - 1, by = symbol]
+        prices[, mom36m := close / shift(close, 22 * 36) - 1, by = symbol]
+        prices[, mom36m_lag := shift(close, 22) / shift(close, 22 * 37) - 1, by = symbol]
+        prices[, chmom := mom6m / shift(mom6m, 22) - 1, by = symbol]
+        prices[, chmom_lag := shift(mom6m, 22) / shift(mom6m, 44) - 1, by = symbol]
 
         # maximum and minimum return
-        prices_dt[, maxret_3y := roll::roll_max(returns, trading_year * 3), by = symbol]
-        prices_dt[, maxret_3y := roll::roll_max(returns, trading_year * 3), by = symbol]
-        prices_dt[, maxret_2y := roll::roll_max(returns, trading_year * 2), by = symbol]
-        prices_dt[, maxret := roll::roll_max(returns, trading_year), by = symbol]
-        prices_dt[, maxret_half := roll::roll_max(returns, trading_halfyear), by = symbol]
-        prices_dt[, maxret_quarter := roll::roll_max(returns, trading_quarter), by = symbol]
-        prices_dt[, minret_3y := roll::roll_min(returns, trading_year * 3), by = symbol]
-        prices_dt[, minret_2y := roll::roll_min(returns, trading_year * 2), by = symbol]
-        prices_dt[, minret := roll::roll_min(returns, trading_year), by = symbol]
-        prices_dt[, minret_half := roll::roll_min(returns, trading_halfyear), by = symbol]
-        prices_dt[, minret_quarter := roll::roll_min(returns, trading_quarter), by = symbol]
+        prices[, maxret_3y := roll::roll_max(returns, trading_year * 3), by = symbol]
+        prices[, maxret_3y := roll::roll_max(returns, trading_year * 3), by = symbol]
+        prices[, maxret_2y := roll::roll_max(returns, trading_year * 2), by = symbol]
+        prices[, maxret := roll::roll_max(returns, trading_year), by = symbol]
+        prices[, maxret_half := roll::roll_max(returns, trading_halfyear), by = symbol]
+        prices[, maxret_quarter := roll::roll_max(returns, trading_quarter), by = symbol]
+        prices[, minret_3y := roll::roll_min(returns, trading_year * 3), by = symbol]
+        prices[, minret_2y := roll::roll_min(returns, trading_year * 2), by = symbol]
+        prices[, minret := roll::roll_min(returns, trading_year), by = symbol]
+        prices[, minret_half := roll::roll_min(returns, trading_halfyear), by = symbol]
+        prices[, minret_quarter := roll::roll_min(returns, trading_quarter), by = symbol]
 
         # sector momentum
-        sector_returns <- prices_dt[, .(sec_returns = weighted_mean(returns, marketCap)), by = .(sector, date)]
+        sector_returns <- prices[, .(sec_returns = weighted_mean(returns, marketCap)), by = .(sector, date)]
         sector_returns[, secmom := frollapply(sec_returns, 22, function(x) prod(1 + x) - 1), by = sector]
         sector_returns[, secmom_lag := shift(secmom, 22), by = sector]
         sector_returns[, secmom6m := frollapply(sec_returns, 22, function(x) prod(1 + x) - 1), by = sector]
@@ -163,7 +202,7 @@ Factors = R6::R6Class(
         sector_returns[, secmom3year_lag := shift(secmom3year, 22), by = sector]
 
         # industry momentum
-        ind_returns <- prices_dt[, .(indret = weighted_mean(returns, marketCap)), by = .(industry, date)]
+        ind_returns <- prices[, .(indret = weighted_mean(returns, marketCap)), by = .(industry, date)]
         ind_returns[, indmom := frollapply(indret, 22, function(x) prod(1 + x) - 1), by = industry]
         ind_returns[, indmom_lag := shift(indmom, 22), by = industry]
         ind_returns[, indmom6m := frollapply(indret, 22, function(x) prod(1 + x) - 1), by = industry]
@@ -175,27 +214,27 @@ Factors = R6::R6Class(
         ind_returns[, indmom3year := frollapply(indret, 22 * 36, function(x) prod(1 + x) - 1), by = industry]
         ind_returns[, indmom3year_lag := shift(indmom3year, 22), by = industry]
 
-        # merge sector and industry predictors to prices_dt
-        prices_dt <- sector_returns[prices_dt, on = c("sector", "date")]
-        prices_dt <- ind_returns[prices_dt, on = c("industry", "date")]
+        # merge sector and industry predictors to prices
+        prices <- sector_returns[prices, on = c("sector", "date")]
+        prices <- ind_returns[prices, on = c("industry", "date")]
 
         # volatility
-        prices_dt[, dvolume := volume * close]
-        prices_dt[, `:=`(
+        prices[, dvolume := volume * close]
+        prices[, `:=`(
           dolvol = frollsum(dvolume, 22),
           dolvol_halfyear = frollsum(dvolume, trading_halfyear),
           dolvol_year = frollsum(dvolume, trading_year),
           dolvol_2year = frollsum(dvolume, trading_year * 2),
           dolvol_3year = frollsum(dvolume, trading_year * 3)
         ), by = symbol]
-        prices_dt[, `:=`(
+        prices[, `:=`(
           dolvol_lag = shift(dolvol, 22),
           dolvol_halfyear_lag = frollsum(dolvol_halfyear, 22),
           dolvol_year_lag = frollsum(dolvol_year, 22)
         ), by = symbol]
 
         # illiquidity
-        prices_dt[, `:=`(
+        prices[, `:=`(
           illiquidity = abs(returns) / volume, #  Illiquidity (Amihud's illiquidity)
           illiquidity_month = frollsum(abs(returns), 22) / frollsum(volume, 22),
           illiquidity_half_year = frollsum(abs(returns), trading_halfyear) /
@@ -206,7 +245,7 @@ Factors = R6::R6Class(
         ), by = symbol]
 
         # Share turnover
-        prices_dt[, `:=`(
+        prices[, `:=`(
           share_turnover = volume / weightedAverageShsOut,
           turn = frollsum(volume, 22) / weightedAverageShsOut,
           turn_half_year = frollsum(volume, trading_halfyear) / weightedAverageShsOut,
@@ -216,14 +255,14 @@ Factors = R6::R6Class(
         ), by = symbol]
 
         # Std of share turnover
-        prices_dt[, `:=`(
+        prices[, `:=`(
           std_turn = roll::roll_sd(share_turnover, 22),
           std_turn_6m = roll::roll_sd(share_turnover, trading_halfyear),
           std_turn_1y = roll::roll_sd(share_turnover, trading_year)
         ), by = symbol]
 
         # return volatility
-        prices_dt[, `:=`(
+        prices[, `:=`(
           retvol = roll::roll_sd(returns, width = 22),
           retvol3m = roll::roll_sd(returns, width = 22 * 3),
           retvol6m = roll::roll_sd(returns, width = 22 * 6),
@@ -231,7 +270,7 @@ Factors = R6::R6Class(
           retvol2y = roll::roll_sd(returns, width = 22 * 12 * 2),
           retvol3y = roll::roll_sd(returns, width = 22 * 12 * 3)
         ), by= symbol]
-        prices_dt[, `:=`(
+        prices[, `:=`(
           retvol_lag = shift(retvol, 22),
           retvol3m_lag = shift(retvol3m, 22),
           retvol6m_lag = shift(retvol6m, 22),
@@ -239,11 +278,11 @@ Factors = R6::R6Class(
         ), by = symbol]
 
         # idiosyncratic volatility
-        weekly_market_returns <- prices_dt[, .(market_returns = mean(returns, na.rm = TRUE)),
+        weekly_market_returns <- prices[, .(market_returns = mean(returns, na.rm = TRUE)),
                                            by = date]
         weekly_market_returns[, market_returns := frollapply(market_returns, 22, function(x) prod(1+x)-1)]
-        prices_dt <- weekly_market_returns[prices_dt, on = "date"]
-        id_vol <- na.omit(prices_dt, cols = c("market_returns", "mom1w"))
+        prices <- weekly_market_returns[prices, on = "date"]
+        id_vol <- na.omit(prices, cols = c("market_returns", "mom1w"))
         id_vol <- id_vol[, .(date, e = QuantTools::roll_lm(market_returns, mom1w, trading_year * 3)[, 3][[1]]),
                          by = symbol]
         id_vol[, `:=`(
@@ -254,12 +293,17 @@ Factors = R6::R6Class(
           idvol2y = roll::roll_sd(e, trading_year * 2),
           idvol3y = roll::roll_sd(e, trading_year * 3)
         )]
-        prices_dt <- id_vol[prices_dt, on = c("symbol", "date")]
-
+        prices <- id_vol[prices, on = c("symbol", "date")]
 
         # GU AT ALL ---------------------------------------------------------------
+        # help for finding columns in fundamentals
+        colnames(fundamentals)[grep("book", colnames(fundamentals), ignore.case = TRUE)]
+        
         # create Gu et al predictors
         fundamentals[, `:=`(
+          # open source AP
+          am = totalAssets / marketCap,
+          # Gu st all
           agr = assetGrowth,          # asset growth
           bm = 1 / pbRatio,
           cash = cashAndCashEquivalents / totalAssets, # cash holdings
@@ -282,11 +326,6 @@ Factors = R6::R6Class(
         ), by = symbol]
         cols <- colnames(fundamentals)[which(colnames(fundamentals) == "agr"):ncol(fundamentals)]
         fundamentals[, (cols) := lapply(.SD, function(x) ifelse(is.nan(x), 0, x)), .SDcols = cols]
-
-        # help for finding columns in fundamentals
-        colnames(fundamentals)[grep("book", colnames(fundamentals), ignore.case = TRUE)]
-
-
 
         # MACRO -------------------------------------------------------------------
         # fred help function
@@ -337,7 +376,7 @@ Factors = R6::R6Class(
         }
 
         # volume of growth / decline stocks
-        vol_52 <- prices_dt[, .(symbol, date, high, low, close, volume)]
+        vol_52 <- prices[, .(symbol, date, high, low, close, volume)]
         vol_52[, return_52w := close / shift(close, n = 52 * 5) - 1, by = "symbol"]
         vol_52[return_52w > 0, return_52w_dummy := "up", by = "symbol"]
         vol_52[return_52w <= 0, return_52w_dummy := "down", by = "symbol"]
@@ -350,7 +389,7 @@ Factors = R6::R6Class(
 
         # TODO: ADD SP500 stocks after Matej finish his task!
         # net expansion
-        welch_goyal <- prices_dt[, .(symbol, date, marketCap, returns)]
+        welch_goyal <- prices[, .(symbol, date, marketCap, returns)]
         welch_goyal <- welch_goyal[, .(mcap = sum(marketCap, na.rm = TRUE),
                                        vwretx = weighted_mean(returns, marketCap, na.rm = TRUE)), by = date]
         setorder(welch_goyal, date)
@@ -371,6 +410,7 @@ Factors = R6::R6Class(
         print("Dividend data")
         url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
         dividends_l <- lapply(sp500_symbols, function(s){
+          print(s)
           p <- GET(paste0(url, s), query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD")))
           res <- content(p)
           dividends_ <- rbindlist(res$historical, fill = TRUE)
@@ -413,7 +453,7 @@ Factors = R6::R6Class(
                         list(welch_goyal, vol_52_indicators,
                              vix, sp500, oil, t10y2y))
 
-        return(list(prices_factos = prices_dt,
+        return(list(prices_factos = prices,
                     fundamental_factors = fundamentals,
                     macro = macro))
       }

@@ -18,6 +18,10 @@ factor investing literature.
 \item{\code{fmp}}{Help field to hold FMP class.}
 
 \item{\code{import}}{Help field to hold Import class.}
+
+\item{\code{utilsdata}}{Help field to hold Import class.}
+
+\item{\code{sp500_symbols}}{Path to QuantConnect SPY file.}
 }
 \if{html}{\out{</div>}}
 }
@@ -42,12 +46,14 @@ factor investing literature.
 \subsection{Method \code{new()}}{
 Create a new Factors object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Factors$new(source = "fmp")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Factors$new(sp500_symbols, source = "fmp")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{sp500_symbols}}{Path to QuantConnect SPY file.}
+
 \item{\code{source}}{Data source for calculating factors.}
 }
 \if{html}{\out{</div>}}

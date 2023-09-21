@@ -20,18 +20,17 @@ Imports:
     rvest,
     stringr,
     jsonlite,
-    pins,
     zip,
     lubridate,
     tiledb,
     nanotime,
     bit64,
-    timechange,
     future.apply,
     fredr,
-    QuantTools
-Remotes:
-    bitbucket::quanttools/quanttools
+    arrow,
+    rusquant,
+    duckdb,
+    DBI
 Suggests: 
     rmarkdown,
     knitr,

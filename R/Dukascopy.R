@@ -26,20 +26,21 @@ Dukascopy = R6::R6Class(
 
     #' @description
     #' Get all symbols from Dukascopy
+    #' 
+    #' @param tag url tag option. See here: https://www.dukascopy-node.app/instruments
     #'
     #' @return Vector of symbols.
-    get_symbols = function() {
-      quotes <- fromJSON("https://www.dukascopy.com/plugins/quotes-list/base.json.php")
-      etfs <- read_html("https://www.dukascopy.com/swiss/english/cfd/range-of-markets/") |>
-        html_elements("#ETFtable") |>
+    get_symbols = function(tag = "us") {
+        
+      url = paste0("https://www.dukascopy-node.app/instruments/", tag)
+      instruments = content(GET(url)) |>
+        html_elements("table") |>
         html_table() |>
-        (`[[`)(1) |>
-        as.data.frame()
-      colnames(etfs) <- c("instr", "desc", "market", "point")
-      quotes <- rbindlist(list(quotes, etfs), fill = TRUE)
-      quotes$symbols <- gsub("/|\\.", "", quotes$instr)
-
-      return(quotes)
+        as.data.table()
+      setnames(instruments, c("instrument", "id", "earliest_date_utc"))
+      instruments[, earliest_date_utc := as.Date(earliest_date_utc, format = "%b %d, %Y")]
+      
+      return(instruments)
     },
 
     #' @description
@@ -52,8 +53,8 @@ Dukascopy = R6::R6Class(
     #'
     #' @references \url{https://www.interactivebrokers.com/api/doc.html}
     #' @return GET response.
-    download_raw = function(save_path = "D:/dukascopy",
-                            symbols = "SPYUSUSD",
+    download_raw = function(save_path = "F:/equity/usa/tick/quotes",
+                            symbols = "spyususd",
                             start_date = as.Date("2017-01-01"),
                             end_date = Sys.Date() - 1) {
 
@@ -74,7 +75,7 @@ Dukascopy = R6::R6Class(
                               stringsAsFactors = FALSE)
       urls <- paste(metadata$Var4, metadata$Var3, metadata$Var2, metadata$Var1,
                     sep = "/")
-      save_paths <- paste(save_path, metadata$Var3, gsub("/", "-", metadata$Var2), metadata$Var1,
+      save_paths <- paste(save_path, metadata$Var3, gsub("/", "", metadata$Var2), metadata$Var1,
                           sep = "/")
       save_paths <- gsub("\\.bi5", "\\.lzma", save_paths)
 
@@ -83,7 +84,7 @@ Dukascopy = R6::R6Class(
       if (length(remove_indecies) > 0) {
         save_paths <- save_paths[-remove_indecies]
         urls <- urls[-remove_indecies]
-        }
+      }
 
       # create directories
       lapply(unique(dirname(save_paths)), dir.create, recursive = TRUE)
@@ -116,7 +117,7 @@ Dukascopy = R6::R6Class(
     raw_to_dt = function(files) {
 
       # debug
-      # files <- list.files("D:/dukascopy",
+      # files <- list.files("F:/equity/usa/tick/quotes/dukascopy/SPYUSUSD",
       #                     full.names = TRUE,
       #                     recursive  = TRUE)
       # library(nanotime)
@@ -126,6 +127,8 @@ Dukascopy = R6::R6Class(
       files <- files[files_sizes > 0]
       data_by_hour <- lapply(files, function(f) {
 
+        # debug
+        # f = files[10000]
         print(f)
 
         # decompress file and save it temporarily
@@ -136,7 +139,7 @@ Dukascopy = R6::R6Class(
           return(NULL)
         }
 
-        # open new filw
+        # open new file
         new_file_name <- gsub("\\.lzma", "", f)
         con <- file(new_file_name, "rb")
 

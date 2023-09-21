@@ -230,23 +230,63 @@ UtilsData = R6::R6Class(
 
     #' @description Get SP500 stocks for every date.
     #'
+    #' @param qc_spy_path to spy constitues
+    #'
     #' @return Data table of Sp500 tickers
-    sp500_history = function() {
+    sp500_history = function(qc_spy_path) {
 
-      # get SP500 stocks by date
-      url <- "https://raw.githubusercontent.com/fja05680/sp500/master/S%26P%20500%20Historical%20Components%20%26%20Changes(03-14-2022).csv"
-      sp500_symbols <- fread(url)
-      symbols_long <- tstrsplit(sp500_symbols$tickers, split = ",")
+      # debug
+      # qc_spy_path = "F:/lean_root/data/equity/usa/universes/etf/spy"
+      
+      # get infor on SP500 constitues from sp500 github repo
+      url = "https://api.github.com/repos/fja05680/sp500/contents"
+      sp500_repo = read_json(url)
+      sp500_repo_urls = vapply(sp500_repo, `[[`, "download_url", FUN.VALUE = character(1L))
+      index_file = grepl("Changes.*\\(", sp500_repo_urls)
+      url = sp500_repo_urls[index_file]
+      sp500_history = fread(url)
+      symbols_long <- tstrsplit(sp500_history$tickers, split = ",")
       symbols_long <- as.data.table(do.call(cbind, symbols_long))
-      sp500_symbols <- cbind(date = setDT(sp500_symbols)[, .(date)], symbols_long)
-      setnames(sp500_symbols, "date.date", "date")
-      sp500_symbols <- melt(sp500_symbols, id.vars = "date")
-      sp500_symbols <- sp500_symbols[, .(date, value)]
-      setnames(sp500_symbols, c("date", "symbol"))
-      sp500_symbols <- na.omit(sp500_symbols)
-      setorder(sp500_symbols, "date")
+      sp500_history <- cbind(date = setDT(sp500_history)[, .(date)], symbols_long)
+      setnames(sp500_history, "date.date", "date")
+      sp500_history <- melt(sp500_history, id.vars = "date")
+      sp500_history <- sp500_history[, .(date, value)]
+      setnames(sp500_history, c("date", "symbol"))
+      sp500_history <- na.omit(sp500_history)
+      setorder(sp500_history, "date")
 
-      return(sp500_symbols)
+      # get info from wikipedia
+      url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+      sp500_history_wiki = read_html(url) %>% 
+        html_element("#changes") %>% 
+        html_table()
+      sp500_wiki = read_html(url) %>% 
+        html_element("#constituents") %>% 
+        html_table()
+      sp500_history_wiki_symbols = c(sp500_history_wiki$Added,
+                                     sp500_history_wiki$Removed,
+                                     sp500_wiki$Symbol)
+      sp500_history_wiki_symbols = sp500_history_wiki_symbols[sp500_history_wiki_symbols != ""]
+      sp500_history_wiki_symbols = unique(sp500_history_wiki_symbols)
+      
+      # get info from QC
+      qc_sp500_files = list.files(qc_spy_path, full.names = TRUE)
+      sp500_history_qc = lapply(qc_sp500_files, fread)
+      sp500_history_qc = rbindlist(sp500_history_qc)
+      setnames(sp500_history_qc, c("ticker", "symbol", "date", "ratio", "value", "none"))
+      sp500_history_qc[, date := as.Date(as.character(date), format = "%Y%m%d")]
+      
+      # all symbols
+      symbols = unique(c(
+        sp500_history$symbol,
+        sp500_history_wiki_symbols,
+        sp500_history_qc$ticker
+      ))
+      
+      return(list(sp500_history = sp500_history, 
+                  sp500_history_wiki = sp500_history_wiki,
+                  sp500_history_qc = sp500_history_qc,
+                  symbols = symbols))
     },
 
     #' @description Help function to import clean data from Azureblob.
@@ -459,6 +499,415 @@ UtilsData = R6::R6Class(
       )
       print("Map files created successfully!")
       return (as.data.frame(all_mapfiles))
+    },
+    
+    #' @description Get map files from Quantconnect map_files folder
+    #'
+    #' @param symbols Symbols
+    #' @param path_map_files Path to map_files directory
+    #'
+    #' @return Data table with mapped symbols.
+    get_map_files_qc = function(symbols, path_map_files) {
+      # debug
+      # symbols = c("META")
+      # path_map_files = "F:/lean_root/data/equity/usa/map_files"
+      
+      # get map dta fo every symbol
+      maps_l = lapply(symbols, function(s) {
+        map_file = file.path(path_map_files, paste0(tolower(s), ".csv"))
+        if (!file.exists(map_file)) {
+          print(paste0("No map data for ", s))
+          return(NULL)
+        } else {
+          maps = fread(map_file)
+          maps = as.data.table(cbind.data.frame(s, maps))
+          if (length(maps) > 3) {
+            setnames(maps, c("symbol_input", "date", "symbol", "exc"))  
+          } else if (length(maps) == 3) {
+            setnames(maps, c("symbol_input", "date", "symbol"))  
+          }
+          maps[, date := as.IDate(as.Date(as.character(date), format = "%Y%m%d"))]
+          return(maps)
+        }
+      })
+      
+      # test for null
+      if (any(lengths(maps_l) > 1)) {
+        # merge an return
+        maps = rbindlist(maps_l)
+        maps[, symbol := toupper(symbol)]
+        return(maps)
+      } else {
+        return(NULL)      
+      }
+    },
+    
+    #' @description Get factor files from Quantconnect factor_files folder
+    #'
+    #' @param symbols Symbols
+    #' @param path_factor_files Path to factor_files directory
+    #'
+    #' @return Data table with factor files data for symbol.
+    get_factor_files_qc = function(symbols, path_factor_files) {
+      factors_l = lapply(symbols, function(s) {
+        factor_file = file.path(path_factor_files, paste0(tolower(s), ".csv"))
+        if (!file.exists(factor_file)) {
+          print(paste0("No map data for ", s))
+          return(NULL)
+        } else {
+          factors = fread(factor_file)
+          factors = as.data.table(cbind.data.frame(symbol = s, factors))
+          setnames(factors, c("symbol", "date", "div", "split", "prev_close"))
+          factors[, date := as.IDate(as.Date(as.character(date), "%Y%m%d"))]
+          return(factors)
+        }
+      })
+      factors = rbindlist(factors_l)
+      return(factors)  
+    },
+    
+    #' @description Adjust FMP market data
+    #'
+    #' @param file_path File path to parquet file that contains market data.
+    #' @param file_path_save Path to which save the data.
+    #' @param path_map_files Path to map files directory
+    #' @param path_factor_files Path to factor files directory
+    #' @param trading_hours Should we keep only trading hours in output DT.
+    #' @param parallel should we use parallle package. If yes set plan.
+    #'
+    #' @return Data table adjusted market data.
+    adjust_fmp = function(file_path, 
+                          file_path_save, 
+                          path_map_files, 
+                          path_factor_files,
+                          trading_hours = TRUE,
+                          parallel = FALSE) {
+      
+      # debug
+      # library(checkmate)
+      # library(arrow)
+      # library(data.table)
+      # library(lubridate)
+      # file_path      = "F:/equity/usa/minute/AAPL"
+      # file_path_save = "F:/equity/usa/minute-adjusted"
+      # path_map_files  = "F:/lean_root/data/equity/usa/map_files"
+      # path_factor_files = "F:/lean_root/data/equity/usa/factor_files"
+      # trading_hours = TRUE
+      # self = list()
+      # # get map dta fo every symbol
+      # self$get_map_files_qc = function(symbols, path_map_files) {
+      #   # debug
+      #   # symbols = c("AAPL", "AA")
+      #   # path_map_files = "F:/lean_root/data/equity/usa/map_files"
+      # 
+      #   # get map dta fo every symbol
+      #   maps_l = lapply(symbols, function(s) {
+      #     map_file = file.path(path_map_files, paste0(tolower(s), ".csv"))
+      #     if (!file.exists(map_file)) {
+      #       print(paste0("No map data for ", s))
+      #       return(NULL)
+      #     } else {
+      #       maps = fread(map_file)
+      #       maps = as.data.table(cbind.data.frame(s, maps))
+      #       if (length(maps) > 3) {
+      #         setnames(maps, c("symbol_input", "date", "symbol", "exc"))
+      #       } else if (length(maps) == 3) {
+      #         setnames(maps, c("symbol_input", "date", "symbol"))
+      #       }
+      #       maps[, date := as.IDate(as.Date(as.character(date), format = "%Y%m%d"))]
+      #       return(maps)
+      #     }
+      #   })
+      # 
+      #   # test for null
+      #   if (any(lengths(maps_l) > 1)) {
+      #     # merge an return
+      #     maps = rbindlist(maps_l)
+      #     maps[, symbol := toupper(symbol)]
+      #     return(maps)
+      #   } else {
+      #     return(NULL)
+      #   }
+      # }
+      # self$get_factor_files_qc = function(symbols, path_factor_files) {
+      #   factors_l = lapply(symbols, function(s) {
+      #     factor_file = file.path(path_factor_files, paste0(tolower(s), ".csv"))
+      #     if (!file.exists(factor_file)) {
+      #       print(paste0("No map data for ", s))
+      #       return(NULL)
+      #     } else {
+      #       factors = fread(factor_file)
+      #       factors = as.data.table(cbind.data.frame(symbol = s, factors))
+      #       setnames(factors, c("symbol", "date", "div", "split", "prev_close"))
+      #       factors[, date := as.IDate(as.Date(as.character(date), "%Y%m%d"))]
+      #       return(factors)
+      #     }
+      #   })
+      #   factors = rbindlist(factors_l)
+      #   return(factors)
+      # }
+
+      # Error in if (nrow(maps) > 2) { : argument is of length zero
+      
+      # checks
+      print("Checks")
+      if (!file.exists(file_path)) {stop("File file_path doesnt exists")}
+      assertDirectoryExists(file.path(file_path_save))
+      assertDirectoryExists(file.path(path_map_files))
+      assertDirectoryExists(file.path(path_factor_files))
+      
+      # get symbol
+      symbol = gsub(".parquet", "", basename(file_path)) 
+      print(paste0("Symbol ", symbol))
+      
+      # import market data
+      if (file_test("-d", file_path)) {
+        if (parallel) {
+          dt = future_lapply(list.files(file_path, recursive = TRUE, full.names = TRUE), read_parquet)
+        } else {
+          dt = lapply(list.files(file_path, recursive = TRUE, full.names = TRUE), read_parquet)
+        }
+        dt = rbindlist(dt)
+        dt = cbind(symbol = symbol, dt)
+      } else {
+        dt = read_parquet(file_path)
+        dt = cbind(symbol = symbol, dt)
+      }
+      
+      # choose columns and change columns names
+      dt = dt[, .(symbol, date = t / 1000, open = o, high = h, low = l, close = c, volume = v)]
+      
+      # set time zone
+      dt[, date := as.POSIXct(date, tz = "UTC")]
+      dt[, date := with_tz(date, "America/New_York")]
+      
+      # keep only trading hours
+      if (trading_hours) {
+        dt[, hours := as.ITime(date)]
+        dt = dt[hours %between% c(as.ITime("09:30:00"), as.ITime("16:00:00"))]
+        dt[, hours := NULL]
+      }
+      
+      # create help date column to merge dates later
+      setnames(dt, "date", "time")
+      dt[, date := as.IDate(time)]
+      
+      # get map files
+      print("Get map data")
+      maps = self$get_map_files_qc(symbol, path_map_files)
+      
+      # join map files
+      if (length(maps) > 2 && nrow(maps) > 2) {
+        # import additional market data collected from symbols
+        symbols_new = setdiff(maps[, unique(symbol)], symbol)
+        base_path = dirname(file_path)
+        files_new = list.files(base_path, full.names = TRUE, pattern = paste0("^", symbols_new, ".par"))
+        if (length(files_new) == 0) {
+          maped_dt = copy(dt)
+        } else {
+          dt_new = lapply(files_new, read_parquet)
+          names(dt_new) = gsub(".parquet", "", basename(files_new))
+          dt_new = rbindlist(dt_new, idcol = "symbol") 
+          dt_new[, date := with_tz(date, "America/New_York")]
+          if (trading_hours) {
+            dt_new[, hours := as.ITime(date)]
+            dt_new = dt_new[hours %between% c(as.ITime("09:30:00"), as.ITime("16:00:00"))]
+            dt_new[, hours := NULL]
+          }
+          setnames(dt_new, "date", "time")
+          dt_new[, date := as.IDate(time)]
+          dt = rbind(dt, dt_new)
+          
+          # merge mapped files and data 
+          maps[, date_join := date]
+          maped_dt = maps[dt, on = .(symbol, date), roll = -Inf]
+          maped_dt = maped_dt[date <= date_join]
+          maped_dt = maped_dt[!(symbol == symbol_input & time < tail(maps[, date_join], 2)[-2])]
+          setnames(maped_dt, c("symbol_input", "symbol"), c("symbol", "symbol_map"))
+          
+          # sort
+          setorder(maped_dt, time)
+        }
+      } else {
+        maped_dt = copy(dt)
+      }
+      
+      # debug
+      # unique(maped_dt[, .(symbol, date_join)])
+      # plot(as.xts.data.table(maped_dt[, .(time, close)]))
+      # maped_dt[duplicated(maped_dt[, .(symbol, time)])]
+      # maped_dt[time == as.POSIXct("2021-06-30 09:32:00", tz = "America/New_York")]  
+
+      # get factor files
+      print("Get factor data")
+      factors = self$get_factor_files_qc(symbol, path_factor_files)
+      
+      # adjust if there are factor data
+      if (length(factors) > 1) {
+        # adjust ohlc
+        dtadj = factors[maped_dt, on = c("symbol", "date"), roll = -Inf]
+        setorder(dtadj, symbol, date)
+
+        # adjust
+        dtadj[, `:=`(
+          open_adj = open * split * div,
+          high_adj = high * split * div,
+          low_adj = low * split * div,
+          close_adj = close * split * div
+        )]
+        dtadj = dtadj[, .(date = time, open = open_adj, high = high_adj, 
+                          low = low_adj, close = close_adj, volume, close_raw = close)]
+        
+        # time back to UTC 
+        dtadj[, date := with_tz(date, "UTC")]
+        
+        # save adjusted to NAS or local uri
+        print("Save to uri")
+        file_name = file.path(file_path_save, paste0(symbol, ".parquet"))
+        if (file.exists(file_name)) file.remove(file_name)
+        write_parquet(dtadj, file_name)
+      } else {
+        # save without adjusting because there are no maps and factors data
+        print("Save to uri without adjustment because there are no maps and factors data")
+        file_name = file.path(file_path_save, paste0(symbol, ".parquet"))
+        if (file.exists(file_name)) file.remove(file_name)
+        write_parquet(dt, file_name)
+      }
+      return(NULL)
+      
+      # debug
+      # x = "F:/equity/usa/minute-adjusted/META.parquet"
+      # system.time({ohlcv = arrow::read_parquet(x)})
+      # plot(ohlcv[seq(1, nrow(ohlcv), 50), close])
+    },
+    
+    #' @description NAS sync
+    #'
+    #' @param local_dir File path to parquet file that contains market data.
+    #' @param nas_dir Path to which save the data.
+    #' @param direction downlaod or upload.
+    #'
+    #' @return Nothin to return
+    sync = function(local_dir, nas_dir, direction = "upload") {
+      
+      # debug
+      # local_dir = "F:/equity/usa/minute/AAPL"
+      # nas_dir    = "N:/home/Drive/equity/usa/minute/AAPL"
+      
+      # warning message
+      if (!dir.exists(nas_dir)) {
+        warning("Folder ", nas_dir, " doesn't exists. It will be created automaticly.")
+        dir.create(nas_dir)
+      }
+      
+      # list files in local dir and NAS dir
+      local_ = list.files(local_dir, full.names = TRUE)
+      nas_   = list.files(nas_dir, full.names = TRUE)
+      
+      # check new files
+      new_files = which(!(basename(local_) %in% basename(nas_)))
+      new_files = local_[new_files]
+      new_files_path = file.path(nas_dir, basename(new_files))
+      
+      # copy files from local to NAS
+      file.copy(new_files, new_files_path)
+    },
+    
+    #' @description Merged Fundamental data
+    #'
+    #' @param balance_sheet file to balance sheet csv's. 
+    #' @param income_statement file to income statement csv's.
+    #' @param cash_flow file to cash flow csv's.
+    #' @param financial_growth file to financial growth csv's.
+    #' @param financial_metrics file to financial metrics csv's.
+    #' @param financial_ratios file to financial ratios csv's.
+    #'
+    #' @return Nothin to return
+    fundamnetals_agg = function(balance_sheet,
+                                income_statement,
+                                cash_flow,
+                                financial_growth,
+                                financial_metrics,
+                                financial_ratios) {
+      
+      # debug
+      # library(arrow)
+      # library(data.table)
+      # balance_sheet     = "F:/equity/usa/fundamentals/balance-sheet-statement-bulk/quarter"
+      # income_statement  = "F:/equity/usa/fundamentals/income-statement-bulk/quarter"
+      # cash_flow         = "F:/equity/usa/fundamentals/cash-flow-statement-bulk/quarter"
+      # financial_growth  = "F:/equity/usa/fundamentals/financial-growth-bulk/quarter"
+      # financial_metrics = "F:/equity/usa/fundamentals/key-metrics-bulk/quarter"
+      # financial_ratios  = "F:/equity/usa/fundamentals/ratios-bulk/quarter"
+      
+      # help function
+      read_fs = function(path) {
+        dt_files = list.files(path, full.names = TRUE)
+        dt = lapply(dt_files, fread)
+        dt = rbindlist(dt)
+        if ("acceptedDateTime" %in% colnames(dt)) {
+          dt[, `:=`(
+            acceptedDateTime = as.POSIXct(acceptedDate, format = "%Y-%m-%d %H:%M:%S", tz = "America/New_York"),
+            acceptedDate = as.Date(acceptedDate, format = "%Y-%m-%d %H:%M:%S", tz = "America/New_York")
+          )]
+        }
+        return(dt)
+      }
+      
+      # income statement data
+      print("Import financial statement data")
+      bs = read_fs(balance_sheet)
+      pl = read_fs(income_statement)
+      cf = read_fs(cash_flow)
+      fin_growth = read_fs(financial_growth)
+      fin_metrics = read_fs(financial_metrics)
+      ratios = read_fs(financial_ratios)
+      
+      # merge all fundamental data
+      columns_diff_pl <- c("symbol", "date", setdiff(colnames(pl), colnames(bs)))
+      columns_diff_cf <- c("symbol", "date", setdiff(colnames(cf), colnames(bs)))
+      columns_diff_cf <- c("symbol", "date", setdiff(columns_diff_cf, colnames(pl)))
+      columns_diff_fg <- c("symbol", "date", setdiff(colnames(fin_growth), colnames(pl)))
+      columns_diff_fm <- c("symbol", "date", setdiff(colnames(fin_metrics), colnames(pl)))
+      columns_diff_fm <- c("symbol", "date", setdiff(columns_diff_fm, colnames(ratios)))
+      columns_diff_fr <- c("symbol", "date", setdiff(colnames(ratios), colnames(pl)))
+      fundamentals <-
+        Reduce(
+          function(x, y)
+            merge(
+              x,
+              y,
+              by = c("symbol", "date"),
+              all.x = TRUE,
+              all.y = FALSE
+            ),
+          list(bs,
+               pl[, ..columns_diff_pl],
+               cf[, ..columns_diff_cf],
+               fin_growth[, ..columns_diff_fg],
+               fin_metrics[, ..columns_diff_fm],
+               ratios[, ..columns_diff_fr])
+        )
+
+      # remove unnecesary columns
+      fundamentals[, c("link", "finalLink") := NULL]
+      
+      # conver characters to numerics
+      char_cols = fundamentals[, colnames(.SD), .SDcols = is.character]
+      char_cols = setdiff(char_cols, c("symbol", "reportedCurrency", "period"))
+      fundamentals[, (char_cols) := lapply(.SD, as.numeric), .SDcols = char_cols]
+      
+      # order
+      setorder(fundamentals, symbol, date)
+      
+      # create ttm variables for pl and cf
+      ids = c("symbol", "date", "reportedCurrency", "cik", "fillingDate", 
+              "acceptedDate", "calendarYear", "period")
+      cols = setdiff(c(columns_diff_pl, columns_diff_cf), ids)
+      cols_ttm = paste0(cols, "_ttm")
+      fundamentals[, (cols_ttm) := lapply(.SD, frollsum, 4), .SDcols = cols, by = symbol]
+      
+      return(fundamentals)
     }
   )
 )

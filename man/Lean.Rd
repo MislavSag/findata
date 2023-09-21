@@ -16,6 +16,7 @@ Help functions for transforming raw market data to Quantconnect data.
 \item \href{#method-Lean-equity_daily_from_fmpcloud}{\code{Lean$equity_daily_from_fmpcloud()}}
 \item \href{#method-Lean-equity_hour_from_fmpcloud}{\code{Lean$equity_hour_from_fmpcloud()}}
 \item \href{#method-Lean-equity_minute_from_fmpcloud}{\code{Lean$equity_minute_from_fmpcloud()}}
+\item \href{#method-Lean-adjusted_qc_data}{\code{Lean$adjusted_qc_data()}}
 \item \href{#method-Lean-clone}{\code{Lean$clone()}}
 }
 }
@@ -125,6 +126,31 @@ Convert FMP Cloud minute data to Quantconnect minute data.
 }
 \subsection{Returns}{
 No value returned.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Lean-adjusted_qc_data"></a>}}
+\if{latex}{\out{\hypertarget{method-Lean-adjusted_qc_data}{}}}
+\subsection{Method \code{adjusted_qc_data()}}{
+Adjust bough QuantConnect. Use map_files and factor_files
+    to adjust OHLCV data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Lean$adjusted_qc_data(path_market_data, path_map_files, path_factor_files)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path_market_data}}{Path to daily / hourly data.}
+
+\item{\code{path_map_files}}{Path to map files.}
+
+\item{\code{path_factor_files}}{Path to factor files.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with adjusted QC data.
 }
 }
 \if{html}{\out{<hr>}}

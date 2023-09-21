@@ -291,13 +291,13 @@ Lean = R6::R6Class(
     #'
     #' @return Data table with adjusted QC data.
     adjusted_qc_data = function(path_market_data,
-                              path_map_files,
-                              path_factor_files) {
+                                path_map_files,
+                                path_factor_files) {
 
       # debug
-      path_market_data = "C:/Users/Mislav/Documents/qcdata/qcdaily.csv"
-      path_map_files = "C:/Users/Mislav/lean/data/equity/usa/map_files"
-      path_factor_files = "C:/Users/Mislav/lean/data/equity/usa/factor_files"
+      # path_market_data = "C:/Users/Mislav/Documents/qcdata/qcdaily.csv"
+      # path_map_files = "F:/lean_root/data/equity/usa/map_files"
+      # path_factor_files = "F:/lean_root/data/equity/usa/factor_files"
 
       # import daily / hourly market data
       dt = fread(path_market_data)
@@ -313,10 +313,28 @@ Lean = R6::R6Class(
       maps = rbindlist(maps_l, idcol = "symbol", fill = TRUE)
       setnames(maps, c("symbol_input", "date", "symbol", "exc"))
       maps[, date := as.IDate(as.Date(as.character(date), format = "%Y%m%d"))]
+      maps[, date_join := date]
+
+      # test
+      maps[symbol == "tops"]
+      maps[symbol_input == "tops"]
+      maps[symbol == "meta"]
+      maps[symbol_input == "meta"]
+      maps[symbol_input == "aapl"]
+      dt[symbol == "fb"]
+      dt[ symbol == "tops"]
 
       # merge mapped files and data
-      maped_dt = maps[dt, on = c("symbol", "date"), roll = -Inf]
+      maped_dt = maps[dt, on = .(symbol, date), roll = -Inf]
       setnames(maped_dt, c("symbol_input", "symbol"), c("symbol", "symbol_map"))
+      setorder(maped_dt, symbol, date)
+
+      # remove first observation is freater than date
+      maped_dt = maped_dt[date_join <= shift(date_join, -1, type = "shift")]
+
+      # debug
+      # x = maped_dt[symbol == "tops"][order(date)]
+      # plot(x[, .(date, close)])
 
       # import factor files
       factor_files = list.files(
@@ -330,11 +348,30 @@ Lean = R6::R6Class(
       factors = rbindlist(factors_l, idcol = "symbol")
       setnames(factors, c("symbol", "date", "div", "split", "prev_close"))
       factors[, date := as.IDate(as.Date(as.character(date), "%Y%m%d"))]
+      setorder(factors, symbol, date)
 
       # adjust data
       dtadj = factors[maped_dt, on = c("symbol", "date"), roll = -Inf]
       setorder(dtadj, symbol, date)
-      dtadj[, close_adj := close * split * div]
+
+      # test
+      # maped_dt[symbol == "tops"]
+      # factors[symbol == "tops"]
+      dtadj[, `:=`(
+        open_adj = open * split * div,
+        high_adj = high * split * div,
+        low_adj = low * split * div,
+        close_adj = close * split * div
+      )]
+
+      # test
+      # plot(as.xts.data.table(dtadj[symbol == "aapl", .(date, close_adj)])) # GOOD
+      # plot(as.xts.data.table(dtadj[symbol == "meta", .(date, close_adj)])) # GOOD
+      # plot(as.xts.data.table(dtadj[symbol == "tops", .(date, close_adj)])) # NOT GOOD
+      # dtadj[symbol == "tops"]
+      # dtadj[symbol == "tops"  & date %between% c("2020-07-31", "2020-08-31")]
+      # factors[symbol == "tops"]
+
 
       # return final adjusted data
       return(dtadj)

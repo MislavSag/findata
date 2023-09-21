@@ -13,7 +13,7 @@ Get data data from finam using Quanttools package.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Finam-new}{\code{Finam$new()}}
-\item \href{#method-Finam-finam_tick_tiledb}{\code{Finam$finam_tick_tiledb()}}
+\item \href{#method-Finam-get_ticks}{\code{Finam$get_ticks()}}
 \item \href{#method-Finam-clone}{\code{Finam$clone()}}
 }
 }
@@ -47,26 +47,26 @@ A new `Finam` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Finam-finam_tick_tiledb"></a>}}
-\if{latex}{\out{\hypertarget{method-Finam-finam_tick_tiledb}{}}}
-\subsection{Method \code{finam_tick_tiledb()}}{
+\if{html}{\out{<a id="method-Finam-get_ticks"></a>}}
+\if{latex}{\out{\hypertarget{method-Finam-get_ticks}{}}}
+\subsection{Method \code{get_ticks()}}{
 Get tick data from finam source using QuantTools.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Finam$finam_tick_tiledb(
-  symbols,
-  days = getBusinessDays(as.Date("2011-01-01"), Sys.Date() - 1),
-  save_uri = "s3://equity-usa-tick-finam"
+\if{html}{\out{<div class="r">}}\preformatted{Finam$get_ticks(
+  symbol,
+  save_uri,
+  days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)
 )}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{symbols}}{Start date}
-
-\item{\code{days}}{Days to scrap data for}
+\item{\code{symbol}}{Start date}
 
 \item{\code{save_uri}}{Tiledb uri to save.}
+
+\item{\code{days}}{Days to scrap data for}
 }
 \if{html}{\out{</div>}}
 }

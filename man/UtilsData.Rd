@@ -20,6 +20,11 @@ Various help data.
 \item \href{#method-UtilsData-get_market_data}{\code{UtilsData$get_market_data()}}
 \item \href{#method-UtilsData-adjust_market_data}{\code{UtilsData$adjust_market_data()}}
 \item \href{#method-UtilsData-get_map_files_tiledb}{\code{UtilsData$get_map_files_tiledb()}}
+\item \href{#method-UtilsData-get_map_files_qc}{\code{UtilsData$get_map_files_qc()}}
+\item \href{#method-UtilsData-get_factor_files_qc}{\code{UtilsData$get_factor_files_qc()}}
+\item \href{#method-UtilsData-adjust_fmp}{\code{UtilsData$adjust_fmp()}}
+\item \href{#method-UtilsData-sync}{\code{UtilsData$sync()}}
+\item \href{#method-UtilsData-fundamnetals_agg}{\code{UtilsData$fundamnetals_agg()}}
 \item \href{#method-UtilsData-clone}{\code{UtilsData$clone()}}
 }
 }
@@ -123,9 +128,16 @@ Adjusted data saved to AWS S3 bucket
 \subsection{Method \code{sp500_history()}}{
 Get SP500 stocks for every date.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$sp500_history()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$sp500_history(qc_spy_path)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{qc_spy_path}}{to spy constitues}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Data table of Sp500 tickers
 }
@@ -210,6 +222,148 @@ Help function to get map files.
 }
 \subsection{Returns}{
 Maped files.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-get_map_files_qc"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_map_files_qc}{}}}
+\subsection{Method \code{get_map_files_qc()}}{
+Get map files from Quantconnect map_files folder
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$get_map_files_qc(symbols, path_map_files)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Symbols}
+
+\item{\code{path_map_files}}{Path to map_files directory}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with mapped symbols.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-get_factor_files_qc"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-get_factor_files_qc}{}}}
+\subsection{Method \code{get_factor_files_qc()}}{
+Get factor files from Quantconnect factor_files folder
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$get_factor_files_qc(symbols, path_factor_files)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbols}}{Symbols}
+
+\item{\code{path_factor_files}}{Path to factor_files directory}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table with factor files data for symbol.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-adjust_fmp"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-adjust_fmp}{}}}
+\subsection{Method \code{adjust_fmp()}}{
+Adjust FMP market data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$adjust_fmp(
+  file_path,
+  file_path_save,
+  path_map_files,
+  path_factor_files,
+  trading_hours = TRUE,
+  parallel = FALSE
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{file_path}}{File path to parquet file that contains market data.}
+
+\item{\code{file_path_save}}{Path to which save the data.}
+
+\item{\code{path_map_files}}{Path to map files directory}
+
+\item{\code{path_factor_files}}{Path to factor files directory}
+
+\item{\code{trading_hours}}{Should we keep only trading hours in output DT.}
+
+\item{\code{parallel}}{should we use parallle package. If yes set plan.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data table adjusted market data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-sync"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-sync}{}}}
+\subsection{Method \code{sync()}}{
+NAS sync
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$sync(local_dir, nas_dir, direction = "upload")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{local_dir}}{File path to parquet file that contains market data.}
+
+\item{\code{nas_dir}}{Path to which save the data.}
+
+\item{\code{direction}}{downlaod or upload.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Nothin to return
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-UtilsData-fundamnetals_agg"></a>}}
+\if{latex}{\out{\hypertarget{method-UtilsData-fundamnetals_agg}{}}}
+\subsection{Method \code{fundamnetals_agg()}}{
+Merged Fundamental data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$fundamnetals_agg(
+  balance_sheet,
+  income_statement,
+  cash_flow,
+  financial_growth,
+  financial_metrics,
+  financial_ratios
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{balance_sheet}}{file to balance sheet csv's.}
+
+\item{\code{income_statement}}{file to income statement csv's.}
+
+\item{\code{cash_flow}}{file to cash flow csv's.}
+
+\item{\code{financial_growth}}{file to financial growth csv's.}
+
+\item{\code{financial_metrics}}{file to financial metrics csv's.}
+
+\item{\code{financial_ratios}}{file to financial ratios csv's.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Nothin to return
 }
 }
 \if{html}{\out{<hr>}}

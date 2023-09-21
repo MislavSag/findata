@@ -148,83 +148,55 @@ InvestingCom = R6::R6Class(
 
     #' @description Update earnings announcements data from investingcom website
     #'
-    #' @param uri TileDB uri argument
+    #' @param path to save output DT.
     #' @param start_date First date to scrape from.If NULL, takes last date from existing uri.
-    #' @param consolidate Consolidate and vacuum at the end.
+    #' @param update existing uri.
     #'
     #' @return Get and update ea data from investingcom,
-    update_investingcom_earnings = function(uri, start_date = NULL, consolidate = TRUE) {
+    update_investingcom_earnings = function(path, start_date, update = TRUE) {
 
       # debug
       # library(findata)
       # library(data.table)
       # library(httr)
       # library(RcppQuantuccia)
-      # library(tiledb)
+      # library(arrow)
       # library(lubridate)
       # library(nanotime)
       # self = InvestingCom$new()
-      # uri = "s3://equity-usa-earningsevents-investingcom"
+      # path = "F:/equity/usa/fundamentals/earning_announcements_investingcom.parquet"
 
-      # check if uri exists
-      bucket_check <- tryCatch(tiledb_object_ls(uri), error = function(e) e)
-      if (length(bucket_check) < 2 && grepl("bucket does not exist", bucket_check)) {
-        stop("Bucket does not exist. Craete s3 bucket with uri name.")
+      # help function
+      clean_scraped = function(dt) {
+        dt <- unique(dt)
+        setorder(dt, "datetime")
+        setnames(dt, "datetime", "time")
+        dt[, time := as.POSIXct(time, tz = "America/New_York")]
+        dt[, time := with_tz(time, tzone = "UTC")]
+        dt <- unique(dt, by = c("symbol", "time"))
+        
       }
-
-      # define start date
-      if (is.null(start_date)) {
-        if (tiledb_object_type(uri) == "ARRAY") {
-          arr <- tiledb_array(uri,
-                              as.data.frame = TRUE,
-                              selected_ranges = list(time = cbind(as.POSIXct(Sys.Date() - 10), Sys.time())))
-          dt_old <- arr[]
-          start_date <- min(dt_old$time, na.rm = TRUE)
-        } else {
-          start_date <- as.Date("2014-01-01")
-        }
-      }
-
+      
       # get new data
       dt <- self$get_investingcom_earnings_calendar_bulk(start_date)
-
+      
       # check if there are data available for timespan
       if (nrow(dt) == 0) {
         print("No data for earning announcements.")
         return(NULL)
       }
-
+      
       # clean data
-      dt <- unique(dt)
-      setorder(dt, "datetime")
-      setnames(dt, "datetime", "time")
-      dt[, time := as.POSIXct(time, tz = "America/New_York")]
-      dt[, time := with_tz(time, tzone = "UTC")]
-      dt <- unique(dt, by = c("symbol", "time"))
-
-      # save to AWS S3
-      if (tiledb_object_type(uri) != "ARRAY") {
-        fromDataFrame(
-          obj = dt,
-          uri = uri,
-          col_index = c("symbol", "time"),
-          sparse = TRUE,
-          tile_domain=list(time=c(as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
-                                  as.POSIXct("2099-12-31 23:59:59", tz = "UTC"))),
-          allows_dups = FALSE
-        )
-      } else {
-        # save to tiledb
-        arr <- tiledb_array(uri, as.data.frame = TRUE)
-        arr[] <- dt
-        tiledb_array_close(arr)
+      dt = clean_scraped(dt)
+      
+      # get data
+      if (update) {
+        dt_old = read_parquet(path)
+        dt = rbind(dt_old, dt)
       }
 
-      # consolidate
-      if (consolidate) {
-        tiledb:::libtiledb_array_consolidate(ctx = self$context_with_config@ptr, uri = uri)
-        tiledb:::libtiledb_array_vacuum(ctx = self$context_with_config@ptr, uri = uri)
-      }
+      # save to uri
+      write_parquet(dt, path)
     }
   )
 )

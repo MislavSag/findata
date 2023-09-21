@@ -51,13 +51,11 @@ A new `Import` object.
 Function imports all relevant data for USA stocks from FMP Prep.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Import$get_data_fmp(
-  uri_market_cap = "s3://equity-usa-market-cap",
-  uri_earning_announcements = "s3://equity-usa-earningsevents",
-  uri_pl = "s3://equity-usa-income-statement-bulk",
-  uri_bs = "s3://equity-usa-balance-sheet-statement-bulk",
-  uri_fg = "s3://equity-usa-financial-growth-bulk",
-  uri_metrics = "s3://equity-usa-key-metrics-bulk",
-  uri_prices = "D:/equity-usa-daily-fmp",
+  symbols,
+  uri_market_cap = "F:/equity/usa/fundamentals/market_cap.parquet",
+  uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
+  uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
+  uri_prices = "F:/equity/daily_fmp_all.csv",
   first_date = NA
 )}\if{html}{\out{</div>}}
 }
@@ -65,17 +63,13 @@ Function imports all relevant data for USA stocks from FMP Prep.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{symbols}}{Securities symbols.}
+
 \item{\code{uri_market_cap}}{Tiledb uri for market capitalization.}
 
 \item{\code{uri_earning_announcements}}{Tiledb uri for earning announcements.}
 
-\item{\code{uri_pl}}{Tiledb uri for p&l.}
-
-\item{\code{uri_bs}}{Tiledb uri for balance sheet.}
-
-\item{\code{uri_fg}}{Tiledb uri for financial growth.}
-
-\item{\code{uri_metrics}}{Tiledb uri for key metrics.}
+\item{\code{uri_fundamentals}}{to fundamentals data.}
 
 \item{\code{uri_prices}}{Tiledb uri for daily OHLCV prices.}
 
