@@ -27,11 +27,11 @@ Imports:
     bit64,
     future.apply,
     fredr,
-    arrow,
     rusquant,
     duckdb,
     DBI
 Suggests: 
+    arrow,
     rmarkdown,
     knitr,
     rlang,
