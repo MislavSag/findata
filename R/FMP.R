@@ -1647,11 +1647,6 @@ FMP = R6::R6Class(
       # symbols <- symbols[!grepl("/", symbols)]
       # symbols <- unique(union(sp100_symbols, symbols))
       
-      # check if we have all necessary env variables
-      assert_choice("AWS_ACCESS_KEY_ID", names(Sys.getenv()))
-      assert_choice("AWS_SECRET_ACCESS_KEY", names(Sys.getenv()))
-      assert_choice("AWS_DEFAULT_REGION", names(Sys.getenv()))
-      
       # parallel execution
       # plan("multisession", workers = 2L)
       # ADD FUTURE LAPPLY BELOW
