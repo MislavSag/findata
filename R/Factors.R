@@ -120,6 +120,7 @@ Factors = R6::R6Class(
         fmp_data$fundamentals <- NULL
         prices <- fmp_data$prices
         fmp_data$prices <- NULL
+        dividends = fmp_data$dividends
 
         # free memory
         rm(fmp_data)
@@ -404,8 +405,8 @@ Factors = R6::R6Class(
 
         # dividend to price for all market
         print("Dividend data")
-        dividends = read_parquet(uri_dividends)
-        dividends[, date := as.Date(date)]
+        date_cols = c("date", "recordDate", "paymentDate", "declarationDate")
+        dividends[, (date_cols) := lapply(.SD, as.Date), .SDcols = date_cols]
         dividends <- na.omit(dividends, cols = c("adjDividend", "date"))
         dividends = dividends[symbol %in% sp500_symbols]
 
