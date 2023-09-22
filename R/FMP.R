@@ -82,7 +82,7 @@ FMP = R6::R6Class(
         start_date <- as.Date("2010-01-01")
         dt = get_ea(start_date, Sys.Date())
       } else {
-        dt_existing = read_parquet(path)
+        dt_existing = arrow::read_parquet(path)
         dt_new = get_ea(start_date, Sys.Date())
         if (nrow(dt_new) == 0) {
           print("No data for earning announcements.")
@@ -93,7 +93,7 @@ FMP = R6::R6Class(
       }
 
       # save to uri
-      write_parquet(dt, path)
+      arrow::write_parquet(dt, path)
     },
 
     #' @description Get Earning Call Transcript from FMP cloud.
@@ -113,7 +113,7 @@ FMP = R6::R6Class(
       # self = list()
       # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
       # # get symbols for transcripts
-      # events = read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
+      # events = arrow::read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
       # events = as.data.table(events)
       # events <- events[date < Sys.Date()]                 # remove announcements for today
       # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
@@ -147,7 +147,7 @@ FMP = R6::R6Class(
         # create dir 
         file_ = file.path(uri, paste0(s, ".parquet"))
         if (file.exists(file_)) {
-          old_data = read_parquet(file_)
+          old_data = arrow::read_parquet(file_)
           new = fsetdiff(as.data.table(res[, c("quarter", "year")]),
                          as.data.table(old_data[, c("quarter", "year")]))
           years = new[, unique(year)]
@@ -181,7 +181,7 @@ FMP = R6::R6Class(
         }
         
         # save
-        write_parquet(new_data, file_)
+        arrow::write_parquet(new_data, file_)
         
         return(NULL)
       })
@@ -1066,7 +1066,7 @@ FMP = R6::R6Class(
         
         # get all existing data
         if (file.exists(file_name)) {
-          dt_old = read_parquet(file_name)
+          dt_old = arrow::read_parquet(file_name)
           limit = as.integer(Sys.Date() - dt_old[, max(as.Date(date))])
           if (limit == 0) return(NULL)
         } else {
@@ -1095,7 +1095,7 @@ FMP = R6::R6Class(
         setorder(data_new, -date)
         
         # save
-        write_parquet(data_new, file_name)
+        arrow::write_parquet(data_new, file_name)
         return(NULL)
       })
     },
@@ -1308,7 +1308,7 @@ FMP = R6::R6Class(
       #   }
       # )
       # get symbols for transcripts
-      # events = read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
+      # events = arrow::read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
       # events = as.data.table(events)
       # events <- events[date < Sys.Date()]                 # remove announcements for today
       # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
@@ -1347,7 +1347,7 @@ FMP = R6::R6Class(
       } else {
 
         # import existing data
-        ratings_raw <- as.data.table(read_parquet(uri))
+        ratings_raw <- as.data.table(arrow::read_parquet(uri))
 
         # get new data
         ratings_l <- lapply(symbols, function(s) {
@@ -1369,7 +1369,7 @@ FMP = R6::R6Class(
       ratings <- unique(ratings)
 
       # save to uri
-      write_parquet(ratings, uri)
+      arrow::write_parquet(ratings, uri)
 
       return(NULL)
     },
@@ -1492,7 +1492,7 @@ FMP = R6::R6Class(
         if (file_name %in% dir_files) {
           # read data for the symbol
           print("Get minute data")
-          data_history = read_parquet(file_name_full)
+          data_history = arrow::read_parquet(file_name_full)
           
           # cont if there is history data
           if (length(data_history) > 0) {
@@ -1597,10 +1597,10 @@ FMP = R6::R6Class(
             file.remove(file_name_full)
           }
           # save file
-          write_parquet(data_by_symbol, file_name_full)
+          arrow::write_parquet(data_by_symbol, file_name_full)
         } else {
           # save to S3
-          write_parquet(data_by_symbol, file_name_full)
+          arrow::write_parquet(data_by_symbol, file_name_full)
         }
         return(NULL)
       })
@@ -1735,7 +1735,7 @@ FMP = R6::R6Class(
 
           # save file
           file_name_full = file.path(dir_name, paste0(date, ".parquet"))
-          write_parquet(date_data, file_name_full)
+          arrow::write_parquet(date_data, file_name_full)
         }
       })
     },
@@ -1913,7 +1913,7 @@ FMP = R6::R6Class(
       #'     if (file_name %in% dir_files) {
       #'       # read data for the symbol
       #'       print("Get minute data")
-      #'       data_history = read_parquet(file_name_full)
+      #'       data_history = arrow::read_parquet(file_name_full)
       #'       
       #'       # cont if there is history data
       #'       if (length(data_history) > 0) {
@@ -2018,10 +2018,10 @@ FMP = R6::R6Class(
       #'         file.remove(file_name_full)
       #'       }
       #'       # save file
-      #'       write_parquet(data_by_symbol, file_name_full)
+      #'       arrow::write_parquet(data_by_symbol, file_name_full)
       #'     } else {
       #'       # save to S3
-      #'       write_parquet(data_by_symbol, file_name_full)
+      #'       arrow::write_parquet(data_by_symbol, file_name_full)
       #'     }
       #'     return(NULL)
       #'   })

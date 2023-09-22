@@ -53,7 +53,7 @@ Import = R6::R6Class(
       # exchanges = c("AMEX", "NASDAQ", "NYSE", "OTC")
       # stocks_us <- securities[type == "stock" & exchangeShortName %in% exchanges]
       # symbols_us <- stocks_us[, unique(symbol)]
-      # events = read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
+      # events = arrow::read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
       # events = as.data.table(events)
       # events <- events[date < Sys.Date()]                 # remove announcements for today
       # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
@@ -77,14 +77,14 @@ Import = R6::R6Class(
       # MARKET CAP --------------------------------------------------------------
       # get market cap data
       print("Market cap data.")
-      market_cap = read_parquet(uri_market_cap)
+      market_cap = arrow::read_parquet(uri_market_cap)
       setorder(market_cap, symbol, date)
       market_cap = market_cap[symbol %in% symbols]
       
       # EARNING ANNOUNCEMENTS ---------------------------------------------------
       # get earning announcmenet evetns data from FMP
       print("Earnings announcements")
-      events = read_parquet(uri_earning_announcements)
+      events = arrow::read_parquet(uri_earning_announcements)
       setorder(events, date)
       events = events[date < Sys.Date()]
       events = unique(events, by = c("symbol", "date"))
@@ -93,7 +93,7 @@ Import = R6::R6Class(
       # FUNDAMENTAL DATA --------------------------------------------------------
       # get fundmanetals data
       print("Fundamental data.")
-      fundamentals = read_parquet(uri_fundamentals)
+      fundamentals = arrow::read_parquet(uri_fundamentals)
       fundamentals = fundamentals[symbol %in% symbols]
       setorder(market_cap, symbol, date)
       
@@ -140,7 +140,7 @@ Import = R6::R6Class(
       # DIVIDENDS ---------------------------------------------------------------
       # read dividends data
       print("Import dividends data.")
-      dividends = read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
+      dividends = arrow::read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
       dividends[, lapply(.SD, as.Date), 
                 .SDcols = c("date", "recordDate", "paymentDate", "declarationDate")]
       dividends[, label := NULL]
