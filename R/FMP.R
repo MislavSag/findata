@@ -1660,7 +1660,7 @@ FMP = R6::R6Class(
       lapply(rev(symbols), function(s) {
         
         # debug
-        # s = "WW"
+        # s = "ET"
         print(s)
         
         # create folder for symbol if it doesn't exists
@@ -1696,6 +1696,16 @@ FMP = R6::R6Class(
           dates = dates[dates > as.Date("2021-10-04")]
         } else if (s == "WW") {
           dates = dates[dates > as.Date("2015-12-30")]
+        } else if (s == "WBD") {
+          dates = dates[dates > as.Date("2016-01-05")]
+        } else if (s == "WBA") {
+          dates = dates[dates > as.Date("2018-01-03")]
+        } else if (s == "USAU") {
+          dates = dates[dates > as.Date("2015-12-30")]
+        } else if (s == "FBIN") {
+          dates = dates[dates > as.Date("2022-12-15")]
+        } else if (s == "ET") {
+          dates = dates[dates > as.Date("2011-12-30")]
         }
         
         # extract missing dates

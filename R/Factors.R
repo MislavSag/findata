@@ -26,11 +26,6 @@ Factors = R6::R6Class(
     #' @field sp500_symbols Path to QuantConnect SPY file.
     sp500_symbols = NULL,
     
-    # DEBUG
-    # self = list()
-    # self$fmp = FMP$new()
-    # self$import = Import$new()
-
     #' @description
     #' Create a new Factors object.
     #'
@@ -106,7 +101,8 @@ Factors = R6::R6Class(
         #   uri_market_cap = "F:/equity/usa/fundamentals/market_cap.parquet",
         #   uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
         #   uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
-        #   uri_prices = "F:/equity/daily_fmp_all.csv"
+        #   uri_prices = "F:/equity/daily_fmp_all.csv",
+        #   uri_dividends = "F:/equity/usa/fundamentals/dividends.parquet"
         # )
         # sp500_symbols = self$utilsdata$sp500_history("F:/lean_root/data/equity/usa/universes/etf/spy")
         # sp500_symbols = sp500_symbols$symbols
@@ -408,19 +404,10 @@ Factors = R6::R6Class(
 
         # dividend to price for all market
         print("Dividend data")
-        url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
-        dividends_l <- lapply(sp500_symbols, function(s){
-          print(s)
-          p <- GET(paste0(url, s), query = list(apikey = Sys.getenv("APIKEY-FMPCLOUD")))
-          res <- content(p)
-          dividends_ <- rbindlist(res$historical, fill = TRUE)
-          cbind(symbol = res$symbol, dividends_)
-        })
-        dividends <- rbindlist(dividends_l, fill = TRUE)
+        dividends = read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
         dividends[, date := as.Date(date)]
         dividends <- na.omit(dividends, cols = c("adjDividend", "date"))
-        # dividends <- unique(dividends, by = c("symbol", "date"))
-        dividends[order(adjDividend)]
+        dividends = dividends[symbol %in% sp500_symbols]
 
         # dividend sp500
         dividends_sp500 <- dividends[, .(div = sum(adjDividend , na.rm = TRUE)), by = date]

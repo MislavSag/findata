@@ -56,6 +56,7 @@ Function imports all relevant data for USA stocks from FMP Prep.
   uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
   uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
   uri_prices = "F:/equity/daily_fmp_all.csv",
+  uri_dividends = "F:/equity/usa/fundamentals/dividends.parquet",
   first_date = NA
 )}\if{html}{\out{</div>}}
 }
@@ -72,6 +73,8 @@ Function imports all relevant data for USA stocks from FMP Prep.
 \item{\code{uri_fundamentals}}{to fundamentals data.}
 
 \item{\code{uri_prices}}{Tiledb uri for daily OHLCV prices.}
+
+\item{\code{uri_dividends}}{Tiledb uri for dividends data.}
 
 \item{\code{first_date}}{if NA, keep all. Otherwise, keep only data from
 first_date.}

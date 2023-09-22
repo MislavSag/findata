@@ -29,6 +29,7 @@ Import = R6::R6Class(
     #' @param uri_earning_announcements Tiledb uri for earning announcements.
     #' @param uri_fundamentals to fundamentals data.
     #' @param uri_prices Tiledb uri for daily OHLCV prices.
+    #' @param uri_dividends Tiledb uri for dividends data.
     #' @param first_date if NA, keep all. Otherwise, keep only data from
     #'     first_date.
     #'
@@ -38,6 +39,7 @@ Import = R6::R6Class(
                             uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
                             uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
                             uri_prices = "F:/equity/daily_fmp_all.csv",
+                            uri_dividends = "F:/equity/usa/fundamentals/dividends.parquet",
                             first_date = NA) {
 
       # debug
@@ -135,12 +137,22 @@ Import = R6::R6Class(
       prices = fund_merge[prices, on = c("symbol", "date"), roll = Inf]
       setorder(prices, symbol, date)
 
-
+      # DIVIDENDS ---------------------------------------------------------------
+      # read dividends data
+      print("Import dividends data.")
+      dividends = read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
+      dividends[, lapply(.SD, as.Date), 
+                .SDcols = c("date", "recordDate", "paymentDate", "declarationDate")]
+      dividends[, label := NULL]
+      dividends = dividends[symbol %in% symbols]
+      setorder(dividends, symbol, date)
+      
       # RETURN ------------------------------------------------------------------
       return(list(
         events = events,
         fundamentals = fundamentals,
-        prices = prices
+        prices = prices,
+        dividends = dividends
       ))
     }
   )

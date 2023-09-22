@@ -12,9 +12,9 @@
 #' @import bit64
 #' @import future.apply
 #' @import fredr
-#' @import rusquant
 #' @import duckdb
 #' @import DBI
+#' @import rusquant
 #' @importFrom arrow read_parquet write_parquet s3_bucket
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url
