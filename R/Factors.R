@@ -404,7 +404,7 @@ Factors = R6::R6Class(
 
         # dividend to price for all market
         print("Dividend data")
-        dividends = read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
+        dividends = read_parquet(uri_dividends)
         dividends[, date := as.Date(date)]
         dividends <- na.omit(dividends, cols = c("adjDividend", "date"))
         dividends = dividends[symbol %in% sp500_symbols]
