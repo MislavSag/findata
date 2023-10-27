@@ -106,6 +106,14 @@ Factors = R6::R6Class(
         # )
         # sp500_symbols = self$utilsdata$sp500_history("F:/lean_root/data/equity/usa/universes/etf/spy")
         # sp500_symbols = sp500_symbols$symbols
+        # indmom3year          indmom3year_lag              sec_returns                   secmom               secmom_lag                 secmom6m 
+        # TRUE                     TRUE                     TRUE                     TRUE                     TRUE                     TRUE 
+        # secmom6m_lag               secmomyear           secmomyear_lag              secmom2year          secmom2year_lag              secmom3year 
+        # TRUE                     TRUE                     TRUE                     TRUE                     TRUE                     TRUE 
+        # secmom3year_lag    weightedAverageShsOut weightedAverageShsOutDil           share_turnover                     turn           turn_half_year 
+        # TRUE                     TRUE                     TRUE                     TRUE                     TRUE                     TRUE 
+        # turn_year               turn_2year               turn_3year                 std_turn              std_turn_6m              std_turn_1y 
+        # TRUE                     TRUE                     TRUE                     TRUE                     TRUE                     TRUE 
         
         # add SPY to symbols
         symbols = c("SPY", symbols)
@@ -186,7 +194,7 @@ Factors = R6::R6Class(
         prices[, minret_quarter := roll::roll_min(returns, trading_quarter), by = symbol]
 
         # sector momentum
-        sector_returns <- prices[, .(sec_returns = weighted_mean(returns, marketCap)), by = .(sector, date)]
+        sector_returns <- prices[, .(sec_returns = weighted_mean(returns, marketCap, na.rm = TRUE)), by = .(sector, date)]
         sector_returns[, secmom := frollapply(sec_returns, 22, function(x) prod(1 + x) - 1), by = sector]
         sector_returns[, secmom_lag := shift(secmom, 22), by = sector]
         sector_returns[, secmom6m := frollapply(sec_returns, 22, function(x) prod(1 + x) - 1), by = sector]
@@ -199,7 +207,7 @@ Factors = R6::R6Class(
         sector_returns[, secmom3year_lag := shift(secmom3year, 22), by = sector]
 
         # industry momentum
-        ind_returns <- prices[, .(indret = weighted_mean(returns, marketCap)), by = .(industry, date)]
+        ind_returns = prices[, .(indret = weighted_mean(returns, marketCap, na.rm = TRUE)), by = .(industry, date)]
         ind_returns[, indmom := frollapply(indret, 22, function(x) prod(1 + x) - 1), by = industry]
         ind_returns[, indmom_lag := shift(indmom, 22), by = industry]
         ind_returns[, indmom6m := frollapply(indret, 22, function(x) prod(1 + x) - 1), by = industry]
@@ -214,7 +222,7 @@ Factors = R6::R6Class(
         # merge sector and industry predictors to prices
         prices <- sector_returns[prices, on = c("sector", "date")]
         prices <- ind_returns[prices, on = c("industry", "date")]
-
+        
         # volatility
         prices[, dvolume := volume * close]
         prices[, `:=`(

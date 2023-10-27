@@ -588,7 +588,8 @@ UtilsData = R6::R6Class(
       # library(arrow)
       # library(data.table)
       # library(lubridate)
-      # file_path      = "F:/equity/usa/minute/AAPL"
+      # library(future.apply)
+      # file_path      = "F:/equity/usa/minute/MRNA"
       # file_path_save = "F:/equity/usa/minute-adjusted"
       # path_map_files  = "F:/lean_root/data/equity/usa/map_files"
       # path_factor_files = "F:/lean_root/data/equity/usa/factor_files"
@@ -662,17 +663,33 @@ UtilsData = R6::R6Class(
       
       # import market data
       if (file_test("-d", file_path)) {
-        if (parallel) {
-          dt = future_lapply(list.files(file_path, recursive = TRUE, full.names = TRUE), read_parquet)
-        } else {
-          dt = lapply(list.files(file_path, recursive = TRUE, full.names = TRUE), read_parquet)
+        files_ = list.files(file_path, recursive = TRUE, full.names = TRUE)
+        if (length(dt) == 0) {
+          return(NULL)
         }
-        dt = rbindlist(dt)
+        files_ = file.info(files_)
+        files_ = files_[files_$size > 4,]
+        if (parallel) {
+          dt = future_lapply(rownames(files_), function(x) {
+            tryCatch({read_parquet(x)}, error = function(e) NULL)
+          })
+        } else {
+          dt = lapply(rownames(files_), function(x) {
+            tryCatch({read_parquet(x)}, error = function(e) print(e))
+          })
+        }
+        if (length(dt) == 0) {
+          return(NULL)
+        }
+        dt = rbindlist(dt, use.names = TRUE)
         dt = cbind(symbol = symbol, dt)
       } else {
         dt = read_parquet(file_path)
         dt = cbind(symbol = symbol, dt)
       }
+      
+      # remove missing value for close
+      dt = na.omit(dt, cols = "c")
       
       # choose columns and change columns names
       dt = dt[, .(symbol, date = t / 1000, open = o, high = h, low = l, close = c, volume = v)]
@@ -844,7 +861,7 @@ UtilsData = R6::R6Class(
       read_fs = function(path) {
         dt_files = list.files(path, full.names = TRUE)
         dt = lapply(dt_files, fread)
-        dt = rbindlist(dt)
+        dt = rbindlist(dt, fill = TRUE)
         if ("acceptedDateTime" %in% colnames(dt)) {
           dt[, `:=`(
             acceptedDateTime = as.POSIXct(acceptedDate, format = "%Y-%m-%d %H:%M:%S", tz = "America/New_York"),

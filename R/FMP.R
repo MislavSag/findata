@@ -1655,7 +1655,7 @@ FMP = R6::R6Class(
       lapply(rev(symbols), function(s) {
         
         # debug
-        # s = "ET"
+        # s = "WBA"
         print(s)
         
         # create folder for symbol if it doesn't exists
@@ -1685,29 +1685,12 @@ FMP = R6::R6Class(
         dates_business = getBusinessDays(min(dates), max(dates))[]
         dates_business = dates_business[dates_business %in% dates]
         dates = dates_business
-        
-        # remove mannually some dates
-        if (s == "XPRO") {
-          dates = dates[dates > as.Date("2021-10-04")]
-        } else if (s == "WW") {
-          dates = dates[dates > as.Date("2015-12-30")]
-        } else if (s == "WBD") {
-          dates = dates[dates > as.Date("2016-01-05")]
-        } else if (s == "WBA") {
-          dates = dates[dates > as.Date("2018-01-03")]
-        } else if (s == "USAU") {
-          dates = dates[dates > as.Date("2015-12-30")]
-        } else if (s == "FBIN") {
-          dates = dates[dates > as.Date("2022-12-15")]
-        } else if (s == "ET") {
-          dates = dates[dates > as.Date("2011-12-30")]
-        }
-        
+
         # extract missing dates
         dates_exists = gsub(".parquet", "", list.files(dir_name))
         dates_new = as.Date(setdiff(paste0(dates), dates_exists))
         
-        # read old data
+        # get new data
         for (i in seq_along(dates_new)) {
           # crate date 
           date = dates_new[i]
@@ -1725,7 +1708,15 @@ FMP = R6::R6Class(
           # if there is no data next
           if (nrow(date_data) == 0) {
             print(paste0("No data for date ", date, " for symbol ", s))
-            next()
+            date_data = data.table(
+              o = NA_real_,
+              h = NA_real_,
+              l = NA_real_,
+              c = NA_real_,
+              v = NA_real_,
+              t = NA_real_,
+              formated = "no minute data"
+            )
           }
 
           # save file

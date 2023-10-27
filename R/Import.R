@@ -47,6 +47,7 @@ Import = R6::R6Class(
       # library(findata)
       # library(arrow)
       # library(httr)
+      # library(duckdb)
       # self = list()
       # self$fmp = FMP$new()
       # securities <- self$fmp$get_stock_list()
@@ -120,9 +121,11 @@ Import = R6::R6Class(
       adjust_cols <- c("open", "high", "low")
       prices[, (adjust_cols) := lapply(.SD, function(x) 
         x * (adjClose / close)), .SDcols = adjust_cols]
+      prices[, close_raw := close]
       prices[, close := adjClose]
-      prices = na.omit(prices[, .(symbol, date, open, high, low, close, volume, returns)])
-
+      prices = na.omit(prices[, .(symbol, date, open, high, low, close, volume, 
+                                  close_raw, returns)])
+      
       # add profiles data
       prices = profiles[, .(symbol, industry, sector)][prices, on = "symbol"]
 

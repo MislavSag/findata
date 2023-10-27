@@ -980,7 +980,7 @@ get_equities_taq = function(symbols,
     if (file_name %in% dir_files) {
       # read data for the symbol
       print("Get minute data")
-      data_history = read_parquet(file_name_full)
+      data_history = arrow::read_parquet(file_name_full)
       
       # cont if there is history data
       if (length(data_history) > 0) {
@@ -1085,10 +1085,10 @@ get_equities_taq = function(symbols,
         file.remove(file_name_full)
       }
       # save file
-      write_parquet(data_by_symbol, file_name_full)
+      arrow::write_parquet(data_by_symbol, file_name_full)
     } else {
       # save to S3
-      write_parquet(data_by_symbol, file_name_full)
+      arrow::write_parquet(data_by_symbol, file_name_full)
     }
     return(NULL)
   })
