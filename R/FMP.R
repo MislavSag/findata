@@ -1616,7 +1616,7 @@ FMP = R6::R6Class(
     #'
     #' @return Data saved to uri.
     get_minute = function(symbols,
-                          uri_minute = "F:/equity/usa/minute",
+                          uri_minute,
                           deep_scan = FALSE,
                           workers = 1L) {
       
