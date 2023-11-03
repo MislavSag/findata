@@ -105,7 +105,7 @@
 #     Sys.sleep(0.8)
 #   }
 #   if (length(fred_meta_) > 0) {
-#     return(cbind(id = id, fred_meta_))  
+#     return(cbind(id = id, fred_meta_))
 #   } else {
 #     return(NULL)
 #   }
@@ -127,7 +127,7 @@
 # fred_meta[, (date_cols) := lapply(.SD, as.Date), .SDcols = date_cols]
 # 
 # # filter data
-# fred_meta_sample = fred_meta[observation_end > as.Date("2020-01-01")]
+# fred_meta_sample = fred_meta[observation_end > as.Date("2018-01-01")]
 # dim(fred_meta_sample)
 # fred_meta_sample = unique(fred_meta_sample)
 # dim(fred_meta_sample)
@@ -137,7 +137,7 @@
 # cols = c("id", "frequency_short", "title")
 # fred_meta_sample_unique = unique(fred_meta_sample, by = cols)
 # str(fred_meta_sample)
-# ids = fred_meta_sample_unique[, id] 
+# ids = fred_meta_sample_unique[, id]
 # save_path = "F:/macro/fred"
 # vapply(ids, function(id_) {
 #   # id_ = ids[[2]]
@@ -157,8 +157,8 @@
 #     print(file_name_)
 #     date_vec = vin_dates[[1]]
 #     num_bins <- ceiling(length(date_vec) / 2000)
-#     bins <- cut(seq_along(date_vec), 
-#                 breaks = c(seq(1, length(date_vec), by = 1999), 
+#     bins <- cut(seq_along(date_vec),
+#                 breaks = c(seq(1, length(date_vec), by = 1999),
 #                            length(date_vec)), include.lowest = TRUE, labels = FALSE)
 #     split_dates <- split(date_vec, bins)
 #     split_dates = lapply(split_dates, function(d) as.Date(d))

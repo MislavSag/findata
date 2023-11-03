@@ -143,7 +143,7 @@ Import = R6::R6Class(
       # DIVIDENDS ---------------------------------------------------------------
       # read dividends data
       print("Import dividends data.")
-      dividends = arrow::read_parquet("F:/equity/usa/fundamentals/dividends.parquet")
+      dividends = arrow::read_parquet(uri_dividends)
       dividends[, lapply(.SD, as.Date), 
                 .SDcols = c("date", "recordDate", "paymentDate", "declarationDate")]
       dividends[, label := NULL]
