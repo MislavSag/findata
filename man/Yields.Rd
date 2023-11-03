@@ -19,6 +19,7 @@ Get data on yields curve for various countries.
 \item \href{#method-Yields-new}{\code{Yields$new()}}
 \item \href{#method-Yields-get_yields}{\code{Yields$get_yields()}}
 \item \href{#method-Yields-get_yields_us}{\code{Yields$get_yields_us()}}
+\item \href{#method-Yields-get_yields_china}{\code{Yields$get_yields_china()}}
 \item \href{#method-Yields-clone}{\code{Yields$clone()}}
 }
 }
@@ -28,7 +29,7 @@ Get data on yields curve for various countries.
 \subsection{Method \code{new()}}{
 Create a new Yields object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Yields$new(countries = c("US"))}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Yields$new(countries = c("US", "China"))}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -62,6 +63,19 @@ Data.table with yields data
 Scrap yields for US.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Yields$get_yields_us()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Data.table with yields data
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Yields-get_yields_china"></a>}}
+\if{latex}{\out{\hypertarget{method-Yields-get_yields_china}{}}}
+\subsection{Method \code{get_yields_china()}}{
+Scrap yields for China.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Yields$get_yields_china()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{

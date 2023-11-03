@@ -1618,8 +1618,6 @@ FMP = R6::R6Class(
                           uri_minute = "F:/equity/usa/minute",
                           deep_scan = FALSE) {
       
-      
-      
       # debug
       # library(findata)
       # library(data.table)
@@ -1652,7 +1650,7 @@ FMP = R6::R6Class(
       # ADD FUTURE LAPPLY BELOW
       
       # main loop to scrap minute data
-      lapply(rev(symbols), function(s) {
+      future_lapply(symbols, function(s) {
         
         # debug
         # s = "WBA"
