@@ -1612,11 +1612,13 @@ FMP = R6::R6Class(
     #' @param uri_minute AWS S3 bucket uri or NAS path.
     #' @param deep_scan should we test for dates with low number od observation
     #'     and try to scrap again.
+    #' @param workers Number of workers.
     #'
     #' @return Data saved to uri.
     get_minute = function(symbols,
                           uri_minute = "F:/equity/usa/minute",
-                          deep_scan = FALSE) {
+                          deep_scan = FALSE,
+                          workers = 1L) {
       
       # debug
       # library(findata)
@@ -1650,7 +1652,7 @@ FMP = R6::R6Class(
       # ADD FUTURE LAPPLY BELOW
       
       # main loop to scrap minute data
-      future_lapply(symbols, function(s) {
+      mclapply(symbols, function(s) {
         
         # debug
         # s = "WBA"
@@ -1721,7 +1723,7 @@ FMP = R6::R6Class(
           file_name_full = file.path(dir_name, paste0(date, ".parquet"))
           arrow::write_parquet(date_data, file_name_full)
         }
-      })
+      }, mc.cores = workers)
     },
     
         
