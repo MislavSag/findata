@@ -20,6 +20,7 @@ Get data on yields curve for various countries.
 \item \href{#method-Yields-get_yields}{\code{Yields$get_yields()}}
 \item \href{#method-Yields-get_yields_us}{\code{Yields$get_yields_us()}}
 \item \href{#method-Yields-get_yields_china}{\code{Yields$get_yields_china()}}
+\item \href{#method-Yields-get_yields_eu}{\code{Yields$get_yields_eu()}}
 \item \href{#method-Yields-clone}{\code{Yields$clone()}}
 }
 }
@@ -29,7 +30,7 @@ Get data on yields curve for various countries.
 \subsection{Method \code{new()}}{
 Create a new Yields object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Yields$new(countries = c("US", "China"))}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Yields$new(countries = c("US", "China", "EU"))}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -49,9 +50,16 @@ A new `Yields` object.
 \subsection{Method \code{get_yields()}}{
 Scrap yields.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Yields$get_yields()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Yields$get_yields(eu_yields_history_file)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{eu_yields_history_file}}{yields histoty path.}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Data.table with yields data
 }
@@ -80,6 +88,26 @@ Scrap yields for China.
 
 \subsection{Returns}{
 Data.table with yields data
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Yields-get_yields_eu"></a>}}
+\if{latex}{\out{\hypertarget{method-Yields-get_yields_eu}{}}}
+\subsection{Method \code{get_yields_eu()}}{
+Scrap yields for EU from ECB.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Yields$get_yields_eu(yields_history_file)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{yields_history_file}}{yields histoty path.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data.table with yields data for EU from ECB.
 }
 }
 \if{html}{\out{<hr>}}

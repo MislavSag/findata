@@ -15,6 +15,9 @@
 #' @import duckdb
 #' @import DBI
 #' @import rusquant
+#' @import fs
+#' @import eodhd
+#' @import parallel
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url
 #' @importFrom zip zipr

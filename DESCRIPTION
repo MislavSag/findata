@@ -29,8 +29,13 @@ Imports:
     fredr,
     rusquant,
     duckdb,
-    DBI
-Suggests: 
+    DBI,
+    fs,
+    eodhd,
+    parallel
+Remotes:
+    EodHistoricalData/EODHD-APIs-R-Financial-Library
+Suggests:
     arrow,
     rmarkdown,
     knitr,

@@ -17,15 +17,17 @@ Yields = R6::R6Class(
     #' @param countries character vector of countries to scrap data for.
     #'
     #' @return A new `Yields` object.
-    initialize = function(countries = c("US", "China")) {
+    initialize = function(countries = c("US", "China", "EU")) {
       self$countries = countries
     },
     
     #' @description
     #' Scrap yields.
     #'
+    #' @param eu_yields_history_file yields histoty path.
+    #'
     #' @return Data.table with yields data
-    get_yields = function() {
+    get_yields = function(eu_yields_history_file) {
       if ("US" %in% self$countries) {
         yields_us = self$get_yields_us()
       } else {
@@ -36,7 +38,12 @@ Yields = R6::R6Class(
       } else {
         yields_china = NULL
       }
-      yields_all = rbindlist(list(yields_us, yields_china))
+      if ("EU" %in% self$countries) {
+        yields_eu = self$get_yields_eu(eu_yields_history_file)
+      } else {
+        yields_eu = NULL
+      }
+      yields_all = rbindlist(list(yields_us, yields_china, yields_eu))
       return(yields_all)
     },
     
@@ -155,6 +162,44 @@ Yields = R6::R6Class(
         variable == "30Y", "Y360M_China"
       )]
       setnames(yields, c("date", "label", "yield"))
+      return(yields)
+    },
+    
+    #' @description
+    #' Scrap yields for EU from ECB.
+    #'
+    #' @param yields_history_file yields histoty path.
+    #'
+    #' @return Data.table with yields data for EU from ECB.
+    get_yields_eu = function(yields_history_file) {
+      # debug
+      # https://www.ecb.europa.eu/stats/financial_markets_and_interest_rates/euro_area_yield_curves/html/index.en.html
+      # yields_history_file = "F:/macro/yield_curves/eu_history.csv"
+      
+      # check
+      checkFileExists(yields_history_file)
+      
+      # read history and current and merge
+      yields_history = fread(yields_history_file)
+      url = "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_C.SV_C_YM.?startPeriod=2023-01-01&format=csvdata"
+      tmp_ = tempfile("eu_yields_current", fileext = ".csv")
+      GET(url, write_disk(tmp_))
+      yields_current = fread(tmp_)
+      yields_raw = rbind(yields_history, yields_current)
+      
+      # clean yields
+      yields = yields_raw[, lapply(.SD, function(v) if(uniqueN(v, na.rm = TRUE) > 1) v)]
+      yields = yields[UNIT == "PCPA", .(date = as.Date(TIME_PERIOD), label = DATA_TYPE_FM, yield = OBS_VALUE)]
+      yields = yields[grepl("SR", label)]
+      yields[!grepl("Y", label), year_ := 0L]
+      yields[is.na(year_), year_ := as.integer(gsub("SR_|Y.*", "", label))]
+      yields[, month_ := as.integer(gsub("SR_|.*Y|M", "", label))]
+      yields[, month_ := nafill(month_, fill = 0)]
+      yields[, months_ := (year_ * 12) + month_]
+      yields[, label := paste0("Y", months_, "M_EU")]
+      yields[, unique(label)]
+      yields[, `:=`(year_ = NULL, month_ = NULL, months_ = NULL)]
+      yields[, date := as.IDate(date)]
       return(yields)
     }
   )

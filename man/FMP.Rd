@@ -786,12 +786,7 @@ Data saved to uri.
 \subsection{Method \code{get_minute()}}{
 Get minute data for all history from FMP cloud.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute(
-  symbols,
-  uri_minute = "F:/equity/usa/minute",
-  deep_scan = FALSE,
-  workers = 1L
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_minute(symbols, uri_minute, deep_scan = FALSE, workers = 1L)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

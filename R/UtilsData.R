@@ -589,7 +589,7 @@ UtilsData = R6::R6Class(
       # library(data.table)
       # library(lubridate)
       # library(future.apply)
-      # file_path      = "F:/equity/usa/minute/MRNA"
+      # file_path      = "F:/equity/usa/minute/HOG"
       # file_path_save = "F:/equity/usa/minute-adjusted"
       # path_map_files  = "F:/lean_root/data/equity/usa/map_files"
       # path_factor_files = "F:/lean_root/data/equity/usa/factor_files"
@@ -711,14 +711,15 @@ UtilsData = R6::R6Class(
       
       # get map files
       print("Get map data")
-      maps = self$get_map_files_qc(symbol, path_map_files)
+      maps = self$get_map_files_qc(tolower(symbol), path_map_files)
       
       # join map files
       if (length(maps) > 2 && nrow(maps) > 2) {
         # import additional market data collected from symbols
         symbols_new = setdiff(maps[, unique(symbol)], symbol)
         base_path = dirname(file_path)
-        files_new = list.files(base_path, full.names = TRUE, pattern = paste0("^", symbols_new, ".par"))
+        files_new = list.files(base_path, full.names = TRUE,
+                               pattern = paste0("^", tolower(symbols_new), ".par"))
         if (length(files_new) == 0) {
           maped_dt = copy(dt)
         } else {
@@ -757,7 +758,8 @@ UtilsData = R6::R6Class(
 
       # get factor files
       print("Get factor data")
-      factors = self$get_factor_files_qc(symbol, path_factor_files)
+      factors = self$get_factor_files_qc(tolower(symbol), path_factor_files)
+      factors[, symbol := toupper(symbol)]
       
       # adjust if there are factor data
       if (length(factors) > 1) {
