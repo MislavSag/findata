@@ -45,7 +45,7 @@ EODHD = R6::R6Class(
       mclapply(symbols, function(s) {
 
         # debug
-        # s = "SPY.US"
+        # s = "AGN.US"
         print(s)
 
         # create folder for symbol if it doesn't exists
@@ -62,20 +62,22 @@ EODHD = R6::R6Class(
           seq_date_start = seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 100)
           seq_date_start[seq_date_start != Sys.Date()]
           seq_date_end = c(seq_date_start[2:length(seq_date_start)], Sys.Date() - 1)
-          seq_date_start = as.POSIXct(paste0(seq_date_start, " 00:00:00"), tz = "America/New_York")
-          seq_date_end = as.POSIXct(paste0(seq_date_end, " 00:00:00"), tz = "America/New_York")
         } else {
           start_date = max(as.Date(path_ext_remove(path_file(dates_exists))))
           seq_date_start = seq.Date(min(start_date+1, Sys.Date()-1), Sys.Date()-1, by = 100)
           if (length(seq_date_start) == 1) {
             seq_date_end = Sys.Date() - 1
+          } else {
+            seq_date_end = c(seq_date_start[2:length(seq_date_start)], Sys.Date() - 1)
           }
         }
+        seq_date_start = as.POSIXct(paste0(seq_date_start, " 00:00:00"), tz = "America/New_York")
+        seq_date_end = as.POSIXct(paste0(seq_date_end, " 00:00:00"), tz = "America/New_York")
 
         # get data
         dt_l = lapply(seq_along(seq_date_start), function(i) {
           dt_l = get_intraday_historical_data(
-            api_token = self$api_key,
+            api_token = self$api_key, # "6554c94962c153.05315397",
             symbol = s,
             from_unix_time = as.numeric(seq_date_start[i]),
             to_unix_time = as.numeric(seq_date_end[i]),
