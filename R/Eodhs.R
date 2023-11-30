@@ -45,7 +45,7 @@ EODHD = R6::R6Class(
       mclapply(symbols, function(s) {
 
         # debug
-        # s = "AGN.US"
+        # s = "BLY.US"
         print(s)
 
         # create folder for symbol if it doesn't exists
@@ -76,13 +76,17 @@ EODHD = R6::R6Class(
 
         # get data
         dt_l = lapply(seq_along(seq_date_start), function(i) {
+          print(i)
           dt_l = get_intraday_historical_data(
-            api_token = self$api_key, # "6554c94962c153.05315397",
+            api_token = "6554c94962c153.05315397", #self$api_key, # "6554c94962c153.05315397",
             symbol = s,
             from_unix_time = as.numeric(seq_date_start[i]),
             to_unix_time = as.numeric(seq_date_end[i]),
             interval = "1m"
           )
+          if (any(class(dt_l) %in% c("xml_document")) && length(dt_l)) {
+            return(NULL)
+          }
           rbindlist(dt_l)
         })
         dt = rbindlist(dt_l)
