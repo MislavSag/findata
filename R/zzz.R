@@ -16,13 +16,12 @@
 #' @import DBI
 #' @import rusquant
 #' @import fs
-#' @import eodhd
 #' @import parallel
+#' @import xml2
 #' @importFrom jsonlite fromJSON read_json
-#' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url
+#' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url user_agent
 #' @importFrom zip zipr
-#' @importFrom lubridate force_tz with_tz
-
+#' @importFrom lubridate force_tz with_tz floor_date
 # @importFrom arrow read_parquet write_parquet s3_bucket
 
 "_PACKAGE"

@@ -31,10 +31,8 @@ Imports:
     duckdb,
     DBI,
     fs,
-    eodhd,
-    parallel
-Remotes:
-    EodHistoricalData/EODHD-APIs-R-Financial-Library
+    parallel,
+    xml2
 Suggests:
     arrow,
     rmarkdown,
