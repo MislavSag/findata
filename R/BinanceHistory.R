@@ -158,7 +158,7 @@ BinanceHistory = R6::R6Class(
             
             # final loop
             for (i in seq_along(file_names)) {
-              download.file(url_files[i], file_names[i], quiet = TRUE)
+              private$download_with_retry(url_files[i], file_names[i], 3, quiet = TRUE)
             }
             # utils::unzip(file_name_, exdir = path_dir(file_name_))
             # fs::file_delete(file_name_)
@@ -186,6 +186,26 @@ BinanceHistory = R6::R6Class(
       urls = paste0(url_prefix, urls)
     },
     url_data = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?delimiter=/&prefix=",
-    url_host = "https://data.binance.vision/"
+    url_host = "https://data.binance.vision/",
+    download_with_retry = function(url, destfile, max_attempts = 3, ...) {
+      attempt <- 1
+      
+      while(attempt <= max_attempts) {
+        tryCatch({
+          # Attempt to download the file
+          download.file(url, destfile, ...)
+          # If successful, break out of the loop
+          break
+        }, error = function(e) {
+          cat("Attempt", attempt, "failed. Error:", e$message, "\n")
+          # If not successful, increase the attempt counter
+          attempt <- attempt + 1
+        })
+      }
+      
+      if(attempt == max_attempts + 1) {
+        stop("Failed to download the file after", max_attempts, "attempts.")
+      }
+    }
   )
 )
