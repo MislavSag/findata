@@ -69,13 +69,13 @@ NULL.
 \subsection{Method \code{bulk_fred()}}{
 Bulk FRED database.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MacroData$bulk_fred()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MacroData$bulk_fred(ids)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{ids}}{Character vector, Fred serioes ids.}
+\item{\code{ids}}{Character vector, Fred series ids.}
 }
 \if{html}{\out{</div>}}
 }

@@ -105,10 +105,10 @@ MacroData = R6::R6Class(
     #' @description
     #' Bulk FRED database.
     #'
-    #' @param ids Character vector, Fred serioes ids.
+    #' @param ids Character vector, Fred series ids.
     #'
     #' @return NULL.
-    bulk_fred = function() {
+    bulk_fred = function(ids) {
       # DEBUG
       # filter data
       # fred_meta_sample = fred_meta[observation_end > as.Date("2018-01-01")]
@@ -122,7 +122,7 @@ MacroData = R6::R6Class(
       }
       
       # get data from the FERD in a loop
-      vapply(ids[1:10], function(id_) {
+      vapply(ids, function(id_) {
         # id_ = ids[[2]]
         # id_ = "GDP"
         # print(id_)
