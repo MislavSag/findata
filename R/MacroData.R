@@ -166,6 +166,5 @@ MacroData = R6::R6Class(
         return(1L)
       }, FUN.VALUE = integer(1L))
     }
-    
   )
 )
