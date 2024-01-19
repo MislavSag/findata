@@ -852,17 +852,45 @@ UtilsData = R6::R6Class(
       # debug
       # library(arrow)
       # library(data.table)
-      # balance_sheet     = "F:/equity/usa/fundamentals/balance-sheet-statement-bulk/quarter"
-      # income_statement  = "F:/equity/usa/fundamentals/income-statement-bulk/quarter"
-      # cash_flow         = "F:/equity/usa/fundamentals/cash-flow-statement-bulk/quarter"
-      # financial_growth  = "F:/equity/usa/fundamentals/financial-growth-bulk/quarter"
-      # financial_metrics = "F:/equity/usa/fundamentals/key-metrics-bulk/quarter"
-      # financial_ratios  = "F:/equity/usa/fundamentals/ratios-bulk/quarter"
+      # PATH = "F:/data/"
+      # fi_uri = fs::path(PATH, "equity", "us", "fundamentals")
+      # balance_sheet     = fs::path(fi_uri, "balance-sheet-statement-bulk", "quarter")
+      # income_statement  = fs::path(fi_uri, "income-statement-bulk", "quarter")
+      # cash_flow         = fs::path(fi_uri, "cash-flow-statement-bulk", "quarter")
+      # financial_growth  = fs::path(fi_uri, "financial-growth-bulk", "quarter")
+      # financial_metrics = fs::path(fi_uri, "key-metrics-bulk", "quarter")
+      # financial_ratios  = fs::path(fi_uri, "ratios-bulk", "quarter")
       
-      # help function
+      # help functions
+      # match_column_classes <- function(dt1, dt2) {
+      #   for (col_name in intersect(names(dt2), names(dt1))) {
+      #     class_type <- class(dt1[[col_name]])[1]  # Get the first class of the column
+      #     
+      #     # Using if-else chain as it's more straightforward for handling class_type
+      #     dt2[, (col_name) := if (class_type == "integer64") {
+      #       as.integer64(get(col_name))
+      #     } else if (class_type == "numeric") {
+      #       as.numeric(get(col_name))
+      #     } else if (class_type == "factor") {
+      #       factor(get(col_name))
+      #     } else if (class_type == "character") {
+      #       as.character(get(col_name))
+      #     } else if (class_type == "integer") {
+      #       as.integer(get(col_name))
+      #     } else if (class_type == "logical") {
+      #       as.logical(get(col_name))
+      #     } else {
+      #       get(col_name)
+      #     }, with = FALSE]
+      #   }
+      #   return(dt2)
+      # }
       read_fs = function(path) {
         dt_files = list.files(path, full.names = TRUE)
         dt = lapply(dt_files, fread)
+        dt = lapply(dt, function(x) {
+          if ("deferredRevenue" %in% names(dt)) x[, deferredRevenue := as.numeric(deferredRevenue)] # FIXME: mannually
+        })
         dt = rbindlist(dt, fill = TRUE)
         if ("acceptedDateTime" %in% colnames(dt)) {
           dt[, `:=`(
