@@ -889,7 +889,8 @@ UtilsData = R6::R6Class(
         dt_files = list.files(path, full.names = TRUE)
         dt = lapply(dt_files, fread)
         dt = lapply(dt, function(x) {
-          if ("deferredRevenue" %in% names(dt)) x[, deferredRevenue := as.numeric(deferredRevenue)] # FIXME: mannually
+          if ("deferredRevenue" %in% names(x)) x[, deferredRevenue := as.numeric(deferredRevenue)] # FIXME: mannually
+          x
         })
         dt = rbindlist(dt, fill = TRUE)
         if ("acceptedDateTime" %in% colnames(dt)) {
@@ -911,13 +912,13 @@ UtilsData = R6::R6Class(
       ratios = read_fs(financial_ratios)
       
       # merge all fundamental data
-      columns_diff_pl <- c("symbol", "date", setdiff(colnames(pl), colnames(bs)))
-      columns_diff_cf <- c("symbol", "date", setdiff(colnames(cf), colnames(bs)))
-      columns_diff_cf <- c("symbol", "date", setdiff(columns_diff_cf, colnames(pl)))
-      columns_diff_fg <- c("symbol", "date", setdiff(colnames(fin_growth), colnames(pl)))
-      columns_diff_fm <- c("symbol", "date", setdiff(colnames(fin_metrics), colnames(pl)))
-      columns_diff_fm <- c("symbol", "date", setdiff(columns_diff_fm, colnames(ratios)))
-      columns_diff_fr <- c("symbol", "date", setdiff(colnames(ratios), colnames(pl)))
+      columns_diff_pl = c("symbol", "date", setdiff(colnames(pl), colnames(bs)))
+      columns_diff_cf = c("symbol", "date", setdiff(colnames(cf), colnames(bs)))
+      columns_diff_cf = c("symbol", "date", setdiff(columns_diff_cf, colnames(pl)))
+      columns_diff_fg = c("symbol", "date", setdiff(colnames(fin_growth), colnames(pl)))
+      columns_diff_fm = c("symbol", "date", setdiff(colnames(fin_metrics), colnames(pl)))
+      columns_diff_fm = c("symbol", "date", setdiff(columns_diff_fm, colnames(ratios)))
+      columns_diff_fr = c("symbol", "date", setdiff(colnames(ratios), colnames(pl)))
       fundamentals <-
         Reduce(
           function(x, y)
