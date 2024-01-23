@@ -104,11 +104,12 @@ MacroData = R6::R6Class(
     #' @description
     #' Get data from alfred.
     #'
+    #' @param id Fred series id.
     #' @param vintage_dates Vintage dates.
     #' @param bin_len Bin length.
     #'
     #' @return Data table with data.
-    get_alfred = function(vintage_dates, bin_len=2000) {
+    get_alfred = function(id, vintage_dates, bin_len=2000) {
       num_bins = ceiling(length(vintage_dates) / bin_len)
       bins = cut(
         seq_along(vintage_dates),
@@ -173,10 +174,10 @@ MacroData = R6::R6Class(
         } else {
           print(file_name_)
           date_vec = vin_dates[[1]]
-          obs = self$get_alfred(date_vec)
+          obs = self$get_alfred(id_, date_vec)
           if (nrow(obs) > 95000) {
             print("Lots of vars")
-            obs = self$get_alfred(date_vec, 500)
+            obs = self$get_alfred(id_, date_vec, 500)
             if (nrow(obs) > 95000) {
               stop("Lots of vars")
             }
