@@ -5,10 +5,7 @@
 #' @import qlcal
 #' @import rvest
 #' @import stringr
-#' @import AzureStor
-#' @import stringr
 #' @import tiledb
-#' @import nanotime
 #' @import bit64
 #' @import future.apply
 #' @import fredr

@@ -23,7 +23,6 @@ Imports:
     zip,
     lubridate,
     tiledb,
-    nanotime,
     bit64,
     future.apply,
     fredr,

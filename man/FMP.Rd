@@ -25,7 +25,6 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
 \item \href{#method-FMP-create_start_end_dates}{\code{FMP$create_start_end_dates()}}
-\item \href{#method-FMP-get_intraday_equities_batch}{\code{FMP$get_intraday_equities_batch()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
 \item \href{#method-FMP-get_factor_files}{\code{FMP$get_factor_files()}}
 \item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
@@ -289,50 +288,6 @@ Help function for calculating start and end dates
 }
 \subsection{Returns}{
 list of start and end dates
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_intraday_equities_batch"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_intraday_equities_batch}{}}}
-\subsection{Method \code{get_intraday_equities_batch()}}{
-Get hour data for all history from fmp cloud.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_intraday_equities_batch(
-  symbols,
-  url = "s3://equity-usa-minute-fmpcloud",
-  save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-  save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-  deep_scan = FALSE,
-  hardcode_start_dates = NULL,
-  hardcode_end_dates = NULL,
-  consolidate = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{symbols}}{Symbol of the stock.}
-
-\item{\code{url}}{AWS S3 bucket url.}
-
-\item{\code{save_uri_hour}}{AWS S3 bucket uri for hour data.}
-
-\item{\code{save_uri_daily}}{AWS S3 bucket uri for daily data.}
-
-\item{\code{deep_scan}}{should we test for dates with low number od observation
-and try to scrap again.}
-
-\item{\code{hardcode_start_dates}}{Start dates to scrape from.}
-
-\item{\code{hardcode_end_dates}}{end_date to scrap from.}
-
-\item{\code{consolidate}}{Consolidate hour and daily data at the end.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Data saved to Azure blob.
 }
 }
 \if{html}{\out{<hr>}}

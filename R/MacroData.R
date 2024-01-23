@@ -23,8 +23,12 @@ MacroData = R6::R6Class(
       # self = list()
       # self$path_to_dump = path_to_dump
       
-      # check path_to_dump
+      # checks
       assert_character(path_to_dump, len = 1L)
+      assert_choice("FRED-KEY", names(Sys.getenv()))
+      
+      # set credentials
+      fredr_set_key(Sys.getenv("FRED-KEY"))
       
       # set init vars
       self$path_to_dump = path_to_dump
@@ -37,12 +41,6 @@ MacroData = R6::R6Class(
     #'
     #' @return NULL.
     get_fred_metadata = function(asset) {
-      # checks
-      assert_choice("FRED-KEY", names(Sys.getenv()))
-      
-      # set credentials
-      fredr_set_key(Sys.getenv("FRED-KEY"))
-      
       # get categories
       categories_id <-
         read_html("https://fred.stlouisfed.org/categories/") |>
@@ -124,7 +122,7 @@ MacroData = R6::R6Class(
       # get data from the FERD in a loop
       vapply(ids, function(id_) {
         # id_ = ids[[2]]
-        # id_ = "GDP"
+        # id_ = "VIXCLS"
         # print(id_)
         file_name_ = path(dir_, id_, ext = "csv")
         if (fs::file_exists(file_name_)) return(1L)
@@ -140,19 +138,22 @@ MacroData = R6::R6Class(
           print(file_name_)
           date_vec = vin_dates[[1]]
           num_bins <- ceiling(length(date_vec) / 2000)
-          bins <- cut(seq_along(date_vec),
-                      breaks = c(seq(1, length(date_vec), by = 1999),
-                                 length(date_vec)), include.lowest = TRUE, labels = FALSE)
-          split_dates <- split(date_vec, bins)
+          bins = cut(
+            seq_along(date_vec),
+            breaks = c(seq(1, length(date_vec), by = 1999),
+                       length(date_vec)),
+            include.lowest = TRUE,
+            labels = FALSE
+          )
+          split_dates = split(date_vec, bins)
           split_dates = lapply(split_dates, function(d) as.Date(d))
           obs_l = lapply(split_dates, function(d) {
             obs = fredr_series_observations(
               series_id = id_,
-              observation_start = head(d, 1),
-              observation_end = tail(d, 1),
+              observation_start=head(d, 1),
+              observation_end=tail(d, 1),
               realtime_start=head(d, 1),
-              realtime_end=tail(d, 1),
-              limit = 2000
+              realtime_end=tail(d, 1)
             )
           })
           obs = rbindlist(obs_l)
