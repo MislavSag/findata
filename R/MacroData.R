@@ -26,6 +26,7 @@ MacroData = R6::R6Class(
       # checks
       assert_character(path_to_dump, len = 1L)
       assert_choice("FRED-KEY", names(Sys.getenv()))
+      assert_true(dir_exists(path_to_dump))
       
       # set credentials
       fredr_set_key(Sys.getenv("FRED-KEY"))
@@ -101,6 +102,38 @@ MacroData = R6::R6Class(
     },
     
     #' @description
+    #' Get data from alfred.
+    #'
+    #' @param vintage_dates Vintage dates.
+    #' @param bin_len Bin length.
+    #'
+    #' @return Data table with data.
+    get_alfred = function(vintage_dates, bin_len=2000) {
+      num_bins = ceiling(length(vintage_dates) / bin_len)
+      bins = cut(
+        seq_along(vintage_dates),
+        breaks = c(seq(1, length(vintage_dates), by = bin_len-1),
+                   length(vintage_dates)),
+        include.lowest = TRUE,
+        labels = FALSE
+      )
+      split_dates = split(vintage_dates, bins)
+      split_dates = lapply(split_dates, function(d) as.Date(d))
+      obs_l = lapply(split_dates, function(d) {
+        obs = fredr_series_observations(
+          series_id = id_,
+          observation_start=head(d, 1),
+          observation_end=tail(d, 1),
+          realtime_start=head(d, 1),
+          realtime_end=tail(d, 1)
+        )
+      })
+      obs = rbindlist(obs_l)
+      obs[, vintage := 1L]
+      return(obs)
+    },
+    
+    #' @description
     #' Bulk FRED database.
     #'
     #' @param ids Character vector, Fred series ids.
@@ -122,7 +155,7 @@ MacroData = R6::R6Class(
       # get data from the FERD in a loop
       vapply(ids, function(id_) {
         # id_ = ids[[2]]
-        # id_ = "VIXCLS"
+        # id_ = "NFCI"
         # print(id_)
         file_name_ = path(dir_, id_, ext = "csv")
         if (fs::file_exists(file_name_)) return(1L)
@@ -134,33 +167,20 @@ MacroData = R6::R6Class(
             observation_end = Sys.Date()
           )
           obs$vintage = 0L
+          if (nrow(obs) > 95000) {
+            stop("Lots of vars")
+          }
         } else {
           print(file_name_)
           date_vec = vin_dates[[1]]
-          num_bins <- ceiling(length(date_vec) / 2000)
-          bins = cut(
-            seq_along(date_vec),
-            breaks = c(seq(1, length(date_vec), by = 1999),
-                       length(date_vec)),
-            include.lowest = TRUE,
-            labels = FALSE
-          )
-          split_dates = split(date_vec, bins)
-          split_dates = lapply(split_dates, function(d) as.Date(d))
-          obs_l = lapply(split_dates, function(d) {
-            obs = fredr_series_observations(
-              series_id = id_,
-              observation_start=head(d, 1),
-              observation_end=tail(d, 1),
-              realtime_start=head(d, 1),
-              realtime_end=tail(d, 1)
-            )
-          })
-          obs = rbindlist(obs_l)
-          obs$vintage = 1L
-        }
-        if (nrow(obs) > 90000) {
-          stop("Lots of vars")
+          obs = self$get_alfred(date_vec)
+          if (nrow(obs) > 95000) {
+            print("Lots of vars")
+            obs = self$get_alfred(date_vec, 500)
+            if (nrow(obs) > 95000) {
+              stop("Lots of vars")
+            }
+          }
         }
         fwrite(obs, file_name_)
         Sys.sleep(0.9)
