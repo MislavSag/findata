@@ -70,12 +70,14 @@ NULL.
 \subsection{Method \code{get_alfred()}}{
 Get data from alfred.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MacroData$get_alfred(vintage_dates, bin_len = 2000)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MacroData$get_alfred(id, vintage_dates, bin_len = 2000)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{id}}{Fred series id.}
+
 \item{\code{vintage_dates}}{Vintage dates.}
 
 \item{\code{bin_len}}{Bin length.}

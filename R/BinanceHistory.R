@@ -39,8 +39,8 @@ BinanceHistory = R6::R6Class(
     #' @return NULL.
     dump_binance = function(asset, data_type, frequency) {
       # TODO DEBUG
-      # asset = "spot"
-      # data_type = "klines"
+      # asset = "cm"
+      # data_type = "fundingRate"
       # frequency = c("1d", "1h")
       
       # data types by asset
@@ -97,9 +97,10 @@ BinanceHistory = R6::R6Class(
       urls = unique(urls)
       
       # get data for every symbol
-      for (t in c("monthly", "daily")) {
+      time_ = ifelse(data_type == "fundingRate", "monthly", c("monthly", "daily"))
+      for (t in time_) {
         # TODO DEBUG
-        # t = "daily"
+        # t = "monthly"
         print(t)
         
         # change url if monthly
@@ -109,20 +110,23 @@ BinanceHistory = R6::R6Class(
           urls_ = urls
         }
         
+        # for fundingRate there is no frequency
+        frequency = ifelse(data_type == "fundingRate", "", frequency)
+        
         # loop for all frequencies
         for (f in frequency) {
           # TODO DEBUG
           # f = "1d"
+          # f = ""
           
           # define url
-          url_ = paste0(urls_, f, "/")
+          url_ = paste0(urls_, f, ifelse(f == "", "", "/"))
           
           # get ziped data
           for (u in url_) {
             # TODO DEBUG
             # u = url_[1]
             
-            # get meta data for folder
             if (t == "daily") {
               date_floor = floor_date(Sys.Date(), unit = "month")
               pre = gsub("\\/", "-", gsub(paste0(".*", paste0(data_type, "/")), "", u))
@@ -169,6 +173,13 @@ BinanceHistory = R6::R6Class(
     ),
   private = list(
     parse_xml = function(url, attr_1, attr_2, url_prefix, url_suffix = NULL) {
+      
+      # private$parse_xml(u_, "//Contents", ".//Key", private$url_host)
+      # url = u_
+      # url_prefix = private$url_host
+      # url_suffix = NULL
+      # attr_1 = "//Contents"
+      
       # url = u_; attr_1 = "//Contents"; attr_2 = ".//Key"; url_prefix = private$url_host
       if (!is.null(url_suffix)) {
         url = paste0(url, url_suffix)
