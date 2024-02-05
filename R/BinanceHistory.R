@@ -39,8 +39,8 @@ BinanceHistory = R6::R6Class(
     #' @return NULL.
     dump_binance = function(asset, data_type, frequency) {
       # TODO DEBUG
-      # asset = "cm"
-      # data_type = "fundingRate"
+      # asset = "spot"
+      # data_type = "klines"
       # frequency = c("1d", "1h")
       
       # data types by asset
@@ -111,7 +111,7 @@ BinanceHistory = R6::R6Class(
         }
         
         # for fundingRate there is no frequency
-        frequency = ifelse(data_type == "fundingRate", "", frequency)
+        if (data_type == "fundingRate") frequency = ""
         
         # loop for all frequencies
         for (f in frequency) {
