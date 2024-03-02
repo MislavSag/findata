@@ -12,6 +12,8 @@ Abstract class for all other data classes.
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
 
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
+
+\item{\code{fredr_apikey}}{FRED api key.}
 }
 \if{html}{\out{</div>}}
 }
@@ -29,7 +31,11 @@ Abstract class for all other data classes.
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(
+  azure_storage_endpoint = NULL,
+  context_with_config = NULL,
+  fredr_apikey = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -38,6 +44,8 @@ Create a new DataAbstract object.
 \item{\code{azure_storage_endpoint}}{Azure endpoint}
 
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
+
+\item{\code{fredr_apikey}}{FRED api key}
 }
 \if{html}{\out{</div>}}
 }

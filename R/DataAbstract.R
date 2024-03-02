@@ -13,16 +13,21 @@ DataAbstract = R6::R6Class(
 
     #' @field context_with_config AWS S3 Tiledb config
     context_with_config = NULL,
+    
+    #' @field fredr_apikey FRED api key.
+    fredr_apikey = NULL,
 
     #' @description
     #' Create a new DataAbstract object.
     #'
     #' @param azure_storage_endpoint Azure endpoint
     #' @param context_with_config AWS S3 Tiledb config
+    #' @param fredr_apikey FRED api key
     #'
     #' @return A new `DataAbstract` object.
     initialize = function(azure_storage_endpoint = NULL,
-                          context_with_config = NULL) {
+                          context_with_config = NULL,
+                          fredr_apikey = NULL) {
 
       # set calendar for RcppQuantuccia package
       qlcal::setCalendar("UnitedStates/NYSE")
@@ -42,7 +47,13 @@ DataAbstract = R6::R6Class(
       self$context_with_config <- tiledb_ctx(config)
 
       # set fred apikey
-      fredr::fredr_set_key(Sys.getenv("FRED-KEY"))
+      if (is.null(azure_storage_endpoint) & Sys.getenv("FRED-KEY") != "") {
+        fredr::fredr_set_key(Sys.getenv("FRED-KEY"))
+      } else if (!is.null(azure_storage_endpoint)) {
+        fredr::fredr_set_key(fredr_apikey)
+      } else {
+        warning("Fred API key is not set.")
+      }
     },
 
     #' @description Save files bob. It automaticly saves files as csv and rds objects
