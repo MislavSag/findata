@@ -46,7 +46,7 @@ factor investing literature.
 \subsection{Method \code{new()}}{
 Create a new Factors object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Factors$new(sp500_symbols, source = "fmp")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Factors$new(sp500_symbols, source = "fmp", fredr_apikey = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -55,6 +55,8 @@ Create a new Factors object.
 \item{\code{sp500_symbols}}{Path to QuantConnect SPY file.}
 
 \item{\code{source}}{Data source for calculating factors.}
+
+\item{\code{fredr_apikey}}{FRED api key}
 }
 \if{html}{\out{</div>}}
 }

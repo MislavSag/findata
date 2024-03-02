@@ -31,9 +31,10 @@ Factors = R6::R6Class(
     #'
     #' @param sp500_symbols Path to QuantConnect SPY file.
     #' @param source Data source for calculating factors.
+    #' @param fredr_apikey FRED api key
     #'
     #' @return A new `Factors` object.
-    initialize = function(sp500_symbols, source = "fmp") {
+    initialize = function(sp500_symbols, source = "fmp", fredr_apikey = NULL) {
       self$source = source
 
       # initiate findata classes
@@ -41,6 +42,8 @@ Factors = R6::R6Class(
       self$import = Import$new()
       self$utilsdata = UtilsData$new()
       self$sp500_symbols = sp500_symbols
+      
+      super$initialize(fredr_apikey = fredr_apikey)
     },
 
     #' @description
