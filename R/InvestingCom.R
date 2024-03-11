@@ -36,8 +36,8 @@ InvestingCom = R6::R6Class(
         market_cap <- market_cap_factor <- right_time <- symbol <- name <- eps <- eps_forecast <- `.` <- NULL
 
       # scrap investing.com
-      start_dates <- seq.Date(as.Date(start_date), Sys.Date(), 1)
-      end_dates <- start_dates + 14
+      start_dates <- seq.Date(as.Date(start_date), Sys.Date() + 14, 1)
+      end_dates <- start_dates + 1
 
       # scrap all events
       ea_list <- lapply(seq_along(start_dates), function(i) {
