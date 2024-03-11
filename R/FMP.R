@@ -62,7 +62,7 @@ FMP = R6::R6Class(
       get_ea = function(start_date, end_date) {
         # define listing dates
         dates_from <- seq.Date(start_date, end_date, by = 3)
-        dates_to <- dates_from + 3
+        dates_to <- dates_from + 14
         
         # get data
         ea <- lapply(seq_along(dates_from), function(i) {

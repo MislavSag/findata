@@ -37,7 +37,7 @@ InvestingCom = R6::R6Class(
 
       # scrap investing.com
       start_dates <- seq.Date(as.Date(start_date), Sys.Date(), 1)
-      end_dates <- start_dates + 1
+      end_dates <- start_dates + 14
 
       # scrap all events
       ea_list <- lapply(seq_along(start_dates), function(i) {
