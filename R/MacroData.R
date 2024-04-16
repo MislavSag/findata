@@ -110,6 +110,17 @@ MacroData = R6::R6Class(
     #'
     #' @return Data table with data.
     get_alfred = function(id, vintage_dates, bin_len=2000) {
+      # id = "RRPONTSYD"
+      # vintage_dates = date_vec
+      # bin_len = 2000
+      
+      # Error in cut.default(seq_along(vintage_dates), breaks = c(seq(1, length(vintage_dates),  : 
+      # 'breaks' are not unique
+      # Due to above error, check if vintage dates has same length as bin_len
+      if (length(vintage_dates) == bin_len) {
+        bin_len = bin_len - 10
+      }
+      
       num_bins = ceiling(length(vintage_dates) / bin_len)
       bins = cut(
         seq_along(vintage_dates),
@@ -156,7 +167,7 @@ MacroData = R6::R6Class(
       # get data from the FERD in a loop
       vapply(ids, function(id_) {
         # id_ = ids[[2]]
-        # id_ = "NFCI"
+        # id_ = "RRPONTSYD"
         # print(id_)
         file_name_ = path(dir_, id_, ext = "csv")
         if (fs::file_exists(file_name_)) return(1L)
