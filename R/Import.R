@@ -36,13 +36,13 @@ Import = R6::R6Class(
     #' @return Data.table with factors.
     get_data_fmp = function(symbols,
                             uri_market_cap = "F:/equity/usa/fundamentals/market_cap.parquet",
-                            uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
-                            uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
-                            uri_prices = "F:/equity/daily_fmp_all.csv",
+                            uri_earning_announcements = "F:/data/equity/us/fundamentals/earning_announcements.parquet",
+                            uri_fundamentals = "F:/data/equity/us/fundamentals/fundamentals.parquet",
+                            uri_prices = "F:/data/equity/daily_fmp_all.csv",
                             uri_dividends = "F:/equity/usa/fundamentals/dividends.parquet",
                             first_date = NA) {
 
-      # debug
+      # Debug
       # library(data.table)
       # library(findata)
       # library(arrow)
@@ -54,7 +54,7 @@ Import = R6::R6Class(
       # exchanges = c("AMEX", "NASDAQ", "NYSE", "OTC")
       # stocks_us <- securities[type == "stock" & exchangeShortName %in% exchanges]
       # symbols_us <- stocks_us[, unique(symbol)]
-      # events = arrow::read_parquet("F:/equity/usa/fundamentals/earning_announcements.parquet")
+      # events = arrow::read_parquet(uri_earning_announcements)
       # events = as.data.table(events)
       # events <- events[date < Sys.Date()]                 # remove announcements for today
       # events <- na.omit(events, cols = c("eps"))          # remove rows with NA for earnings
@@ -105,7 +105,7 @@ Import = R6::R6Class(
       symbols_string <- paste0("'", symbols_string, "'")
       query <- sprintf("
       SELECT *
-      FROM read_csv_auto('%s')
+      FROM read_csv_auto('%s', sample_size=-1)
       WHERE Symbol IN (%s)
       ", uri_prices, symbols_string)
       prices <- as.data.table(dbGetQuery(con, query))

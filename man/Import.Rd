@@ -53,9 +53,10 @@ Function imports all relevant data for USA stocks from FMP Prep.
 \if{html}{\out{<div class="r">}}\preformatted{Import$get_data_fmp(
   symbols,
   uri_market_cap = "F:/equity/usa/fundamentals/market_cap.parquet",
-  uri_earning_announcements = "F:/equity/usa/fundamentals/earning_announcements.parquet",
-  uri_fundamentals = "F:/equity/usa/fundamentals/fundamentals.parquet",
-  uri_prices = "F:/equity/daily_fmp_all.csv",
+  uri_earning_announcements =
+    "F:/data/equity/us/fundamentals/earning_announcements.parquet",
+  uri_fundamentals = "F:/data/equity/us/fundamentals/fundamentals.parquet",
+  uri_prices = "F:/data/equity/daily_fmp_all.csv",
   uri_dividends = "F:/equity/usa/fundamentals/dividends.parquet",
   first_date = NA
 )}\if{html}{\out{</div>}}
