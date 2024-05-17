@@ -1420,8 +1420,22 @@ FMP = R6::R6Class(
       res <- content(p)
       res <- rbindlist(res$historical, fill = TRUE)
       return(res)
-    }
+    },
     
+    #' @description Get beneficial ownership from FMP cloud.
+    #' 
+    #' @param ticker Ticker.
+    #' 
+    #' @return data.table with beneficial ownership data.
+    beneficial_ownership = function(ticker) {
+      # ticker = "AAPL"
+      # self$api_key <- Sys.getenv("APIKEY-FMPCLOUD")
+      url <- "https://financialmodelingprep.com/api/v4/insider/ownership/acquisition_of_beneficial_ownership"
+      p <- RETRY("GET", url, query = list(symbol = toupper(ticker), apikey = self$api_key))
+      res <- content(p)
+      res <- rbindlist(res, fill = TRUE)
+      return(res)
+    }
       
       #' #' @description Get hour data for all history from fmp cloud and save as parquet on AWS.
       #' #'

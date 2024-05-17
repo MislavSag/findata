@@ -48,6 +48,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_equities_batch}{\code{FMP$get_equities_batch()}}
 \item \href{#method-FMP-get_minute}{\code{FMP$get_minute()}}
 \item \href{#method-FMP-get_dividends}{\code{FMP$get_dividends()}}
+\item \href{#method-FMP-beneficial_ownership}{\code{FMP$beneficial_ownership()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -780,6 +781,26 @@ Get dividend data from FMP cloud Prep.
 }
 \subsection{Returns}{
 data.table with dividend data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-beneficial_ownership"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-beneficial_ownership}{}}}
+\subsection{Method \code{beneficial_ownership()}}{
+Get beneficial ownership from FMP cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$beneficial_ownership(ticker)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{ticker}}{Ticker.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table with beneficial ownership data.
 #' @description Get hour data for all history from fmp cloud and save as parquet on AWS.
 #'
 #' @param symbols Symbol of the stock.
