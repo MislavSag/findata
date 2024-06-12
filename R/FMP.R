@@ -599,28 +599,28 @@ FMP = R6::R6Class(
 
     #' @description Get ipo-calendar-confirmed date from fmp cloud
     #'
+    #' @param start_date Start date
+    #' @param end_date End date.
+    #'
     #' @param uri TileDB uri argument
     #'
     #' @return Stock IPO date.
-    get_ipo_calendar_confirmed = function(uri = "s3://equity-usa-ipo") {
-
-      # debug
-      self = FMP$new()
-
-      # meta
+    get_ipo_calendar_confirmed_bulk = function(start_date, 
+                                               end_date = Sys.Date()) {
+      # Meta
       url <- "https://financialmodelingprep.com/api/v4/ipo-calendar-confirmed"
-      seq_date_start <- seq.Date(as.Date("2000-01-01"), Sys.Date() - 1, by = 20)
+      seq_date_start <- seq.Date(start_date, end_date, by = 20)
       seq_date_end <- seq_date_start[2:length(seq_date_start)]
       seq_date_start <- seq_date_start[-length(seq_date_start)]
 
-      # get ipo data for every data span
+      # Get ipo data for every data span
       ipos <- lapply(seq_along(seq_date_start), function(i) {
         content(GET(url, query = list(from = seq_date_start[i],
                                       to = seq_date_end[i],
                                       apikey = self$api_key)))
       })
 
-      # merge and clean data
+      # Merge and clean data
       ipo_data <- lapply(ipos, rbindlist)
       ipo_data <- rbindlist(ipo_data)
       ipo_data[, `:=`(filingDate = as.Date(filingDate),
@@ -629,21 +629,7 @@ FMP = R6::R6Class(
       ipo_data[, acceptedDate := with_tz(acceptedDate, tzone = "UTC")]
       ipo_data <- unique(ipo_data)
 
-      # add to tiledb
-      if (tiledb_object_type(uri) != "ARRAY") {
-        fromDataFrame(
-          obj = as.data.frame(ipo_data),
-          uri = uri,
-          col_index = c("symbol", "filingDate"),
-          sparse = TRUE,
-          allows_dups = FALSE
-        )
-      } else {
-        # save to tiledb
-        arr <- tiledb_array(uri, as.data.frame = TRUE)
-        arr[] <- as.data.frame(ipo_data)
-        tiledb_array_close(arr)
-      }
+      return(ipo_data)
     },
 
     #' @description Get FI data.

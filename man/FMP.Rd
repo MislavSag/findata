@@ -28,7 +28,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
 \item \href{#method-FMP-get_factor_files}{\code{FMP$get_factor_files()}}
 \item \href{#method-FMP-get_ipo_date}{\code{FMP$get_ipo_date()}}
-\item \href{#method-FMP-get_ipo_calendar_confirmed}{\code{FMP$get_ipo_calendar_confirmed()}}
+\item \href{#method-FMP-get_ipo_calendar_confirmed_bulk}{\code{FMP$get_ipo_calendar_confirmed_bulk()}}
 \item \href{#method-FMP-get_fi_statement}{\code{FMP$get_fi_statement()}}
 \item \href{#method-FMP-get_financial_metrics}{\code{FMP$get_financial_metrics()}}
 \item \href{#method-FMP-get_stock_splits}{\code{FMP$get_stock_splits()}}
@@ -350,17 +350,21 @@ Stock IPO date.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_ipo_calendar_confirmed"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_ipo_calendar_confirmed}{}}}
-\subsection{Method \code{get_ipo_calendar_confirmed()}}{
+\if{html}{\out{<a id="method-FMP-get_ipo_calendar_confirmed_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_ipo_calendar_confirmed_bulk}{}}}
+\subsection{Method \code{get_ipo_calendar_confirmed_bulk()}}{
 Get ipo-calendar-confirmed date from fmp cloud
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_ipo_calendar_confirmed(uri = "s3://equity-usa-ipo")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_ipo_calendar_confirmed_bulk(start_date, end_date = Sys.Date())}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{start_date}}{Start date}
+
+\item{\code{end_date}}{End date.}
+
 \item{\code{uri}}{TileDB uri argument}
 }
 \if{html}{\out{</div>}}
