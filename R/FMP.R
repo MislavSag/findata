@@ -617,7 +617,7 @@ FMP = R6::R6Class(
       }
 
       # Get ipo data for every data span
-      ipos <- lapply(seq_along(seq_date_start), function(i) {
+      ipos <- lapply(seq_along(start_date), function(i) {
         content(GET(url, query = list(from = start_date[i],
                                       to = end_date[i],
                                       apikey = self$api_key)))
