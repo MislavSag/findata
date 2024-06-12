@@ -607,16 +607,19 @@ FMP = R6::R6Class(
     #' @return Stock IPO date.
     get_ipo_calendar_confirmed_bulk = function(start_date, 
                                                end_date = Sys.Date()) {
+      # start_date = Sys.Date() - 19
       # Meta
       url <- "https://financialmodelingprep.com/api/v4/ipo-calendar-confirmed"
-      seq_date_start <- seq.Date(start_date, end_date, by = 20)
-      seq_date_end <- seq_date_start[2:length(seq_date_start)]
-      seq_date_start <- seq_date_start[-length(seq_date_start)]
+      if ((end_date - start_date) > 20) {
+        seq_date_ <- unique(c(seq.Date(start_date, end_date, by = 20), end_date))
+        start_date <- seq_date_[1:(length(seq_date_)-1)]
+        end_date <- seq_date_[-1]
+      }
 
       # Get ipo data for every data span
       ipos <- lapply(seq_along(seq_date_start), function(i) {
-        content(GET(url, query = list(from = seq_date_start[i],
-                                      to = seq_date_end[i],
+        content(GET(url, query = list(from = start_date[i],
+                                      to = end_date[i],
                                       apikey = self$api_key)))
       })
 
