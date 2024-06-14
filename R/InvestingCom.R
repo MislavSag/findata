@@ -11,7 +11,7 @@ InvestingCom = R6::R6Class(
   public = list(
 
     #' @description
-    #' Create a new FMP object.
+    #' Create a new InvestingCom object.
     #'
     #' @param azure_storage_endpoint Azure storate endpont
     #' @param context_with_config AWS S3 Tiledb config

@@ -30,7 +30,7 @@ Get data data from investing.com.
 \if{html}{\out{<a id="method-InvestingCom-new"></a>}}
 \if{latex}{\out{\hypertarget{method-InvestingCom-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new FMP object.
+Create a new InvestingCom object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
