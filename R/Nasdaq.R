@@ -46,7 +46,7 @@ Nasdaq = R6::R6Class(
       extract_ipos = function(tag = "priced") {
         res_ = lapply(ipo_html, function(x) {
           ipo_raw = x$data
-          rbindlist(ipo_raw[["priced"]][["rows"]], fill = TRUE)
+          rbindlist(ipo_raw[[tag]][["rows"]], fill = TRUE)
         })
         rbindlist(res_)
       }
