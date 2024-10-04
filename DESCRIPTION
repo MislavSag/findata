@@ -9,7 +9,7 @@ Description: Collect data for trading and financial ML.
     FRED.
 License: GPL-3
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     R6,
     data.table,
@@ -30,7 +30,8 @@ Imports:
     DBI,
     fs,
     parallel,
-    xml2
+    xml2,
+    rusquant
 Remotes:
     arbuzovv/rusquant
 Suggests:

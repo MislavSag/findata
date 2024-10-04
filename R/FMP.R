@@ -203,7 +203,6 @@ FMP = R6::R6Class(
       # self = FMP$new()
       # uri = "F:/equity/daily_fmp"
 
-
       # create data seq
       seq_date_all <- getBusinessDays(as.Date("1990-01-01"), Sys.Date() - 1)
 

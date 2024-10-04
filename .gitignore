@@ -7,3 +7,4 @@ FALSE
 R/test.R
 .Renviron
 bug_handling.R
+commits_*

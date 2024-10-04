@@ -1,3 +1,9 @@
+#' @title CME Class
+#'
+#' @description
+#' Get data data from CME data API.
+#'
+#' @export
 CME = R6::R6Class(
   "CME",
   
