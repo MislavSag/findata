@@ -26,12 +26,13 @@ Imports:
     bit64,
     future.apply,
     fredr,
-    rusquant,
     duckdb,
     DBI,
     fs,
     parallel,
     xml2
+Remotes:
+    arbuzovv/rusquant
 Suggests:
     arrow,
     rmarkdown,
