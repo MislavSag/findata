@@ -27,6 +27,7 @@ Get data data from CME data API.
 \item \href{#method-CME-retoken}{\code{CME$retoken()}}
 \item \href{#method-CME-fedwatch}{\code{CME$fedwatch()}}
 \item \href{#method-CME-get_meetings_history}{\code{CME$get_meetings_history()}}
+\item \href{#method-CME-fedwatch_history}{\code{CME$fedwatch_history()}}
 \item \href{#method-CME-clone}{\code{CME$clone()}}
 }
 }
@@ -83,7 +84,12 @@ Refresh the authentication token if it's expired or missing.
 \subsection{Method \code{fedwatch()}}{
 Get the current FedWatch forecasts with full API parameter support.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{CME$fedwatch(meeting_date = NULL, reporting_date = NULL, limit = 10)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{CME$fedwatch(
+  meeting_date = NULL,
+  reporting_date = NULL,
+  limit = 10,
+  remove_na_zero = TRUE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -94,6 +100,8 @@ Get the current FedWatch forecasts with full API parameter support.
 \item{\code{reporting_date}}{Optional. Filter forecasts by specific reporting date in 'yyyy-mm-dd' format.}
 
 \item{\code{limit}}{Optional. Limits the number of results returned. Default is 10.}
+
+\item{\code{remove_na_zero}}{Optional. Remove rows with NA or zero probability. Default is TRUE.}
 }
 \if{html}{\out{</div>}}
 }
@@ -119,6 +127,19 @@ Get historical meetings data from the CME FedWatch API.
 }
 \subsection{Returns}{
 A list containing the meetings history data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-CME-fedwatch_history"></a>}}
+\if{latex}{\out{\hypertarget{method-CME-fedwatch_history}{}}}
+\subsection{Method \code{fedwatch_history()}}{
+Get all history fedwatch data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{CME$fedwatch_history()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table of lower and upper rates for mmeting dates and report dates
 }
 }
 \if{html}{\out{<hr>}}
