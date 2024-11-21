@@ -11,13 +11,17 @@ MacroData = R6::R6Class(
     #' @field path_to_dump Local path to save data to.
     path_to_dump = NULL,
     
+    #' @field delay Delay between requests.
+    delay = NULL,
+    
     #' @description
     #' Create a new MacroData object.
     #'
     #' @param path_to_dump Local path to save data to.
+    #' @param delay Delay between requests.
     #'
     #' @return A new `MacroData` object.
-    initialize = function(path_to_dump) {
+    initialize = function(path_to_dump, delay = 0.8) {
       # TODO: DEBUG
       # path_to_dump = "F:/macro_data"
       # self = list()
@@ -27,12 +31,14 @@ MacroData = R6::R6Class(
       assert_character(path_to_dump, len = 1L)
       assert_choice("FRED-KEY", names(Sys.getenv()))
       assert_true(dir_exists(path_to_dump))
+      assert_numeric(delay, len = 1L)
       
       # set credentials
       fredr_set_key(Sys.getenv("FRED-KEY"))
       
       # set init vars
       self$path_to_dump = path_to_dump
+      self$delay = delay
     },
     
     #' @description
@@ -69,7 +75,7 @@ MacroData = R6::R6Class(
           order_by = "last_updated",
           offset = 0
         )
-        Sys.sleep(0.8)
+        Sys.sleep(self$delay)
         nrow_ = nrow(fred_meta_)
         n = 1
         while (nrow_ == 1000) {
@@ -83,7 +89,7 @@ MacroData = R6::R6Class(
           n = n + 1
           fred_meta_ = rbindlist(list(fred_meta_, fred_meta_n), fill = TRUE)
           nrow_ = nrow(fred_meta_n)
-          Sys.sleep(0.8)
+          Sys.sleep(self$delay)
         }
         if (length(fred_meta_) > 0) {
           return(cbind(id = id, fred_meta_))
@@ -195,7 +201,7 @@ MacroData = R6::R6Class(
           }
         }
         fwrite(obs, file_name_)
-        Sys.sleep(0.9)
+        Sys.sleep(self$delay)
         return(1L)
       }, FUN.VALUE = integer(1L))
     }
