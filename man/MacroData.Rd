@@ -11,6 +11,8 @@ Peovide macroeconomics data from various sources:
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
 \item{\code{path_to_dump}}{Local path to save data to.}
+
+\item{\code{delay}}{Delay between requests.}
 }
 \if{html}{\out{</div>}}
 }
@@ -30,13 +32,15 @@ Peovide macroeconomics data from various sources:
 \subsection{Method \code{new()}}{
 Create a new MacroData object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MacroData$new(path_to_dump)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MacroData$new(path_to_dump, delay = 0.8)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path_to_dump}}{Local path to save data to.}
+
+\item{\code{delay}}{Delay between requests.}
 }
 \if{html}{\out{</div>}}
 }
