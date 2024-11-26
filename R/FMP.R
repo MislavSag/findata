@@ -48,8 +48,6 @@ FMP = R6::R6Class(
       # library(findata)
       # library(data.table)
       # library(httr)
-      # library(RcppQuantuccia)
-      # library(tiledb)
       # library(arrow)
       # library(nanotime)
       # self = FMP$new()
@@ -61,8 +59,8 @@ FMP = R6::R6Class(
       # help function
       get_ea = function(start_date, end_date) {
         # define listing dates
-        dates_from <- seq.Date(start_date, end_date, by = 3)
-        dates_to <- dates_from + 14
+        dates_from = seq.Date(start_date, end_date, by = 3)
+        dates_to = dates_from + 14
         
         # get data
         ea <- lapply(seq_along(dates_from), function(i) {
@@ -79,7 +77,7 @@ FMP = R6::R6Class(
       
       # define start date
       if (is.null(start_date)) {
-        start_date <- as.Date("2010-01-01")
+        start_date = as.Date("2010-01-01")
         dt = get_ea(start_date, Sys.Date())
       } else {
         dt_existing = arrow::read_parquet(path)
@@ -94,6 +92,19 @@ FMP = R6::R6Class(
 
       # save to uri
       arrow::write_parquet(dt, path)
+    },
+    
+    #' @description Get earnings suprises data from FMP cloud Prep.
+    #'
+    #' @param year Year.
+    #'
+    #' @return data.table with earnings surprises data.
+    get_earnings_suprises = function(year = format(Sys.Date(), "%Y")) {
+      url = "https://financialmodelingprep.com/api/v4/earnings-surprises-bulk"
+      p = RETRY("GET", url, query = list(apikey = self$api_key, year = year))
+      res = content(p)
+      setDT(res)
+      return(res)
     },
 
     #' @description Get Earning Call Transcript from FMP cloud.

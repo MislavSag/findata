@@ -159,26 +159,24 @@ InvestingCom = R6::R6Class(
       # library(findata)
       # library(data.table)
       # library(httr)
-      # library(RcppQuantuccia)
       # library(arrow)
       # library(lubridate)
-      # library(nanotime)
       # self = InvestingCom$new()
       # path = "F:/equity/usa/fundamentals/earning_announcements_investingcom.parquet"
 
       # help function
       clean_scraped = function(dt) {
-        dt <- unique(dt)
+        dt = unique(dt)
         setorder(dt, "datetime")
         setnames(dt, "datetime", "time")
         dt[, time := as.POSIXct(time, tz = "America/New_York")]
         dt[, time := with_tz(time, tzone = "UTC")]
-        dt <- unique(dt, by = c("symbol", "time"))
-        
+        dt = unique(dt, by = c("symbol", "time"))
+        return(dt)
       }
       
       # get new data
-      dt <- self$get_investingcom_earnings_calendar_bulk(start_date)
+      dt = self$get_investingcom_earnings_calendar_bulk(start_date)
       
       # check if there are data available for timespan
       if (nrow(dt) == 0) {
@@ -193,6 +191,7 @@ InvestingCom = R6::R6Class(
       if (update) {
         dt_old = read_parquet(path)
         dt = rbind(dt_old, dt)
+        dt = unique(dt, by = c("symbol", "time"))
       }
 
       # save to uri

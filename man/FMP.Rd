@@ -21,6 +21,7 @@ Get data data from FMP Cloud.
 \itemize{
 \item \href{#method-FMP-new}{\code{FMP$new()}}
 \item \href{#method-FMP-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
+\item \href{#method-FMP-get_earnings_suprises}{\code{FMP$get_earnings_suprises()}}
 \item \href{#method-FMP-get_transcripts}{\code{FMP$get_transcripts()}}
 \item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
@@ -107,6 +108,26 @@ Create a new FMP object.
 }
 \subsection{Returns}{
 Earning announcements data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_earnings_suprises"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_earnings_suprises}{}}}
+\subsection{Method \code{get_earnings_suprises()}}{
+Get earnings suprises data from FMP cloud Prep.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_earnings_suprises(year = format(Sys.Date(), "\%Y"))}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{year}}{Year.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table with earnings surprises data.
 }
 }
 \if{html}{\out{<hr>}}
