@@ -11,6 +11,9 @@ FMP = R6::R6Class(
   public = list(
     #' @field api_key API KEY for FMP Cloud
     api_key = NULL,
+    
+    #' @field base_url Base URL for the FMP Cloud API.
+    base_url = "https://financialmodelingprep.com/api",
 
     #' @description
     #' Create a new FMP object.
@@ -22,11 +25,15 @@ FMP = R6::R6Class(
     #' @return A new `FMP` object.
     initialize = function(api_key = NULL,
                           azure_storage_endpoint = NULL,
-                          context_with_config = NULL) {
+                          context_with_config = NULL,
+                          base_url = NULL) {
 
       # endpoint
       super$initialize(azure_storage_endpoint, context_with_config)
 
+      # Set base url
+      self$base_url = base_url
+      
       # check and define variables
       if (is.null(api_key)) {
         self$api_key = assert_character(Sys.getenv("APIKEY-FMPCLOUD"))
@@ -1434,282 +1441,149 @@ FMP = R6::R6Class(
       res <- content(p)
       res <- rbindlist(res, fill = TRUE)
       return(res)
-    }
-      
-      #' #' @description Get hour data for all history from fmp cloud and save as parquet on AWS.
-      #' #'
-      #' #' @param symbols Symbol of the stock.
-      #' #' @param uri_minute AWS S3 bucket uri or NAS path.
-      #' #' @param save_uri_hour AWS S3 bucket uri for hour data.
-      #' #' @param save_uri_daily AWS S3 bucket uri for daily data.
-      #' #' @param deep_scan should we test for dates with low number od observation
-      #' #'     and try to scrap again.
-      #' #'
-      #' #' @return Data saved to Azure blob.
-      #' get_equities_taq = function(symbols,
-      #'                             # uri_minute = "s3://equity-usa-minute",
-      #'                             # save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-      #'                             # save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-      #'                             deep_scan = FALSE) {
-      #'   
-      #'   
-      #'   
-      #'   # debug
-      #'   # library(findata)
-      #'   # library(data.table)
-      #'   # library(httr)
-      #'   # library(RcppQuantuccia)
-      #'   # library(lubridate)
-      #'   # library(nanotime)
-      #'   # library(arrow)
-      #'   # library(checkmate)
-      #'   # library(future.apply)
-      #'   # self = FMP$new()
-      #'   # symbols = c("AAPL", "SPY")
-      #'   # uri_minute = "C:/Users/Mislav/SynologyDrive/equity/usa/minute" # "s3://equity-usa-minute"
-      #'   # deep_scan = FALSE
-      #'   # fmp = FMP$new()
-      #'   # library(rvest)
-      #'   # sp100 <- read_html("https://en.wikipedia.org/wiki/S%26P_100") |>
-      #'   #   html_elements(x = _, "table") |>
-      #'   #   (`[[`)(3) |>
-      #'   #   html_table(x = _, fill = TRUE)
-      #'   # sp100_symbols <- c("SPY", "TLT", "GLD", "USO", "SVXY",
-      #'   #                    sp100$Symbol)
-      #'   # symbols <- fmp$get_sp500_symbols()
-      #'   # symbols <- na.omit(symbols)
-      #'   # symbols <- symbols[!grepl("/", symbols)]
-      #'   # symbols <- unique(union(sp100_symbols, symbols))
-      #'   
-      #'   # check if we have all necessary env variables
-      #'   assert_choice("AWS_ACCESS_KEY_ID", names(Sys.getenv()))
-      #'   assert_choice("AWS_SECRET_ACCESS_KEY", names(Sys.getenv()))
-      #'   assert_choice("AWS_DEFAULT_REGION", names(Sys.getenv()))
-      #'   
-      #'   self$get_intraday_equities(symbol,
-      #'                              multiply = 1)
-      #'   
-      #'   
-      #'   
-      #'   get_intraday_equities = function(symbol,
-      #'                                    multiply = 1,
-      #'                                    time = 'day',
-      #'                                    from = as.character(Sys.Date() - 3),
-      #'                                    to = as.character(Sys.Date())) {
-      #'     
-      #'     # initial GET request. Don't use RETRY here yet.
-      #'     x <- tryCatch({
-      #'       GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-      #'                  symbol, '/', multiply, '/', time, '/', from, '/', to),
-      #'           query = list(apikey = self$api_key),
-      #'           timeout(100))
-      #'     }, error = function(e) NA)
-      #'     
-      #'     # control error
-      #'     tries <- 0
-      #'     while (all(is.na(x)) & tries < 20) {
-      #'       print("There is an error in scraping market data. Sleep and try again!")
-      #'       Sys.sleep(60L)
-      #'       x <- tryCatch({
-      #'         GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-      #'                    symbol, '/', multiply, '/', time, '/', from, '/', to),
-      #'             query = list(apikey = self$api_key),
-      #'             timeout(100))
-      #'       }, error = function(e) NA)
-      #'       tries <- tries + 1
-      #'     }
-      #'     
-      #'     # check if status is ok. If not, try to download again
-      #'     if (x$status_code == 404) {
-      #'       print("There is an 404 error!")
-      #'       return(NULL)
-      #'     } else if (x$status_code == 200) {
-      #'       x <- content(x)
-      #'       return(rbindlist(x$results))
-      #'     } else {
-      #'       x <- RETRY("GET",
-      #'                  paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-      #'                         symbol, '/', multiply, '/', time, '/', from, '/', to),
-      #'                  query = list(apikey = self$api_key),
-      #'                  times = 5,
-      #'                  timeout(100))
-      #'       if (x$status_code == 200) {
-      #'         x <- content(x)
-      #'         return(rbindlist(x$results))
-      #'       } else {
-      #'         stop('Error in reposne. Status not 200 and not 404')
-      #'       }
-      #'     }
-      #'   },
-      #'   
-      #'   
-      #'   
-      #'   # s3 bucket
-      #'   if (grepl("^s3:/", uri_minute)) {
-      #'     bucket = s3_bucket(uri_minute) 
-      #'     dir_files = bucket$ls()
-      #'   } else {
-      #'     dir_files = list.files(uri_minute)
-      #'   }
-      #'   
-      #'   # parallel execution
-      #'   # plan("multisession", workers = 2L)
-      #'   # ADD FUTURE LAPPLY BELOW
-      #'   
-      #'   # main loop to scrap minute data
-      #'   lapply(symbols, function(s) {
-      #'     
-      #'     # debug
-      #'     print(s)
-      #'     
-      #'     # define file name and s3 file name
-      #'     file_name = paste0(s, ".parquet")
-      #'     file_name_full = file.path(uri_minute, file_name)
-      #'     
-      #'     # define start_dates
-      #'     start_dates <- seq.Date(as.Date("2004-01-01"), Sys.Date() - 1, by = 1)
-      #'     start_dates <- start_dates[isBusinessDay(start_dates)]
-      #'     
-      #'     # get trading days from daily data
-      #'     print("Get daily data")
-      #'     daily_start <- seq.Date(as.Date("2004-01-01"), Sys.Date(), by = 365 * 4)
-      #'     daily_end <- c(daily_start[-1], Sys.Date())
-      #'     daily_data <- lapply(seq_along(daily_start), function(i) {
-      #'       daily_data <- tryCatch({
-      #'         self$get_intraday_equities(s,
-      #'                                    multiply = 1,
-      #'                                    time = 'day',
-      #'                                    from = daily_start[i],
-      #'                                    to = daily_end[i])
-      #'       }, error = function(e) NULL)
-      #'     })
-      #'     daily_data <- rbindlist(daily_data)
-      #'     if (length(daily_data) == 0) return(NULL)
-      #'     start_dates <- as.Date(intersect(start_dates, as.Date(daily_data$formated)), origin = "1970-01-01")
-      #'     # TODO: check BRK-b (BTK.B) and other symbols with -/.
-      #'     
-      #'     # OLD DATA ----------------------------------------------------------------
-      #'     # read old data
-      #'     if (file_name %in% dir_files) {
-      #'       # read data for the symbol
-      #'       print("Get minute data")
-      #'       data_history = arrow::read_parquet(file_name_full)
-      #'       
-      #'       # cont if there is history data
-      #'       if (length(data_history) > 0) {
-      #'         # basic clean
-      #'         data_history <- unique(data_history, by = "date")
-      #'         setorder(data_history, date)
-      #'         
-      #'         # missing freq
-      #'         if (deep_scan) { # CHECK THIS LATER !!!
-      #'           
-      #'           # create date column
-      #'           data_history_tz <- copy(data_history)
-      #'           # data_history_tz[, time := as.POSIXct(time, origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"), tz = "UTC")]
-      #'           # data_history_tz[, time := with_tz(time, tz = "America/New_York")]
-      #'           # data_history_tz[, time_ := as.Date(time, tz = "America/New_York")]
-      #'           # data_history_tz[, time_n := .N, by = time_]
-      #'           # 
-      #'           # # define dates we will try to scrap again
-      #'           # observation_per_day <- 60 * 6
-      #'           # try_again <- unique(data_history_tz[time_n < observation_per_day, time_])
-      #'           # start_dates <- as.Date(intersect(try_again, start_dates), origin = "1970-01-01")
-      #'           # end_dates <- start_dates
-      #'           
-      #'         } else {
-      #'           
-      #'           # define dates to scrap
-      #'           data_history_date = data_history[, unique(as.Date(date, tz = "America/New_York"))]
-      #'           
-      #'           # get final dates to scrap
-      #'           start_dates <- as.Date(setdiff(start_dates, data_history_date), origin = "1970-01-01")
-      #'           end_dates <- start_dates
-      #'           
-      #'           # data_history[as.Date(date) == as.Date("2004-01-16")]
-      #'         }
-      #'       } else {
-      #'         dates <- self$create_start_end_dates(start_dates, 1)
-      #'         start_dates <- dates$start_dates
-      #'         end_dates <- dates$end_dates
-      #'       }
-      #'     } else {
-      #'       dates <- self$create_start_end_dates(start_dates, 1)
-      #'       start_dates <- dates$start_dates
-      #'       end_dates <- dates$end_dates
-      #'     }
-      #'     
-      #'     # GET NEW DATA ------------------------------------------------------------
-      #'     # if there is no dates next
-      #'     if (length(start_dates) == 0) {
-      #'       print(paste0("No data for symbol ", s))
-      #'       return(NULL)
-      #'     }
-      #'     
-      #'     # get data
-      #'     print("Get new minute data")
-      #'     
-      #'     system.time({
-      #'       data_slice = lapply(seq_along(start_dates), function(d) {
-      #'         # for (d in seq_along(start_dates[1:10])) {
-      #'         if (end_dates[d] >= Sys.Date()) end_dates[d] <- Sys.Date() - 1
-      #'         self$get_intraday_equities(
-      #'           s,
-      #'           multiply = 1,
-      #'           time = "minute",
-      #'           from = start_dates[d],
-      #'           to = end_dates[d]
-      #'         )
-      #'       })
-      #'     })
-      #'     if (any(unlist(sapply(data_slice, nrow)) > 4999)) {
-      #'       stop("More than 4999 rows!")
-      #'     }
-      #'     data_by_symbol <- rbindlist(data_slice)
-      #'     
-      #'     # if there is no data next
-      #'     if (nrow(data_by_symbol) == 0) {
-      #'       print(paste0("No data for symbol ", s))
-      #'       return(NULL)
-      #'     }
-      #'     
-      #'     # convert to numeric (not sure why I put these, but it have sense I believe).
-      #'     cols <- c("o", "h", "l", "c", "v")
-      #'     data_by_symbol[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
-      #'     
-      #'     # clean data
-      #'     data_by_symbol <- unique(data_by_symbol, by = c("formated"))
-      #'     data_by_symbol[, date := as.POSIXct(t / 1000, 
-      #'                                         origin = as.POSIXct("1970-01-01 00:00:00", tz = "UTC"),
-      #'                                         tz = "UTC")]
-      #'     data_by_symbol = data_by_symbol[, .(date, o, h, l, c, v)]
-      #'     setnames(data_by_symbol, c("date", "open", "high", "low", "close", "volume"))
-      #'     
-      #'     # rbind new an old
-      #'     if (file_name %in% dir_files && nrow(data_history) > 0) {
-      #'       # rbind new data
-      #'       data_by_symbol = rbind(data_history, data_by_symbol)
-      #'       setorder(data_by_symbol, "date")
-      #'       data_by_symbol = unique(data_by_symbol, by = "date")
-      #'       # delete old parquet file
-      #'       if (grepl("^s3:/", uri_minute)) {
-      #'         bucket$DeleteFile(file_name)
-      #'       } else {
-      #'         file.remove(file_name_full)
-      #'       }
-      #'       # save file
-      #'       arrow::write_parquet(data_by_symbol, file_name_full)
-      #'     } else {
-      #'       # save to S3
-      #'       arrow::write_parquet(data_by_symbol, file_name_full)
-      #'     }
-      #'     return(NULL)
-      #'   })
-        
+    },
+
+    # QUOTE -------------------------------------------------------------------
+    #' @description Get the latest bid and ask prices for a stock, as well as the 
+    #'      volume and last trade price in real-time.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing the full quote for the specified stock.
+    get_full_quote = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v3/quote/", symbol)
+      p = RETRY("GET", url, query = list(apikey = self$api_key), times = 5)
+      res = content(p)
+      res = rbindlist(res, fill = TRUE)
+      res[, time := as.POSIXct(timestamp, origin = "1970-01-01", tz = "America/New_York")]
+      return(res)
+    },
     
+    #' @description Get a simplified quote for a stock, including the current price, volume, and last trade price.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing the quote order for the specified stock.
+    get_quote_order = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v3/quote-order/", symbol)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get a simple quote for a stock, including the price, change, and volume.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing the simple quote for the specified stock.
+    get_simple_quote = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0("https://financialmodelingprep.com/api/v3/quote-short/", symbol)
+      p = RETRY("GET", url, query = list(apikey = self$api_key), times = 5)
+      res = content(p)
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get the latest bid and ask prices for an OTC stock, as well as the volume and last trade price in real-time.
+    #'
+    #' @param symbol The OTC stock symbol(s) (e.g., "BATRB,FWONB").
+    #'
+    #' @return A data.table containing the OTC quote for the specified stock(s).
+    get_otc_quote = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v3/otc/real-time-price/", symbol)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get real-time prices for all stocks listed on a specific exchange.
+    #'
+    #' @param exchange The exchange for which to retrieve prices (e.g., "NYSE").
+    #'
+    #' @return A data.table containing real-time prices for all stocks on the specified exchange.
+    get_exchange_prices = function(exchange = "NYSE") {
+      assert_character(exchange, len = 1, null.ok = FALSE)
+      url = paste0("https://financialmodelingprep.com/api/v3/quotes/", exchange)
+      p = RETRY("GET", url, query = list(apikey = self$api_key), times = 5)
+      res = content(p)
+      res = rbindlist(res, fill = TRUE)
+      res[, time := as.POSIXct(timestamp, tz = "America/New_York")]
+      return(res)
+    },
+    
+    #' @description Get the change in a stock's price over a given period of time.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing the stock price change for the specified stock.
+    get_stock_price_change = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v3/stock-price-change/", symbol)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get information on trades that have occurred in the aftermarket.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing aftermarket trade information for the specified stock.
+    get_aftermarket_trades = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v4/pre-post-market-trade/", symbol)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = as.data.table(res)
+      return(res)
+    },
+    
+    #' @description Get the latest bid and ask prices for a stock in the aftermarket.
+    #'
+    #' @param symbol The stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table containing aftermarket quote information for the specified stock.
+    get_aftermarket_quote = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v4/pre-post-market/", symbol)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = as.data.table(res)
+      return(res)
+    },
+    
+    #' @description Get quotes for multiple stocks at once.
+    #'
+    #' @param symbols A comma-separated string of stock symbols (e.g., "AAPL,MSFT").
+    #'
+    #' @return A data.table containing batch quote information for the specified stocks.
+    get_batch_quote = function(symbols) {
+      assert_character(symbols, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v4/batch-pre-post-market/", symbols)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get trades for multiple stocks at once.
+    #'
+    #' @param symbols A comma-separated string of stock symbols (e.g., "AAPL,MSFT").
+    #'
+    #' @return A data.table containing batch trade information for the specified stocks.
+    get_batch_trade = function(symbols) {
+      assert_character(symbols, len = 1, null.ok = FALSE)
+      url = paste0(self$base_url, "/v4/batch-pre-post-market-trade/", symbols)
+      res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
+      res = rbindlist(res, fill = TRUE)
+      return(res)
+    }
   ),
 
   private = list(
+    # PRIVATE -----------------------------------------------------------------
+    
     ea_file_name = "EarningAnnouncements",
     transcripts_file_name = "earnings-calendar.rds",
     prices_file_name = "prices.csv",

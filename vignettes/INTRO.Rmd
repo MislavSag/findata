@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 library(findata)
 library(rvest)
-library(tiledb)
+# library(tiledb)
 library(data.table)
 ```
 
@@ -51,61 +51,61 @@ fmp = FMP$new()
 ## Get minute data
 
 ```{r}
-if (FALSE) {
-  # SP100
-  sp100 <- read_html("https://en.wikipedia.org/wiki/S%26P_100") |>
-    html_elements(x = _, "table") |>
-    (`[[`)(3) |>
-    html_table(x = _, fill = TRUE)
-  sp100_symbols <- c("SPY", "TLT", "GLD", "USO", "SVXY", 
-                     sp100$Symbol)
-
-  # SP500 symbols
-  symbols <- fmp$get_sp500_symbols()
-  symbols <- na.omit(symbols)
-  symbols <- symbols[!grepl("/", symbols)]
-
-  # merge
-  symbols <- unique(union(sp100_symbols, symbols))
-
-  # scrap minute data from FMP cloud
-  if (data.table::wday(Sys.Date()) == 7) {
-    system.time({
-      fmp$get_minute_equities_tiledb(symbols = symbols,
-                                     url = "s3://equity-usa-minute-fmpcloud",
-                                     save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-                                     save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-                                     deep_scan = FALSE)
-      }) 
-  } else if (data.table::wday(Sys.Date()) %in% 2:6) {
-    # get minute data from FMP cloud
-    system.time({
-      fmp$get_minute_equities_tiledb(symbols = symbols,
-                                     url = "s3://equity-usa-minute-fmpcloud",
-                                     save_uri_hour = "s3://equity-usa-hour-fmpcloud",
-                                     save_uri_daily = "s3://equity-usa-daily-fmpcloud",
-                                     deep_scan = FALSE,
-                                     hardcode_start_dates = as.character(Sys.Date() - 1),
-                                     hardcode_end_dates = as.character(Sys.Date() - 1))
-
-      })
-  }
-  
-  # consolidate
-  # tiledb:::libtiledb_array_consolidate(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
-  # tiledb:::libtiledb_array_vacuum(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
-}
+# if (FALSE) {
+#   # SP100
+#   sp100 <- read_html("https://en.wikipedia.org/wiki/S%26P_100") |>
+#     html_elements(x = _, "table") |>
+#     (`[[`)(3) |>
+#     html_table(x = _, fill = TRUE)
+#   sp100_symbols <- c("SPY", "TLT", "GLD", "USO", "SVXY", 
+#                      sp100$Symbol)
+# 
+#   # SP500 symbols
+#   symbols <- fmp$get_sp500_symbols()
+#   symbols <- na.omit(symbols)
+#   symbols <- symbols[!grepl("/", symbols)]
+# 
+#   # merge
+#   symbols <- unique(union(sp100_symbols, symbols))
+# 
+#   # scrap minute data from FMP cloud
+#   if (data.table::wday(Sys.Date()) == 7) {
+#     system.time({
+#       fmp$get_minute_equities_tiledb(symbols = symbols,
+#                                      url = "s3://equity-usa-minute-fmpcloud",
+#                                      save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+#                                      save_uri_daily = "s3://equity-usa-daily-fmpcloud",
+#                                      deep_scan = FALSE)
+#       }) 
+#   } else if (data.table::wday(Sys.Date()) %in% 2:6) {
+#     # get minute data from FMP cloud
+#     system.time({
+#       fmp$get_minute_equities_tiledb(symbols = symbols,
+#                                      url = "s3://equity-usa-minute-fmpcloud",
+#                                      save_uri_hour = "s3://equity-usa-hour-fmpcloud",
+#                                      save_uri_daily = "s3://equity-usa-daily-fmpcloud",
+#                                      deep_scan = FALSE,
+#                                      hardcode_start_dates = as.character(Sys.Date() - 1),
+#                                      hardcode_end_dates = as.character(Sys.Date() - 1))
+# 
+#       })
+#   }
+#   
+#   # consolidate
+#   # tiledb:::libtiledb_array_consolidate(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
+#   # tiledb:::libtiledb_array_vacuum(ctx = context_with_config@ptr, uri = "s3://equity-usa-daily-fmpprep")
+# }
 ```
 
 ```{r}
-if (FALSE) {
-  
-  arr <- tiledb_array("s3://equity-usa-hour-fmpcloud", as.data.frame = TRUE)
-  df <- arr[]
-  unique(df$symbol)
-  
-  symbols[1:10] %in% unique(df$symbol)
-  
-}
+# if (FALSE) {
+#   
+#   arr <- tiledb_array("s3://equity-usa-hour-fmpcloud", as.data.frame = TRUE)
+#   df <- arr[]
+#   unique(df$symbol)
+#   
+#   symbols[1:10] %in% unique(df$symbol)
+#   
+# }
 ```
 

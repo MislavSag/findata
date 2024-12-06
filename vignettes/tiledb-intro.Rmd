@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r}
-library(tiledb)
+# library(tiledb)
 library(data.table)
 library(lubridate)
 ```
@@ -23,12 +23,12 @@ library(lubridate)
 
 
 ```{r}
-# creditentials for AWS S3
-config <- tiledb_config()
-config["vfs.s3.aws_access_key_id"] <- Sys.getenv("AWS-ACCESS-KEY")
-config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
-config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
-context_with_config <- tiledb_ctx(config)
+# # creditentials for AWS S3
+# config <- tiledb_config()
+# config["vfs.s3.aws_access_key_id"] <- Sys.getenv("AWS-ACCESS-KEY")
+# config["vfs.s3.aws_secret_access_key"] <- Sys.getenv("AWS-SECRET-KEY")
+# config["vfs.s3.region"] <- Sys.getenv("AWS-REGION")
+# context_with_config <- tiledb_ctx(config)
 ```
 
 

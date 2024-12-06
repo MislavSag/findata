@@ -30,6 +30,8 @@ InvestingCom = R6::R6Class(
     #'
     #' @return Get investing com ea data.
     get_investingcom_earnings_calendar_bulk = function(start_date) {
+      # Debug
+      # start_date = as.Date("2024-11-15")
 
       # solve No visible binding for global variable
       datetime <- id <- revenue <- revenue_factor <- revenue_forecast <- revenue_forecast_factor <-
@@ -40,20 +42,20 @@ InvestingCom = R6::R6Class(
       end_dates <- start_dates + 1
 
       # scrap all events
-      ea_list <- lapply(seq_along(start_dates), function(i) {
+      ea_list = lapply(seq_along(start_dates), function(i) {
         Sys.sleep(1L)
         print(i)
         self$get_investingcom_earnings_calendar(start_dates[i], end_dates[i])
       })
-      ea <- rbindlist(ea_list, fill = TRUE)
+      ea = rbindlist(ea_list, fill = TRUE)
 
       # clean table
-      DT <- as.data.table(ea)
+      DT = as.data.table(ea)
       setnames(DT, c("id", "name", "eps", "eps_forecast", "revenue", "revenue_forecast", "market_cap", "right_time"))
       DT[, datetime := as.POSIXct(gsub("EarningsCal-\\d+-", "", id), format = "%Y-%m-%d-%H%M%S")]
       DT[, id := str_extract(id, "\\d+")]
-      DT <- DT[, lapply(.SD, function(x) str_trim(gsub("/|--", "", x)))]
-      DT <- DT[, (c("eps", "eps_forecast")) := lapply(.SD, as.numeric), .SDcols = c("eps", "eps_forecast")]
+      DT = DT[, lapply(.SD, function(x) str_trim(gsub("/|--", "", x)))]
+      DT = DT[, (c("eps", "eps_forecast")) := lapply(.SD, as.numeric), .SDcols = c("eps", "eps_forecast")]
       setorder(DT, "datetime")
       DT[grep("B", revenue), revenue_factor := 1000000000]
       DT[grep("B", revenue_forecast), revenue_forecast_factor := 1000000000]
@@ -71,8 +73,8 @@ InvestingCom = R6::R6Class(
       DT[, right_time := gsub("genToolTip oneliner reverseToolTip", "", right_time)]
       DT[right_time == "", right_time := NA]
       DT[, symbol := gsub(".*\\(|\\)", "", name)]
-      DT <- unique(DT)
-      DT <- DT[, .(id, symbol, datetime, name, eps, eps_forecast, revenue, revenue_forecast, market_cap, right_time)]
+      DT = unique(DT)
+      DT = DT[, .(id, symbol, datetime, name, eps, eps_forecast, revenue, revenue_forecast, market_cap, right_time)]
 
       return(DT)
     },
