@@ -81,7 +81,8 @@ Create a new FMP object.
 \if{html}{\out{<div class="r">}}\preformatted{FMP$new(
   api_key = NULL,
   azure_storage_endpoint = NULL,
-  context_with_config = NULL
+  context_with_config = NULL,
+  base_url = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -93,6 +94,8 @@ Create a new FMP object.
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
 
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
+
+\item{\code{base_url}}{Base URL for the FMP Cloud API.}
 }
 \if{html}{\out{</div>}}
 }

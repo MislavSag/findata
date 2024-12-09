@@ -21,6 +21,7 @@ FMP = R6::R6Class(
     #' @param api_key API KEY for FMP cloud data.
     #' @param azure_storage_endpoint Azure storate endpont
     #' @param context_with_config AWS S3 Tiledb config
+    #' @param base_url Base URL for the FMP Cloud API.
     #'
     #' @return A new `FMP` object.
     initialize = function(api_key = NULL,
