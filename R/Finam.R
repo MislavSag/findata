@@ -13,6 +13,9 @@ Finam = R6::R6Class(
     #' @field delay Delay between requests.
     delay = NULL,
     
+    #' @field symbol_list List of symbols from finam.
+    symbols_list = NULL,
+    
     #' @description
     #' Create a new MacroData object.
     #'
