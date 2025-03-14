@@ -6,20 +6,43 @@
 #' @export
 Finam = R6::R6Class(
   "Finam",
-  inherit = DataAbstract,
-  
   public = list(
+    #' @field path_to_dump Local path to save data to.
+    path_to_dump = NULL,
+    
+    #' @field delay Delay between requests.
+    delay = NULL,
+    
     #' @description
-    #' Create a new Finam object.
+    #' Create a new MacroData object.
     #'
-    #' @param azure_storage_endpoint Azure storate endpont
-    #' @param context_with_config AWS S3 Tiledb config
+    #' @param path_to_dump Local path to save data to.
+    #' @param delay Delay between requests.
     #'
-    #' @return A new `Finam` object.
-    initialize = function(azure_storage_endpoint = NULL,
-                          context_with_config = NULL) {
-      # endpoint
-      super$initialize(azure_storage_endpoint, context_with_config)
+    #' @return A new `MacroData` object.
+    initialize = function(path_to_dump, delay = 0.8) {
+      # DEBUG
+      # path_to_dump = "F:/temp"
+      # self = list()
+      # self$path_to_dump = path_to_dump
+      
+      # checks
+      assert_character(path_to_dump, len = 1L)
+      assert_choice("FRED-KEY", names(Sys.getenv()))
+      assert_true(dir.exists(path_to_dump))
+      assert_numeric(delay, len = 1L)
+      
+      # Symbol list
+      symbols = getSymbolList(src = "finam")
+      while (nrow(symbols) <= 1) {
+        symbols = getSymbolList(src = "finam")
+        Sys.sleep(3L)
+      }
+      
+      # set init vars
+      self$path_to_dump = path_to_dump
+      self$delay = delay
+      self$symbol_list = symbols
     },
     
     #' @description Get tick data from finam source using QuantTools.
@@ -29,48 +52,33 @@ Finam = R6::R6Class(
     #' @param days Days to scrap data for
     #'
     #' @return Get investing com ea data.
-    get_ticks = function(symbol,
-                         save_uri,
-                         days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)) {
+    get_ticks = function(symbol, days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)) {
       # debug
       # library(qlcal)
       # library(lubridate)
       # library(rusquant)
       # library(arrow)
+      # library(checkmate)
       # qlcal::setCalendar("UnitedStates/NYSE")
       # symbol <- "SPY"
-      # days = getBusinessDays(as.Date("2020-01-01"), Sys.Date() - 1)
-      # save_uri = "F:/equity/usa/tick/trades/finam"
+      # days = getBusinessDays(as.Date("2007-01-01"), Sys.Date() - 1)
       
-#       [1] "2020-02-27"
-#       [1] "Repeat 2"
-#       [1] "Repeat 3"
-#       Error in setnames(tick_data, c("date", "price", "volume")) : 
-#         Can't assign 3 names to a 0 column data.table
-# In addition: Warning messages:
-# 1: In download.file(stock.URL, destfile = tmp, quiet = !verbose) :
-#   URL 'http://export.finam.ru/table.csv?d=d&f=table&e=.csv&dtf=1&tmf=1&MSOR=0&sep=1&sep2=1&at=1&p=1&market=25&em=21053&df=27&mf=1&yf=2020&dt=27&mt=1&yt=2020&datf=6': Timeout of 60 seconds was reached
-# 2: In read.table(file = file, header = header, sep = sep, quote = quote,  :
-#   incomplete final line found by readTableHeader on 'C:\Users\Mislav\AppData\Local\Temp\Rtmp2vUE7U\file1a0415726815'
-# 3: In download.file(stock.URL, destfile = tmp, quiet = !verbose) :
-#   URL 'http://export.finam.ru/table.csv?d=d&f=table&e=.csv&dtf=1&tmf=1&MSOR=0&sep=1&sep2=1&at=1&p=1&market=25&em=21053&df=27&mf=1&yf=2020&dt=27&mt=1&yt=2020&datf=6': Timeout of 60 seconds was reached
-# 4: In read.table(file = file, header = header, sep = sep, quote = quote,  :
-#   incomplete final line found by readTableHeader on 'C:\Users\Mislav\AppData\Local\Temp\Rtmp2vUE7U\file1a0429a95710'
-# 5: In download.file(stock.URL, destfile = tmp, quiet = !verbose) :
-#   URL 'http://export.finam.ru/table.csv?d=d&f=table&e=.csv&dtf=1&tmf=1&MSOR=0&sep=1&sep2=1&at=1&p=1&market=25&em=21053&df=27&mf=1&yf=2020&dt=27&mt=1&yt=2020&datf=6': Timeout of 60 seconds was reached
-#   
       # set download timeout argument using options
-      options(timeout=120)
+      options(timeout = 120)
       
       # create directory for symbol
-      dir_path = file.path(save_uri, tolower(symbol))
+      dir_path = file.path(self$path_to_dump, tolower(symbol))
       if (!dir.exists(dir_path)) {
         print("Create directory.")
         dir.create(dir_path)
       }
       
+      # Assign symbols list Finam to this object
+      # look at rusquant::getSymbols.Finam to see why
+      symbol_list_FINAM = self$symbol_list
+      
       # main loop
-      lapply(days, function(d) {
+      lapply(days[1000:1001], function(d) {
         # debug
         # d = days[1] # 3123
         # d = "2020-02-28"
@@ -84,10 +92,10 @@ Finam = R6::R6Class(
         }
         
         # fair scraping
-        Sys.sleep(2L)
+        Sys.sleep(self$delay)
         
         # get data
-        tries <- 1
+        tries = 1
         repeat {
           tick_data <- tryCatch(
             rusquant::getSymbols.Finam(
@@ -104,7 +112,7 @@ Finam = R6::R6Class(
           if (!is.null(tick_data) | tries > 2) {
             break()
           } else if (is.null(tick_data)) {
-            Sys.sleep(10L)
+            Sys.sleep(self$delay)
             tick_data <- tryCatch(
               rusquant::getSymbols.Finam(
                 toupper(symbol),
@@ -117,9 +125,9 @@ Finam = R6::R6Class(
             )
           }
           
-          tries <- tries + 1
+          tries = tries + 1
           print(paste0("Repeat ", tries))
-          Sys.sleep(1L)
+          Sys.sleep(self$delay)
         }
         
         # check if there is data
@@ -140,6 +148,6 @@ Finam = R6::R6Class(
         
         return(NULL)
       })
-      }
+    }
   )
 )

@@ -6,8 +6,14 @@
 \description{
 Get data data from finam using Quanttools package.
 }
-\section{Super class}{
-\code{\link[findata:DataAbstract]{findata::DataAbstract}} -> \code{Finam}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{path_to_dump}}{Local path to save data to.}
+
+\item{\code{delay}}{Delay between requests.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -17,33 +23,26 @@ Get data data from finam using Quanttools package.
 \item \href{#method-Finam-clone}{\code{Finam$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Finam-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Finam-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new Finam object.
+Create a new MacroData object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Finam$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Finam$new(path_to_dump, delay = 0.8)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
+\item{\code{path_to_dump}}{Local path to save data to.}
 
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
+\item{\code{delay}}{Delay between requests.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A new `Finam` object.
+A new `MacroData` object.
 }
 }
 \if{html}{\out{<hr>}}
@@ -54,7 +53,6 @@ Get tick data from finam source using QuantTools.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Finam$get_ticks(
   symbol,
-  save_uri,
   days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)
 )}\if{html}{\out{</div>}}
 }
@@ -64,9 +62,9 @@ Get tick data from finam source using QuantTools.
 \describe{
 \item{\code{symbol}}{Start date}
 
-\item{\code{save_uri}}{Tiledb uri to save.}
-
 \item{\code{days}}{Days to scrap data for}
+
+\item{\code{save_uri}}{Tiledb uri to save.}
 }
 \if{html}{\out{</div>}}
 }
