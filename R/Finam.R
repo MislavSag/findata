@@ -14,7 +14,7 @@ Finam = R6::R6Class(
     delay = NULL,
     
     #' @field symbol_list List of symbols from finam.
-    symbols_list = NULL,
+    symbol_list = NULL,
     
     #' @description
     #' Create a new MacroData object.
@@ -31,7 +31,6 @@ Finam = R6::R6Class(
       
       # checks
       assert_character(path_to_dump, len = 1L)
-      assert_choice("FRED-KEY", names(Sys.getenv()))
       assert_true(dir.exists(path_to_dump))
       assert_numeric(delay, len = 1L)
       
