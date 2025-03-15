@@ -13,15 +13,13 @@ InvestingCom = R6::R6Class(
     #' @description
     #' Create a new InvestingCom object.
     #'
-    #' @param azure_storage_endpoint Azure storate endpont
     #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `FMP` object.
-    initialize = function(azure_storage_endpoint = NULL,
-                          context_with_config = NULL) {
+    initialize = function(context_with_config = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint, context_with_config)
+      super$initialize(context_with_config)
     },
 
     #' @description Get complete earnings calendar from investing.com.

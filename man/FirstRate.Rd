@@ -25,32 +25,19 @@ Get data data from FirstRate.
 \item \href{#method-FirstRate-clone}{\code{FirstRate$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FirstRate-new"></a>}}
 \if{latex}{\out{\hypertarget{method-FirstRate-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new FirstRate object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FirstRate$new(
-  userid = NULL,
-  azure_storage_endpoint = NULL,
-  context_with_config = NULL
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FirstRate$new(userid = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{userid}}{FirstRate user ID.}
-
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
 
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
 }

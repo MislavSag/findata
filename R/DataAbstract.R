@@ -8,9 +8,6 @@ DataAbstract = R6::R6Class(
   "DataAbstract",
 
   public = list(
-    #' @field azure_storage_endpoint Azure storate endpont
-    azure_storage_endpoint = NULL,
-
     #' @field context_with_config AWS S3 Tiledb config
     context_with_config = NULL,
     
@@ -20,24 +17,22 @@ DataAbstract = R6::R6Class(
     #' @description
     #' Create a new DataAbstract object.
     #'
-    #' @param azure_storage_endpoint Azure endpoint
     #' @param context_with_config AWS S3 Tiledb config
     #' @param fredr_apikey FRED api key
     #'
     #' @return A new `DataAbstract` object.
-    initialize = function(azure_storage_endpoint = NULL,
-                          context_with_config = NULL,
+    initialize = function(context_with_config = NULL,
                           fredr_apikey = NULL) {
 
       # set calendar for RcppQuantuccia package
       qlcal::setCalendar("UnitedStates/NYSE")
 
       # Azure storage endpoint
-      if (is.null(azure_storage_endpoint) & Sys.getenv("BLOB-ENDPOINT") != "") {
-        self$azure_storage_endpoint = storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
-      } else {
-        self$azure_storage_endpoint <- azure_storage_endpoint
-      }
+      # if (is.null(azure_storage_endpoint) & Sys.getenv("BLOB-ENDPOINT") != "") {
+      #   self$azure_storage_endpoint = storage_endpoint(Sys.getenv("BLOB-ENDPOINT"), Sys.getenv("BLOB-KEY"))
+      # } else {
+      #   self$azure_storage_endpoint <- azure_storage_endpoint
+      # }
 
       # configure s3
       config <- tiledb_config()
@@ -53,20 +48,6 @@ DataAbstract = R6::R6Class(
         fredr::fredr_set_key(fredr_apikey)
       } else {
         warning("Fred API key is not set.")
-      }
-    },
-
-    #' @description Save files bob. It automaticly saves files as csv and rds objects
-    #'
-    #' @param object Object to save
-    #' @param file_name File name (with extensions)
-    #' @param container Blob container
-    save_blob_files = function(object, file_name, container = "fmpcloud") {
-      cont <- storage_container(self$azure_storage_endpoint, container)
-      if (grepl("csv", file_name)) {
-        storage_write_csv(object, cont, file = file_name)
-      } else if (grepl("rds", file_name)) {
-        storage_save_rds(object, cont, file = file_name)
       }
     }
   )

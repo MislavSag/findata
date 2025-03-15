@@ -65,8 +65,6 @@ Get tick data from finam source using QuantTools.
 \item{\code{symbol}}{Start date}
 
 \item{\code{days}}{Days to scrap data for}
-
-\item{\code{save_uri}}{Tiledb uri to save.}
 }
 \if{html}{\out{</div>}}
 }

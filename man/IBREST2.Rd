@@ -44,13 +44,6 @@ Get data data from IB Client Portal API.
 \item \href{#method-IBREST2-clone}{\code{IBREST2$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-IBREST2-new"></a>}}
 \if{latex}{\out{\hypertarget{method-IBREST2-new}{}}}

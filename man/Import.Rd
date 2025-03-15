@@ -24,13 +24,6 @@ Help class that imports all relevant data from sources (for now onlz FMP).
 \item \href{#method-Import-clone}{\code{Import$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Import-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Import-new}{}}}

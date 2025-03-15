@@ -9,8 +9,6 @@ Abstract class for all other data classes.
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
-
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
 
 \item{\code{fredr_apikey}}{FRED api key.}
@@ -21,7 +19,6 @@ Abstract class for all other data classes.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-DataAbstract-new}{\code{DataAbstract$new()}}
-\item \href{#method-DataAbstract-save_blob_files}{\code{DataAbstract$save_blob_files()}}
 \item \href{#method-DataAbstract-clone}{\code{DataAbstract$clone()}}
 }
 }
@@ -31,18 +28,12 @@ Abstract class for all other data classes.
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(
-  azure_storage_endpoint = NULL,
-  context_with_config = NULL,
-  fredr_apikey = NULL
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(context_with_config = NULL, fredr_apikey = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{azure_storage_endpoint}}{Azure endpoint}
-
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
 
 \item{\code{fredr_apikey}}{FRED api key}
@@ -51,27 +42,6 @@ Create a new DataAbstract object.
 }
 \subsection{Returns}{
 A new `DataAbstract` object.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DataAbstract-save_blob_files"></a>}}
-\if{latex}{\out{\hypertarget{method-DataAbstract-save_blob_files}{}}}
-\subsection{Method \code{save_blob_files()}}{
-Save files bob. It automaticly saves files as csv and rds objects
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$save_blob_files(object, file_name, container = "fmpcloud")}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{object}}{Object to save}
-
-\item{\code{file_name}}{File name (with extensions)}
-
-\item{\code{container}}{Blob container}
-}
-\if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}

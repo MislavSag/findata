@@ -16,16 +16,14 @@ FirstRate = R6::R6Class(
     #' Create a new FirstRate object.
     #'
     #' @param userid FirstRate user ID.
-    #' @param azure_storage_endpoint Azure storate endpont
     #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `FirstRate` object.
     initialize = function(userid = NULL,
-                          azure_storage_endpoint = NULL,
                           context_with_config = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint, context_with_config)
+      super$initialize(context_with_config)
 
       # check and define variables
       if (is.null(userid)) {

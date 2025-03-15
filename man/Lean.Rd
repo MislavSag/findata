@@ -20,13 +20,6 @@ Help functions for transforming raw market data to Quantconnect data.
 \item \href{#method-Lean-clone}{\code{Lean$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Lean-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Lean-new}{}}}

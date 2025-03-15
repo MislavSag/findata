@@ -145,7 +145,7 @@ Finam = R6::R6Class(
         
         # save data
         print(file_name)
-        write_parquet(tick_data, file_name)
+        arrow::write_parquet(tick_data, file_name)
         
         return(NULL)
       })

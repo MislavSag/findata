@@ -19,18 +19,15 @@ FMP = R6::R6Class(
     #' Create a new FMP object.
     #'
     #' @param api_key API KEY for FMP cloud data.
-    #' @param azure_storage_endpoint Azure storate endpont
     #' @param context_with_config AWS S3 Tiledb config
     #' @param base_url Base URL for the FMP Cloud API.
     #'
     #' @return A new `FMP` object.
     initialize = function(api_key = NULL,
-                          azure_storage_endpoint = NULL,
                           context_with_config = NULL,
                           base_url = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint, context_with_config)
 
       # Set base url
       self$base_url = base_url

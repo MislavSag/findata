@@ -19,27 +19,18 @@ Get data data from investing.com.
 \item \href{#method-InvestingCom-clone}{\code{InvestingCom$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-InvestingCom-new"></a>}}
 \if{latex}{\out{\hypertarget{method-InvestingCom-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new InvestingCom object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new(context_with_config = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
-
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
 }
 \if{html}{\out{</div>}}

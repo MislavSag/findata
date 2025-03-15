@@ -65,33 +65,19 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
-<ul>
-<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="save_blob_files"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-save_blob_files'><code>findata::DataAbstract$save_blob_files()</code></a></span></li>
-</ul>
-</details>
-}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-new"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$new(
-  api_key = NULL,
-  azure_storage_endpoint = NULL,
-  context_with_config = NULL,
-  base_url = NULL
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL, context_with_config = NULL, base_url = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{api_key}}{API KEY for FMP cloud data.}
-
-\item{\code{azure_storage_endpoint}}{Azure storate endpont}
 
 \item{\code{context_with_config}}{AWS S3 Tiledb config}
 

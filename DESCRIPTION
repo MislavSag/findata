@@ -15,7 +15,6 @@ Imports:
     data.table,
     checkmate,
     httr,
-    AzureStor,
     qlcal,
     rvest,
     stringr,

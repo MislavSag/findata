@@ -1,7 +1,6 @@
 #' @import R6
 #' @import data.table
 #' @import checkmate
-#' @import AzureStor
 #' @import qlcal
 #' @import rvest
 #' @import stringr
