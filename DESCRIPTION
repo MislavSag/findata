@@ -31,11 +31,11 @@ Imports:
     fs,
     parallel,
     xml2,
-    rusquant
+    rusquant,
+    arrow
 Remotes:
     arbuzovv/rusquant
 Suggests:
-    arrow,
     rmarkdown,
     knitr,
     rlang,

@@ -50,7 +50,6 @@ Finam = R6::R6Class(
     #' @description Get tick data from finam source using QuantTools.
     #'
     #' @param symbol Start date
-    #' @param save_uri Tiledb uri to save.
     #' @param days Days to scrap data for
     #'
     #' @return Get investing com ea data.
@@ -77,10 +76,10 @@ Finam = R6::R6Class(
       
       # Assign symbols list Finam to this object
       # look at rusquant::getSymbols.Finam to see why
-      symbol_list_FINAM = self$symbol_list
+      symbol_list_FINAM <<- finam$symbol_list
       
       # main loop
-      lapply(days[1000:1001], function(d) {
+      lapply(days, function(d) {
         # debug
         # d = days[1] # 3123
         # d = "2020-02-28"

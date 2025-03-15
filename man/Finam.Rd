@@ -12,6 +12,8 @@ Get data data from finam using Quanttools package.
 \item{\code{path_to_dump}}{Local path to save data to.}
 
 \item{\code{delay}}{Delay between requests.}
+
+\item{\code{symbol_list}}{List of symbols from finam.}
 }
 \if{html}{\out{</div>}}
 }

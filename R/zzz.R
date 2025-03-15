@@ -15,6 +15,7 @@
 #' @import fs
 #' @import parallel
 #' @import xml2
+#' @import arrow
 #' @importFrom jsonlite fromJSON read_json
 #' @importFrom httr GET POST RETRY content timeout add_headers modify_url write_disk status_code parse_url user_agent
 #' @importFrom zip zipr
