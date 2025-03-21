@@ -42,9 +42,9 @@ DataAbstract = R6::R6Class(
       self$context_with_config <- tiledb_ctx(config)
 
       # set fred apikey
-      if (is.null(azure_storage_endpoint) & Sys.getenv("FRED-KEY") != "") {
+      if (Sys.getenv("FRED-KEY") != "") {
         fredr::fredr_set_key(Sys.getenv("FRED-KEY"))
-      } else if (!is.null(azure_storage_endpoint)) {
+      } else if (Sys.getenv("FRED-KEY") != "") {
         fredr::fredr_set_key(fredr_apikey)
       } else {
         warning("Fred API key is not set.")

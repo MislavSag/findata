@@ -10,17 +10,13 @@ InvestingCom = R6::R6Class(
 
   public = list(
 
-    #' @description
-    #' Create a new InvestingCom object.
-    #'
-    #' @param context_with_config AWS S3 Tiledb config
-    #'
-    #' @return A new `FMP` object.
-    initialize = function(context_with_config = NULL) {
-
-      # endpoint
-      super$initialize(context_with_config)
-    },
+    # #' @description
+    # #' Create a new InvestingCom object.
+    # #'
+    # #' @return A new `FMP` object.
+    # initialize = function() {
+    #   self$
+    # },
 
     #' @description Get complete earnings calendar from investing.com.
     #'

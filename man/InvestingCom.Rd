@@ -12,33 +12,19 @@ Get data data from investing.com.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-InvestingCom-new}{\code{InvestingCom$new()}}
 \item \href{#method-InvestingCom-get_investingcom_earnings_calendar_bulk}{\code{InvestingCom$get_investingcom_earnings_calendar_bulk()}}
 \item \href{#method-InvestingCom-get_investingcom_earnings_calendar}{\code{InvestingCom$get_investingcom_earnings_calendar()}}
 \item \href{#method-InvestingCom-update_investingcom_earnings}{\code{InvestingCom$update_investingcom_earnings()}}
 \item \href{#method-InvestingCom-clone}{\code{InvestingCom$clone()}}
 }
 }
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-InvestingCom-new"></a>}}
-\if{latex}{\out{\hypertarget{method-InvestingCom-new}{}}}
-\subsection{Method \code{new()}}{
-Create a new InvestingCom object.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InvestingCom$new(context_with_config = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new `FMP` object.
-}
-}
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="findata" data-topic="DataAbstract" data-id="initialize"><a href='../../findata/html/DataAbstract.html#method-DataAbstract-initialize'><code>findata::DataAbstract$initialize()</code></a></span></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-InvestingCom-get_investingcom_earnings_calendar_bulk"></a>}}
 \if{latex}{\out{\hypertarget{method-InvestingCom-get_investingcom_earnings_calendar_bulk}{}}}
