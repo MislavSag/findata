@@ -62,6 +62,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_aftermarket_quote}{\code{FMP$get_aftermarket_quote()}}
 \item \href{#method-FMP-get_batch_quote}{\code{FMP$get_batch_quote()}}
 \item \href{#method-FMP-get_batch_trade}{\code{FMP$get_batch_trade()}}
+\item \href{#method-FMP-get_share_float_history}{\code{FMP$get_share_float_history()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -1028,6 +1029,26 @@ Get trades for multiple stocks at once.
 }
 \subsection{Returns}{
 A data.table containing batch trade information for the specified stocks.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_share_float_history"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_share_float_history}{}}}
+\subsection{Method \code{get_share_float_history()}}{
+Get historical share float data from FMP Cloud.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_share_float_history(symbol)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{symbol}}{Stock symbol (e.g., "AAPL").}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A data.table with historical share float data.
 }
 }
 \if{html}{\out{<hr>}}

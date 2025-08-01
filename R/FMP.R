@@ -260,7 +260,7 @@ FMP = R6::R6Class(
                                      to = as.character(Sys.Date())) {
 
       # initial GET request. Don't use RETRY here yet.
-      x <- tryCatch({
+      x = tryCatch({
         GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
                    symbol, '/', multiply, '/', time, '/', from, '/', to),
             query = list(apikey = self$api_key),
@@ -892,6 +892,7 @@ FMP = R6::R6Class(
               url,
               query = list(year = year, period = period, apikey = self$api_key),
               write_disk(file_name, overwrite = TRUE))
+        Sys.sleep(12L)
         return(NULL)
       })
     },
@@ -1575,6 +1576,21 @@ FMP = R6::R6Class(
       url = paste0(self$base_url, "/v4/batch-pre-post-market-trade/", symbols)
       res = content(RETRY("GET", url, query = list(apikey = self$api_key), times = 5))
       res = rbindlist(res, fill = TRUE)
+      return(res)
+    },
+    
+    #' @description Get historical share float data from FMP Cloud.
+    #'
+    #' @param symbol Stock symbol (e.g., "AAPL").
+    #'
+    #' @return A data.table with historical share float data.
+    get_share_float_history = function(symbol) {
+      assert_character(symbol, len = 1, null.ok = FALSE)
+      url = paste0("https://financialmodelingprep.com/api/v4/historical/shares_float")
+      p = RETRY("GET", url, query = list(symbol = symbol, apikey = self$api_key), times = 5)
+      res = content(p)
+      res = rbindlist(res, fill = TRUE)
+      res[, date := as.Date(date)]
       return(res)
     }
   ),
