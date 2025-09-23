@@ -63,6 +63,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_batch_quote}{\code{FMP$get_batch_quote()}}
 \item \href{#method-FMP-get_batch_trade}{\code{FMP$get_batch_trade()}}
 \item \href{#method-FMP-get_share_float_history}{\code{FMP$get_share_float_history()}}
+\item \href{#method-FMP-get_company_profile_bulk_all}{\code{FMP$get_company_profile_bulk_all()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -206,90 +207,6 @@ retrieving intraday market data from FMP cloud.
 }
 \subsection{Returns}{
 Data frame with ohlcv data.
-#' @description Get tick quote data from FMP cloud.
-#'
-#' @param symbol Symbol of the stock.
-#' @param date multiplier.Start date.
-#'
-#' @return Data frame with ohlcv data.
-get_quotes = function(symbol, date) {
-
-  # debug
-  # library(httr)
-  # library(data.table)
-  # self = list()
-  # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
-  # symbol = "SPY"
-  # date = "2023-08-18"
-  
-  # init list
-  q = list()
-  
-  # initial GET request. Don't use RETRY here yet.
-  x <- tryCatch({
-    GET(paste0('https://financialmodelingprep.com/api/v4/historical-price-tick/',
-               symbol, '/', date),
-        query = list(limit = 30000, apikey = self$api_key),
-        timeout(100))
-  }, error = function(e) NA)
-  x <- content(x)
-  q[[1]] = rbindlist(x$results)
-  
-  # get last time
-  last_time = tail(q[[1]]$t, 1)
-
-  x <- tryCatch({
-    GET(paste0('https://financialmodelingprep.com/api/v4/historical-price-tick/',
-               symbol, '/', date),
-        query = list(limit = 300, ts = last_time, te = last_time + 1000, apikey = self$api_key),
-        timeout(100))
-  }, error = function(e) NA)
-  x <- content(x)
-  rbindlist(x$results)
-  q[[2]] = rbindlist(x$results)
-  
-  
-
-  
-  # url = "https://financialmodelingprep.com/api/v4/historical-price-tick/SPY/2023-08-04?limit=500&apikey=15cd5d0adf4bc6805a724b4417bbaafc"
-  # GET(url)
-
-  # control error
-  tries <- 0
-  while (all(is.na(x)) & tries < 20) {
-    print("There is an error in scraping market data. Sleep and try again!")
-    Sys.sleep(60L)
-    x <- tryCatch({
-      GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-                 symbol, '/', multiply, '/', time, '/', from, '/', to),
-          query = list(apikey = self$api_key),
-          timeout(100))
-    }, error = function(e) NA)
-    tries <- tries + 1
-  }
-
-  # check if status is ok. If not, try to download again
-  if (x$status_code == 404) {
-    print("There is an 404 error!")
-    return(NULL)
-  } else if (x$status_code == 200) {
-    x <- content(x)
-    return(rbindlist(x$results))
-  } else {
-    x <- RETRY("GET",
-               paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-                      symbol, '/', multiply, '/', time, '/', from, '/', to),
-               query = list(apikey = self$api_key),
-               times = 5,
-               timeout(100))
-    if (x$status_code == 200) {
-      x <- content(x)
-      return(rbindlist(x$results))
-    } else {
-      stop('Error in reposne. Status not 200 and not 404')
-    }
-  }
-},
 }
 }
 \if{html}{\out{<hr>}}
@@ -1049,6 +966,34 @@ Get historical share float data from FMP Cloud.
 }
 \subsection{Returns}{
 A data.table with historical share float data.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_company_profile_bulk_all"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_company_profile_bulk_all}{}}}
+\subsection{Method \code{get_company_profile_bulk_all()}}{
+Fetch ALL parts of Company Profile Bulk until an empty page.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_company_profile_bulk_all(
+  start_part = 0L,
+  max_parts = 3L,
+  sleep_sec = 102
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{start_part}}{First part to try.}
+
+\item{\code{max_parts}}{Safety cap.}
+
+\item{\code{sleep_sec}}{Optional pause between requests.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of all profiles.
 }
 }
 \if{html}{\out{<hr>}}

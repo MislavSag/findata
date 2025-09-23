@@ -303,92 +303,6 @@ FMP = R6::R6Class(
         }
       }
     },
-
-    #' #' @description Get tick quote data from FMP cloud.
-    #' #'
-    #' #' @param symbol Symbol of the stock.
-    #' #' @param date multiplier.Start date.
-    #' #'
-    #' #' @return Data frame with ohlcv data.
-    #' get_quotes = function(symbol, date) {
-    #' 
-    #'   # debug
-    #'   # library(httr)
-    #'   # library(data.table)
-    #'   # self = list()
-    #'   # self$api_key = Sys.getenv("APIKEY-FMPCLOUD")
-    #'   # symbol = "SPY"
-    #'   # date = "2023-08-18"
-    #'   
-    #'   # init list
-    #'   q = list()
-    #'   
-    #'   # initial GET request. Don't use RETRY here yet.
-    #'   x <- tryCatch({
-    #'     GET(paste0('https://financialmodelingprep.com/api/v4/historical-price-tick/',
-    #'                symbol, '/', date),
-    #'         query = list(limit = 30000, apikey = self$api_key),
-    #'         timeout(100))
-    #'   }, error = function(e) NA)
-    #'   x <- content(x)
-    #'   q[[1]] = rbindlist(x$results)
-    #'   
-    #'   # get last time
-    #'   last_time = tail(q[[1]]$t, 1)
-    #' 
-    #'   x <- tryCatch({
-    #'     GET(paste0('https://financialmodelingprep.com/api/v4/historical-price-tick/',
-    #'                symbol, '/', date),
-    #'         query = list(limit = 300, ts = last_time, te = last_time + 1000, apikey = self$api_key),
-    #'         timeout(100))
-    #'   }, error = function(e) NA)
-    #'   x <- content(x)
-    #'   rbindlist(x$results)
-    #'   q[[2]] = rbindlist(x$results)
-    #'   
-    #'   
-    #' 
-    #'   
-    #'   # url = "https://financialmodelingprep.com/api/v4/historical-price-tick/SPY/2023-08-04?limit=500&apikey=15cd5d0adf4bc6805a724b4417bbaafc"
-    #'   # GET(url)
-    #' 
-    #'   # control error
-    #'   tries <- 0
-    #'   while (all(is.na(x)) & tries < 20) {
-    #'     print("There is an error in scraping market data. Sleep and try again!")
-    #'     Sys.sleep(60L)
-    #'     x <- tryCatch({
-    #'       GET(paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-    #'                  symbol, '/', multiply, '/', time, '/', from, '/', to),
-    #'           query = list(apikey = self$api_key),
-    #'           timeout(100))
-    #'     }, error = function(e) NA)
-    #'     tries <- tries + 1
-    #'   }
-    #' 
-    #'   # check if status is ok. If not, try to download again
-    #'   if (x$status_code == 404) {
-    #'     print("There is an 404 error!")
-    #'     return(NULL)
-    #'   } else if (x$status_code == 200) {
-    #'     x <- content(x)
-    #'     return(rbindlist(x$results))
-    #'   } else {
-    #'     x <- RETRY("GET",
-    #'                paste0('https://financialmodelingprep.com/api/v4/historical-price/',
-    #'                       symbol, '/', multiply, '/', time, '/', from, '/', to),
-    #'                query = list(apikey = self$api_key),
-    #'                times = 5,
-    #'                timeout(100))
-    #'     if (x$status_code == 200) {
-    #'       x <- content(x)
-    #'       return(rbindlist(x$results))
-    #'     } else {
-    #'       stop('Error in reposne. Status not 200 and not 404')
-    #'     }
-    #'   }
-    #' },
-    
     
     #' @description Help function for calculating start and end dates
     #'
@@ -1592,7 +1506,52 @@ FMP = R6::R6Class(
       res = rbindlist(res, fill = TRUE)
       res[, date := as.Date(date)]
       return(res)
+    },
+  
+    # BULK --------------------------------------------------------------------
+    #' @description Fetch ALL parts of Company Profile Bulk until an empty page.
+    #' @param start_part First part to try.
+    #' @param max_parts Safety cap.
+    #' @param sleep_sec Optional pause between requests.
+    #' @return data.table of all profiles.
+    get_company_profile_bulk_all = function(start_part = 0L, max_parts = 4L, sleep_sec = 102) {
+      url = "https://financialmodelingprep.com/stable/profile-bulk"
+      res_list = vector("list", max_parts)
+      i = start_part
+      k = 1L
+      
+      repeat {
+        if (i - start_part + 1L > max_parts) break
+        resp = RETRY(
+          "GET", url,
+          query = list(part = i, apikey = self$api_key),
+          httr::accept("text/csv"),
+          times = 2L,
+          pause_base = 201,
+          pauce_cap = 301,
+          pause_min = 201
+        )
+        cat("Step", i, "\n")
+        print(resp)
+        txt <- httr::content(resp, as = "text", encoding = "UTF-8")
+        if (!nzchar(trimws(txt))) break
+        
+        dt = tryCatch(
+          data.table::fread(text = txt, showProgress = FALSE,
+                            na.strings = c("", "NA", "NaN", "null")),
+          error = function(e) data.table()
+        )
+        if (nrow(dt) == 0L) break
+        
+        res_list[[k]] = dt
+        i = i + 1L
+        k = k + 1L
+        if (sleep_sec > 0) Sys.sleep(sleep_sec)
+      }
+      
+      data.table::rbindlist(res_list[seq_len(k - 1L)], fill = TRUE)
     }
+    
   ),
 
   private = list(
