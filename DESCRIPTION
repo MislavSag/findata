@@ -21,7 +21,6 @@ Imports:
     jsonlite,
     zip,
     lubridate,
-    tiledb,
     bit64,
     future.apply,
     fredr,

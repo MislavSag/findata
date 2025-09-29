@@ -4,7 +4,6 @@
 #' @import qlcal
 #' @import rvest
 #' @import stringr
-#' @import tiledb
 #' @import bit64
 #' @import future.apply
 #' @import fredr
