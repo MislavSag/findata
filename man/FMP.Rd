@@ -25,7 +25,6 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
 \item \href{#method-FMP-get_earnings_suprises}{\code{FMP$get_earnings_suprises()}}
 \item \href{#method-FMP-get_transcripts}{\code{FMP$get_transcripts()}}
-\item \href{#method-FMP-get_daily_tiledb}{\code{FMP$get_daily_tiledb()}}
 \item \href{#method-FMP-get_intraday_equities}{\code{FMP$get_intraday_equities()}}
 \item \href{#method-FMP-create_start_end_dates}{\code{FMP$create_start_end_dates()}}
 \item \href{#method-FMP-get_sp500_symbols}{\code{FMP$get_sp500_symbols()}}
@@ -64,6 +63,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_batch_trade}{\code{FMP$get_batch_trade()}}
 \item \href{#method-FMP-get_share_float_history}{\code{FMP$get_share_float_history()}}
 \item \href{#method-FMP-get_company_profile_bulk_all}{\code{FMP$get_company_profile_bulk_all()}}
+\item \href{#method-FMP-get_daily_bulk}{\code{FMP$get_daily_bulk()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -153,26 +153,6 @@ Get Earning Call Transcript from FMP cloud.
 }
 \subsection{Returns}{
 Result of GET request
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_daily_tiledb"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_daily_tiledb}{}}}
-\subsection{Method \code{get_daily_tiledb()}}{
-get daily data from FMP cloud for all stocks
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_tiledb(uri)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{uri}}{to save daily data for every date.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Scrap all daily data
 }
 }
 \if{html}{\out{<hr>}}
@@ -976,7 +956,7 @@ Fetch ALL parts of Company Profile Bulk until an empty page.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{FMP$get_company_profile_bulk_all(
   start_part = 0L,
-  max_parts = 3L,
+  max_parts = 4L,
   sleep_sec = 102
 )}\if{html}{\out{</div>}}
 }
@@ -994,6 +974,26 @@ Fetch ALL parts of Company Profile Bulk until an empty page.
 }
 \subsection{Returns}{
 data.table of all profiles.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_daily_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_daily_bulk}{}}}
+\subsection{Method \code{get_daily_bulk()}}{
+get daily data from FMP cloud for all stocks
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_daily_bulk(uri)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uri}}{to save daily data for every date.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Scrap all daily data
 }
 }
 \if{html}{\out{<hr>}}

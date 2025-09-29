@@ -13,7 +13,7 @@ FMP = R6::R6Class(
     api_key = NULL,
     
     #' @field base_url Base URL for the FMP Cloud API.
-    base_url = "https://financialmodelingprep.com/api",
+    base_url = "https://financialmodelingprep.com/stable/",
 
     #' @description
     #' Create a new FMP object.
@@ -40,6 +40,8 @@ FMP = R6::R6Class(
       }
     },
 
+
+    # EARNINGS, DIVIDENDS, SPLITS ---------------------------------------------
     #' @description
     #' Create a new FMP object.
     #'
@@ -69,7 +71,7 @@ FMP = R6::R6Class(
         
         # get data
         ea <- lapply(seq_along(dates_from), function(i) {
-          private$fmpv_path("earning_calendar", from = dates_from[i], to = dates_to[i], apikey = self$api_key)
+          private$fmpv_path("earnings-calendar", from = dates_from[i], to = dates_to[i], apikey = self$api_key)
         })
         dt <- rbindlist(ea, fill = TRUE)
         
@@ -105,11 +107,7 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with earnings surprises data.
     get_earnings_suprises = function(year = format(Sys.Date(), "%Y")) {
-      url = "https://financialmodelingprep.com/api/v4/earnings-surprises-bulk"
-      p = RETRY("GET", url, query = list(apikey = self$api_key, year = year))
-      res = content(p)
-      setDT(res)
-      return(res)
+      private$get("earnings-surprises-bulk", params = list(year = year))
     },
 
     #' @description Get Earning Call Transcript from FMP cloud.
@@ -199,47 +197,6 @@ FMP = R6::R6Class(
         # save
         arrow::write_parquet(new_data, file_)
         
-        return(NULL)
-      })
-    },
-
-    #' @description get daily data from FMP cloud for all stocks
-    #'
-    #' @param uri to save daily data for every date.
-    #'
-    #' @return Scrap all daily data
-    get_daily_tiledb = function(uri) {
-
-      # debug
-      # library(findata)
-      # library(data.table)
-      # library(httr)
-      # library(arrow)
-      # library(lubridate)
-      # self = FMP$new()
-      # uri = "F:/equity/daily_fmp"
-
-      # create data seq
-      seq_date_all <- getBusinessDays(as.Date("1990-01-01"), Sys.Date() - 1)
-
-      # # read old data
-      files = list.files(uri)
-      if (length(files) == 0) {
-        seq_date = seq_date_all
-      } else {
-        seq_date = as.Date(setdiff(as.character(seq_date_all), tools::file_path_sans_ext(files)))
-      }
-
-      # get daily with batch and save to azure blob
-      url_base <- "https://financialmodelingprep.com/api/v4/batch-request-end-of-day-prices"
-      lapply(seq_date, function(x) {
-        print(x)
-        file_name_ = file.path(uri, paste0(x, ".csv"))
-        p <- RETRY("GET", 
-                   url_base, 
-                   query = list(date = x, apikey = self$api_key), 
-                   write_disk(file_name_),
-                   times = 5L)
         return(NULL)
       })
     },
@@ -699,26 +656,21 @@ FMP = R6::R6Class(
       })
     },
 
+    # STOCK DIRECTORY ---------------------------------------------------------
     #' @description Get stock list.
     #'
     #' @return data.table with stock list data.
     get_stock_list = function() {
-      url <- "https://financialmodelingprep.com/api/v3/stock/list"
-      p <- RETRY("GET", url, query = list(apikey = self$api_key))
-      res <- content(p)
-      res <- rbindlist(res, fill = TRUE)
-      return(res)
+      private$get("stock-list")
     },
     #' @description Get symbol changes.
     #'
     #' @return data.table with symbol changes data.
     get_symbol_changes = function() {
-      url <- "https://financialmodelingprep.com/api/v4/symbol_change"
-      p <- RETRY("GET", url, query = list(apikey = self$api_key))
-      res <- content(p)
-      res <- rbindlist(res, fill = TRUE)
-      return(res)
+      private$get("symbol-change")
     },
+
+    # COMPANY INFORMATION -----------------------------------------------------
     #' @description Get delisted companies.
     #'
     #' @return data.table with delisted companies data.
@@ -1515,7 +1467,7 @@ FMP = R6::R6Class(
     #' @param sleep_sec Optional pause between requests.
     #' @return data.table of all profiles.
     get_company_profile_bulk_all = function(start_part = 0L, max_parts = 4L, sleep_sec = 102) {
-      url = "https://financialmodelingprep.com/stable/profile-bulk"
+      url = url_base = paste0(self$base_url, "profile-bulk")
       res_list = vector("list", max_parts)
       i = start_part
       k = 1L
@@ -1550,6 +1502,46 @@ FMP = R6::R6Class(
       }
       
       data.table::rbindlist(res_list[seq_len(k - 1L)], fill = TRUE)
+    },
+    #' @description get daily data from FMP cloud for all stocks
+    #'
+    #' @param uri to save daily data for every date.
+    #'
+    #' @return Scrap all daily data
+    get_daily_bulk = function(uri) {
+      
+      # debug
+      # library(findata)
+      # library(data.table)
+      # library(httr)
+      # library(arrow)
+      # library(lubridate)
+      # self = FMP$new()
+      # uri = "F:/equity/daily_fmp"
+      
+      # create data seq
+      seq_date_all = getBusinessDays(as.Date("1990-01-01"), Sys.Date() - 1)
+      
+      # # read old data
+      files = list.files(uri)
+      if (length(files) == 0) {
+        seq_date = seq_date_all
+      } else {
+        seq_date = as.Date(setdiff(as.character(seq_date_all), tools::file_path_sans_ext(files)))
+      }
+      
+      # get daily with batch and save to azure blob
+      url_base = paste0(self$base_url, "eod-bulk")
+      lapply(seq_date, function(x) {
+        print(x)
+        file_name_ = file.path(uri, paste0(x, ".csv"))
+        p <- RETRY("GET", 
+                   url_base, 
+                   query = list(date = x, apikey = self$api_key), 
+                   write_disk(file_name_),
+                   times = 5L)
+        return(NULL)
+      })
     }
     
   ),
@@ -1568,13 +1560,23 @@ FMP = R6::R6Class(
       query_params <- list(...)
 
       # define url
-      url <- paste0("https://financialmodelingprep.com/api/", v, "/", path)
+      url <- paste0(self$base_url, v, "/", path)
 
       # get data
       p <- RETRY("GET", url, query = query_params, times = 5)
       result <- suppressWarnings(rbindlist(httr::content(p), fill = TRUE))
 
       return(result)
+    },
+    get = function(tag, params = list()) {
+      url = paste0(self$base_url, tag)
+      
+      query <- c(list(apikey = self$api_key), params)
+      
+      p = RETRY("GET", url, query = query)
+      res = content(p)
+      res = rbindlist(res, fill = TRUE)
+      return(res)
     }
   )
 )
