@@ -40,7 +40,6 @@ FMP = R6::R6Class(
       }
     },
 
-
     # EARNINGS, DIVIDENDS, SPLITS ---------------------------------------------
     #' @description
     #' Create a new FMP object.
@@ -50,19 +49,6 @@ FMP = R6::R6Class(
     #'
     #' @return Earning announcements data.
     get_earning_announcements = function(path, start_date = NULL) {
-
-      # debug
-      # library(findata)
-      # library(data.table)
-      # library(httr)
-      # library(arrow)
-      # library(nanotime)
-      # self = FMP$new()
-      # symbol = "CA"
-      # start_date = NULL
-      # start_date = as.Date("2023-08-01")
-      # path = "F:/equity/usa/fundamentals/earning_announcements.parquet"
-
       # help function
       get_ea = function(start_date, end_date) {
         # define listing dates
@@ -70,16 +56,15 @@ FMP = R6::R6Class(
         dates_to = dates_from + 14
         
         # get data
-        ea <- lapply(seq_along(dates_from), function(i) {
-          private$fmpv_path("earnings-calendar", from = dates_from[i], to = dates_to[i], apikey = self$api_key)
+        ea = lapply(seq_along(dates_from), function(i) {
+          private$get("earnings-calendar", params = list(from = dates_from[i], to = dates_to[i]))
         })
-        dt <- rbindlist(ea, fill = TRUE)
+        dt = rbindlist(ea, fill = TRUE)
         
         # clean data
-        dt <- unique(dt, by = c("symbol", "date"))
+        dt = unique(dt, by = c("symbol", "date"))
         dt[, date := as.Date(date)]
-        dt[, fiscalDateEnding := as.Date(fiscalDateEnding)]
-        dt[, updatedFromDate := as.Date(updatedFromDate)]
+        dt[, lastUpdated := as.Date(lastUpdated)]
       }
       
       # define start date
@@ -1547,27 +1532,11 @@ FMP = R6::R6Class(
   ),
 
   private = list(
-    # PRIVATE -----------------------------------------------------------------
-    
     ea_file_name = "EarningAnnouncements",
     transcripts_file_name = "earnings-calendar.rds",
     prices_file_name = "prices.csv",
     market_cap_file_name = "MarketCap",
 
-    fmpv_path = function(path = "earning_calendar", v = "v3", ...) {
-
-      # query params
-      query_params <- list(...)
-
-      # define url
-      url <- paste0(self$base_url, v, "/", path)
-
-      # get data
-      p <- RETRY("GET", url, query = query_params, times = 5)
-      result <- suppressWarnings(rbindlist(httr::content(p), fill = TRUE))
-
-      return(result)
-    },
     get = function(tag, params = list()) {
       url = paste0(self$base_url, tag)
       
