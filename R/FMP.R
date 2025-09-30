@@ -13,24 +13,17 @@ FMP = R6::R6Class(
     api_key = NULL,
     
     #' @field base_url Base URL for the FMP Cloud API.
-    base_url = "https://financialmodelingprep.com/stable/",
+    base_url = NULL,
 
     #' @description
     #' Create a new FMP object.
     #'
     #' @param api_key API KEY for FMP cloud data.
-    #' @param context_with_config AWS S3 Tiledb config
-    #' @param base_url Base URL for the FMP Cloud API.
     #'
     #' @return A new `FMP` object.
-    initialize = function(api_key = NULL,
-                          context_with_config = NULL,
-                          base_url = NULL) {
-
-      # endpoint
-
+    initialize = function(api_key = NULL) {
       # Set base url
-      self$base_url = base_url
+      self$base_url = "https://financialmodelingprep.com/stable/"
       
       # check and define variables
       if (is.null(api_key)) {
@@ -38,6 +31,21 @@ FMP = R6::R6Class(
       } else {
         self$api_key = api_key
       }
+    },
+    
+    # UTILS -------------------------------------------------------------------
+    get = function(tag, params = list()) {
+      # tag = "earnings-surprises-bulk"
+      url = paste0(self$base_url, tag)
+      query = c(list(apikey = self$api_key), params)
+      p = RETRY("GET", url, query = query)
+      res = content(p)
+      if ("list" %in% class(res)) {
+        res = rbindlist(res, fill = TRUE)  
+      } else {
+        setDT(res)
+      }
+      return(res)
     },
 
     # EARNINGS, DIVIDENDS, SPLITS ---------------------------------------------
@@ -57,7 +65,8 @@ FMP = R6::R6Class(
         
         # get data
         ea = lapply(seq_along(dates_from), function(i) {
-          private$get("earnings-calendar", params = list(from = dates_from[i], to = dates_to[i]))
+          self$get("earnings-calendar", 
+                   params = list(from = dates_from[i], to = dates_to[i]))
         })
         dt = rbindlist(ea, fill = TRUE)
         
@@ -70,18 +79,19 @@ FMP = R6::R6Class(
       # define start date
       if (is.null(start_date)) {
         start_date = as.Date("2010-01-01")
-        dt = get_ea(start_date, Sys.Date())
-      } else {
+      }
+      dt = get_ea(start_date, Sys.Date())
+      if (file.exists(path)) {
         dt_existing = arrow::read_parquet(path)
         dt_new = get_ea(start_date, Sys.Date())
         if (nrow(dt_new) == 0) {
           print("No data for earning announcements.")
           return(NULL)
         } else {
-          dt = unique(rbind(dt_existing, dt_new), by = c("date", "symbol", "updatedFromDate"))
+          dt = unique(rbind(dt_existing, dt_new), by = c("date", "symbol"))
         }
       }
-
+        
       # save to uri
       arrow::write_parquet(dt, path)
     },
@@ -92,7 +102,7 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with earnings surprises data.
     get_earnings_suprises = function(year = format(Sys.Date(), "%Y")) {
-      private$get("earnings-surprises-bulk", params = list(year = year))
+      self$get("earnings-surprises-bulk", params = list(year = year))
     },
 
     #' @description Get Earning Call Transcript from FMP cloud.
@@ -689,65 +699,6 @@ FMP = R6::R6Class(
       return(res)
     },
 
-    #' @description Get Financial Statements data
-    #'
-    #' @param uri uri path to the directory.
-    #' @param years Get statement for specific year.
-    #' @param statement quarter or annual.
-    #' @param period quarter or annual.
-    #'
-    #' @return data.table of financial reports.
-    get_fi_statement_bulk = function(uri,
-                                     years = 1999:(data.table::year(Sys.Date())),
-                                     statement = c("income-statement-bulk",
-                                                   "balance-sheet-statement-bulk",
-                                                   "cash-flow-statement-bulk",
-                                                   "ratios-bulk",
-                                                   "key-metrics-bulk",
-                                                   "financial-growth-bulk",
-                                                   "income-statement-growth-bulk",
-                                                   "balance-sheet-statement-growth-bulk",
-                                                   "cash-flow-statement-growth-bulk"),
-                                     period = c("annual", "quarter")
-    ) {
-
-      # DEBUG
-      # library(findata)
-      # library(httr)
-      # library(data.table)
-      # uri = "F:/equity/usa/fundamentals"
-      # years = 1990:(data.table::year(Sys.Date()))
-      # statement ="rating-bulk"
-      # period = "quarter"
-      # self <- FMP$new()
-
-      # define save_uri
-      save_uri = file.path(uri, statement, period)
-      if (!dir.exists(save_uri)) {
-        dir.create(save_uri, recursive = TRUE)
-      }
-
-      # prepare donwload data
-      url <- "https://financialmodelingprep.com/api/v4"
-      url <- paste(url, statement, sep = "/")
-
-      # get new years to download
-      years_exist = gsub(".csv", "", list.files(save_uri))
-      years = c(setdiff(years, years_exist), year(Sys.Date()))
-      
-      # donwload data
-      lapply(years, function(year) {
-        print(year)
-        file_name = file.path(save_uri, paste0(year, ".csv"))
-        RETRY("GET",
-              url,
-              query = list(year = year, period = period, apikey = self$api_key),
-              write_disk(file_name, overwrite = TRUE))
-        Sys.sleep(12L)
-        return(NULL)
-      })
-    },
-    
     #' @description Help function for getting grades and targets
     #'
     #' @param symbols stock symbols.
@@ -1525,27 +1476,74 @@ FMP = R6::R6Class(
                    query = list(date = x, apikey = self$api_key), 
                    write_disk(file_name_),
                    times = 5L)
+        Sys.sleep(10L)
+        return(NULL)
+      })
+    },
+    
+    #' @description Get Financial Statements data
+    #'
+    #' @param uri uri path to the directory.
+    #' @param years Get statement for specific year.
+    #' @param statement quarter or annual.
+    #' @param period quarter or annual.
+    #'
+    #' @return data.table of financial reports.
+    get_fi_statement_bulk = function(uri,
+                                     years = 1999:(data.table::year(Sys.Date())),
+                                     statement = c("income-statement-bulk",
+                                                   "balance-sheet-statement-bulk",
+                                                   "cash-flow-statement-bulk",
+                                                   "ratios-ttm-bulk",
+                                                   "key-metrics-ttm-bulk",
+                                                   "financial-growth-bulk",
+                                                   "income-statement-growth-bulk",
+                                                   "balance-sheet-statement-growth-bulk",
+                                                   "cash-flow-statement-growth-bulk"),
+                                     period = c("annual", "quarter")
+    ) {
+      
+      # DEBUG
+      # library(findata)
+      # library(httr)
+      # library(data.table)
+      # uri = "F:/equity/usa/fundamentals"
+      # years = 1990:(data.table::year(Sys.Date()))
+      # statement ="rating-bulk"
+      # period = "quarter"
+      # self <- FMP$new()
+      
+      # define save_uri
+      save_uri = file.path(uri, statement, period)
+      if (!dir.exists(save_uri)) {
+        dir.create(save_uri, recursive = TRUE)
+      }
+      
+      # prepare donwload data
+      url = paste0(self$base_url, statement)
+      
+      # get new years to download
+      years_exist = gsub(".csv", "", list.files(save_uri))
+      years = c(setdiff(years, years_exist), year(Sys.Date()))
+      
+      # donwload data
+      lapply(years, function(year) {
+        print(year)
+        file_name = file.path(save_uri, paste0(year, ".csv"))
+        RETRY("GET",
+              url,
+              query = list(year = year, period = period, apikey = self$api_key),
+              write_disk(file_name, overwrite = TRUE))
+        Sys.sleep(12L)
         return(NULL)
       })
     }
-    
   ),
 
   private = list(
     ea_file_name = "EarningAnnouncements",
     transcripts_file_name = "earnings-calendar.rds",
     prices_file_name = "prices.csv",
-    market_cap_file_name = "MarketCap",
-
-    get = function(tag, params = list()) {
-      url = paste0(self$base_url, tag)
-      
-      query <- c(list(apikey = self$api_key), params)
-      
-      p = RETRY("GET", url, query = query)
-      res = content(p)
-      res = rbindlist(res, fill = TRUE)
-      return(res)
-    }
+    market_cap_file_name = "MarketCap"
   )
 )

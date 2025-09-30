@@ -14,14 +14,12 @@ UtilsData = R6::R6Class(
     #' Create a new UtilsData object.
     #'
     #' @param azure_storage_endpoint Azure storate endpont
-    #' @param context_with_config AWS S3 Tiledb config
     #'
     #' @return A new `UtilsData` object.
-    initialize = function(azure_storage_endpoint = NULL,
-                          context_with_config = NULL) {
+    initialize = function(azure_storage_endpoint = NULL) {
 
       # endpoint
-      super$initialize(azure_storage_endpoint, context_with_config)
+      super$initialize(azure_storage_endpoint)
     },
 
     #' @description Get tick data from finam source using QuantTools.

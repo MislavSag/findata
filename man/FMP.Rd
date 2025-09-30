@@ -73,15 +73,13 @@ Get data data from FMP Cloud.
 \subsection{Method \code{new()}}{
 Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL, context_with_config = NULL, base_url = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL, base_url = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{api_key}}{API KEY for FMP cloud data.}
-
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
 
 \item{\code{base_url}}{Base URL for the FMP Cloud API.}
 }

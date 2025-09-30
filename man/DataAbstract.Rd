@@ -9,8 +9,6 @@ Abstract class for all other data classes.
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
-
 \item{\code{fredr_apikey}}{FRED api key.}
 }
 \if{html}{\out{</div>}}
@@ -28,14 +26,12 @@ Abstract class for all other data classes.
 \subsection{Method \code{new()}}{
 Create a new DataAbstract object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(context_with_config = NULL, fredr_apikey = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DataAbstract$new(fredr_apikey = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
-
 \item{\code{fredr_apikey}}{FRED api key}
 }
 \if{html}{\out{</div>}}

@@ -34,15 +34,13 @@ Various help data.
 \subsection{Method \code{new()}}{
 Create a new UtilsData object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{UtilsData$new(azure_storage_endpoint = NULL, context_with_config = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{UtilsData$new(azure_storage_endpoint = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{azure_storage_endpoint}}{Azure storate endpont}
-
-\item{\code{context_with_config}}{AWS S3 Tiledb config}
 }
 \if{html}{\out{</div>}}
 }
