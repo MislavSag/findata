@@ -137,7 +137,7 @@ FMP = R6::R6Class(
       
 
       # main loop
-      url_meta <- "https://financialmodelingprep.com/api/v4/earning_call_transcript"
+      url_meta <- paste0(self$base_url, "earning-call-transcript-dates")
       lapply(symbols, function(s) {
         
         # debug
@@ -157,21 +157,28 @@ FMP = R6::R6Class(
         file_ = file.path(uri, paste0(s, ".parquet"))
         if (file.exists(file_)) {
           old_data = arrow::read_parquet(file_)
+          old_data = as.data.table(old_data)
           new = fsetdiff(as.data.table(res[, c("quarter", "year")]),
                          as.data.table(old_data[, c("quarter", "year")]))
-          years = new[, unique(year)]
-          if (length(years) == 0) {
+          year_quarter_pairs = new  # new is already the year-quarter pairs we want
+          if (nrow(year_quarter_pairs) == 0) {
             return(NULL)
           }
         } else {
-          years = unique(res$year)
+          res = as.data.table(res)
+          year_quarter_pairs = res[, .(year, quarter)]  # Select year and quarter columns
         }
 
         # get new data
-        new_data <- lapply(years, function(y) {
-          private$fmpv_path(paste0("batch_earning_call_transcript/", s), v = "v4", 
-                            year = y, apikey = self$api_key)
-        })
+        new_data <- mapply(
+          function(y, q) {
+            self$get("earning-call-transcript",
+                    params = list(symbol=s, year = y, quarter=q))
+          },
+          year_quarter_pairs$year,
+          year_quarter_pairs$quarter,
+          SIMPLIFY = FALSE
+        )
         new_data <- rbindlist(new_data)
         if (nrow(new_data) > 0) {
           new_data$date <- as.POSIXct(new_data$date, tz = "America/New_York")
@@ -488,25 +495,8 @@ FMP = R6::R6Class(
     #' @return Stock IPO date.
     get_ipo_calendar_confirmed_bulk = function(start_date, 
                                                end_date = Sys.Date()) {
-      # start_date = Sys.Date() - 19
-      # Meta
-      url <- "https://financialmodelingprep.com/api/v4/ipo-calendar-confirmed"
-      if ((end_date - start_date) > 20) {
-        seq_date_ <- unique(c(seq.Date(start_date, end_date, by = 20), end_date))
-        start_date <- seq_date_[1:(length(seq_date_)-1)]
-        end_date <- seq_date_[-1]
-      }
-
-      # Get ipo data for every data span
-      ipos <- lapply(seq_along(start_date), function(i) {
-        content(GET(url, query = list(from = start_date[i],
-                                      to = end_date[i],
-                                      apikey = self$api_key)))
-      })
-
-      # Merge and clean data
-      ipo_data <- lapply(ipos, rbindlist)
-      ipo_data <- rbindlist(ipo_data)
+      ipo_data <- self$get("ipos-disclosure",
+                           params = list(from = start_date, to = end_date))
       ipo_data[, `:=`(filingDate = as.Date(filingDate),
                       acceptedDate = as.POSIXct(acceptedDate, tz = "America/New_York"),
                       effectivenessDate = as.Date(effectivenessDate))]
@@ -576,12 +566,10 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with market cap data.
     get_market_cap = function(ticker, limit = 10) {
-      url <- "https://financialmodelingprep.com/api/v3/historical-market-capitalization/"
-      url <- paste0(url, toupper(ticker))
-      p <- RETRY("GET", url, query = list(limit = limit, apikey = self$api_key))
-      res <- content(p)
-      res <- rbindlist(res, fill = TRUE)
-      return(res)
+      return(self$get(
+        "historical-market-capitalization",
+        params = list(symbol = ticker, limit = limit)
+      ))
     },
 
     #' @description Get market cap data from FMP cloud Prep - bulk.
@@ -656,7 +644,7 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with stock list data.
     get_stock_list = function() {
-      private$get("stock-list")
+      self$get("stock-list")
     },
     #' @description Get symbol changes.
     #'
@@ -731,11 +719,46 @@ FMP = R6::R6Class(
     #' @return Result of GET request
     get_grades = function(symbols) {
 
+      fetch_paginated = function(symbol) {
+        page <- 0
+        out_list <- list()
+        repeat {
+          url <- paste0(self$base_url, "grades-news")
+          query <- list(
+            symbol = symbol,
+            apikey = self$api_key,
+            page = page,
+            limit = 100
+          )
+          p <- RETRY("GET", url, query = query)
+          res <- content(p)
+          if (length(res) == 0) break
+          out_list <- c(out_list, res)
+          page <- page + 1
+        }
+        if (length(out_list) == 0) return(NULL)
+        rbindlist(out_list, fill = TRUE)
+      }
+
       # get all grades for all symbols
-      grades = self$get_daily_v4(symbols, "upgrades-downgrades")
+      grades_list <- lapply(symbols, fetch_paginated)
+      
+      # filter out NULL results
+      grades_list <- grades_list[!sapply(grades_list, is.null)]
+      
+      # return empty data.table if no results
+      if (length(grades_list) == 0) {
+        return(data.table())
+      }
+      
+      # combine all results
+      grades <- rbindlist(grades_list, fill = TRUE)
+      
+      # ensure it's a data.table and convert date
+      setDT(grades)
       grades[, publishedDate := as.POSIXct(publishedDate,
-                                           format = "%Y-%m-%dT%H:%M:%OSZ",
-                                           tz = "UTC")]
+                                          format = "%Y-%m-%dT%H:%M:%OSZ",
+                                          tz = "UTC")]
       return(grades)
     },
 
@@ -745,9 +768,40 @@ FMP = R6::R6Class(
     #'
     #' @return Result of GET request
     get_targets = function(symbols) {
-
+      fetch_paginated = function(symbol) {
+        page <- 0
+        out_list <- list()
+        repeat {
+          url <- paste0(self$base_url, "price-target-news")
+          query <- list(
+            symbol = symbol,
+            apikey = self$api_key,
+            page = page,
+            limit = 100
+          )
+          p <- RETRY("GET", url, query = query)
+          res <- content(p)
+          if (length(res) == 0) break
+          out_list <- c(out_list, res)
+          page <- page + 1
+        }
+        if (length(out_list) == 0) return(NULL)
+        rbindlist(out_list, fill = TRUE)
+      }
       # get all targets for all symbols
-      targets = self$get_daily_v4(symbols, "price-target")
+      targets_list <- lapply(symbols, fetch_paginated)
+
+      # filter out NULL results
+      targets_list <- targets_list[!sapply(targets_list, is.null)]
+
+      # return empty data.table if no results
+      if (length(targets_list) == 0) {
+        return(data.table())
+      }
+
+      targets <- rbindlist(targets_list, fill = TRUE)
+      setDT(targets)
+      
       targets[, publishedDate := as.POSIXct(publishedDate,
                                             format = "%Y-%m-%dT%H:%M:%OSZ",
                                             tz = "UTC")]
@@ -1221,12 +1275,35 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with dividend data.
     get_dividends = function(ticker) {
-      url <- "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"
-      url <- paste0(url, toupper(ticker))
-      p <- RETRY("GET", url, query = list(apikey = self$api_key))
-      res <- content(p)
-      res <- rbindlist(res$historical, fill = TRUE)
-      return(res)
+
+      fetch_paginated = function(symbol) {
+        page <- 0
+        out_list <- list()
+        repeat {
+          url <- paste0(self$base_url, "dividends")
+          query <- list(
+            symbol = symbol,
+            apikey = self$api_key,
+            page = page,
+            limit = 100
+          )
+          p <- RETRY("GET", url, query = query)
+          res <- content(p)
+          if (length(res) == 0) break
+          out_list <- c(out_list, res)
+          page <- page + 1
+        }
+        if (length(out_list) == 0) return(NULL)
+        rbindlist(out_list, fill = TRUE)
+      }
+      dividends_list <- lapply(ticker, fetch_paginated)
+      dividends_list <- dividends_list[!sapply(dividends_list, is.null)]
+      if (length(dividends_list) == 0) {
+        return(data.table())
+      }
+      dividends_list <- rbindlist(dividends_list, fill = TRUE)
+      setDT(dividends_list)
+      return(dividends_list)
     },
     
     #' @description Get beneficial ownership from FMP cloud.
@@ -1235,13 +1312,7 @@ FMP = R6::R6Class(
     #' 
     #' @return data.table with beneficial ownership data.
     beneficial_ownership = function(ticker) {
-      # ticker = "AAPL"
-      # self$api_key <- Sys.getenv("APIKEY-FMPCLOUD")
-      url <- "https://financialmodelingprep.com/api/v4/insider/ownership/acquisition_of_beneficial_ownership"
-      p <- RETRY("GET", url, query = list(symbol = toupper(ticker), apikey = self$api_key))
-      res <- content(p)
-      res <- rbindlist(res, fill = TRUE)
-      return(res)
+      self$get("beneficial-ownership", params = list(symbol = ticker))
     },
 
     # QUOTE -------------------------------------------------------------------
@@ -1439,6 +1510,14 @@ FMP = R6::R6Class(
       
       data.table::rbindlist(res_list[seq_len(k - 1L)], fill = TRUE)
     },
+
+    #' @description Fetch Stock Rating Bulk.
+    #' @return data.table of all stock ratings.
+    get_stock_rating_bulk = function() {
+      self$get("rating-bulk")
+    },
+
+
     #' @description get daily data from FMP cloud for all stocks
     #'
     #' @param uri to save daily data for every date.
@@ -1496,7 +1575,6 @@ FMP = R6::R6Class(
                                                    "cash-flow-statement-bulk",
                                                    "ratios-ttm-bulk",
                                                    "key-metrics-ttm-bulk",
-                                                   "financial-growth-bulk",
                                                    "income-statement-growth-bulk",
                                                    "balance-sheet-statement-growth-bulk",
                                                    "cash-flow-statement-growth-bulk"),
