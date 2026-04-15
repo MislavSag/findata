@@ -2,3 +2,6 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.vscode$
+^commits_2024_05_finadata\.txt$
+^commits_findata\.txt$

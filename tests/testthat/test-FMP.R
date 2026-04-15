@@ -5,11 +5,14 @@ test_that("construction", {
 })
 
 test_that("historical dividends works", {
-  fmp <- FMP$new()
+  skip_on_cran()
+  skip_if(Sys.getenv("APIKEY-FMPCLOUD") == "", "No API key set in APIKEY-FMPCLOUD")
+
+  fmp <- FMP$new(api_key = Sys.getenv("APIKEY-FMPCLOUD"))
   x <- fmp$get_historical_dividends("AAPL")
   expect_s3_class(x, "data.frame")
-  expect_length(x, 8)
   cols <- c("symbol", "date", "label", "adjDividend", "dividend", "recordDate",
             "paymentDate", "declarationDate")
-  expect_true(all(colnames(x) == cols))
+  expect_true(nrow(x) > 0)
+  expect_identical(colnames(x), cols)
 })

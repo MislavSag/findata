@@ -22,6 +22,7 @@ Get data data from FMP Cloud.
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-FMP-new}{\code{FMP$new()}}
+\item \href{#method-FMP-get}{\code{FMP$get()}}
 \item \href{#method-FMP-get_earning_announcements}{\code{FMP$get_earning_announcements()}}
 \item \href{#method-FMP-get_earnings_suprises}{\code{FMP$get_earnings_suprises()}}
 \item \href{#method-FMP-get_transcripts}{\code{FMP$get_transcripts()}}
@@ -41,7 +42,6 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_delisted_companies}{\code{FMP$get_delisted_companies()}}
 \item \href{#method-FMP-get_available_traded_list}{\code{FMP$get_available_traded_list()}}
 \item \href{#method-FMP-get_sp500_constituent}{\code{FMP$get_sp500_constituent()}}
-\item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
 \item \href{#method-FMP-get_daily_v4}{\code{FMP$get_daily_v4()}}
 \item \href{#method-FMP-get_grades}{\code{FMP$get_grades()}}
 \item \href{#method-FMP-get_targets}{\code{FMP$get_targets()}}
@@ -64,6 +64,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_share_float_history}{\code{FMP$get_share_float_history()}}
 \item \href{#method-FMP-get_company_profile_bulk_all}{\code{FMP$get_company_profile_bulk_all()}}
 \item \href{#method-FMP-get_daily_bulk}{\code{FMP$get_daily_bulk()}}
+\item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
 }
 }
@@ -73,20 +74,40 @@ Get data data from FMP Cloud.
 \subsection{Method \code{new()}}{
 Create a new FMP object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL, base_url = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{FMP$new(api_key = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{api_key}}{API KEY for FMP cloud data.}
-
-\item{\code{base_url}}{Base URL for the FMP Cloud API.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
 A new `FMP` object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get}{}}}
+\subsection{Method \code{get()}}{
+Perform a GET request against an FMP endpoint.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get(tag, params = list())}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{tag}}{Endpoint path relative to `base_url`.}
+
+\item{\code{params}}{Named query parameters passed to the request.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Parsed response as a `data.table`.
 }
 }
 \if{html}{\out{<hr>}}
@@ -476,40 +497,6 @@ Get SP500 stocks.
 
 \subsection{Returns}{
 data.table with SP500 tocks.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FMP-get_fi_statement_bulk"></a>}}
-\if{latex}{\out{\hypertarget{method-FMP-get_fi_statement_bulk}{}}}
-\subsection{Method \code{get_fi_statement_bulk()}}{
-Get Financial Statements data
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{FMP$get_fi_statement_bulk(
-  uri,
-  years = 1999:(data.table::year(Sys.Date())),
-  statement = c("income-statement-bulk", "balance-sheet-statement-bulk",
-    "cash-flow-statement-bulk", "ratios-bulk", "key-metrics-bulk",
-    "financial-growth-bulk", "income-statement-growth-bulk",
-    "balance-sheet-statement-growth-bulk", "cash-flow-statement-growth-bulk"),
-  period = c("annual", "quarter")
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{uri}}{uri path to the directory.}
-
-\item{\code{years}}{Get statement for specific year.}
-
-\item{\code{statement}}{quarter or annual.}
-
-\item{\code{period}}{quarter or annual.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}
@@ -992,6 +979,40 @@ get daily data from FMP cloud for all stocks
 }
 \subsection{Returns}{
 Scrap all daily data
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_fi_statement_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_fi_statement_bulk}{}}}
+\subsection{Method \code{get_fi_statement_bulk()}}{
+Get Financial Statements data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_fi_statement_bulk(
+  uri,
+  years = 1999:(data.table::year(Sys.Date())),
+  statement = c("income-statement-bulk", "balance-sheet-statement-bulk",
+    "cash-flow-statement-bulk", "ratios-ttm-bulk", "key-metrics-ttm-bulk",
+    "financial-growth-bulk", "income-statement-growth-bulk",
+    "balance-sheet-statement-growth-bulk", "cash-flow-statement-growth-bulk"),
+  period = c("annual", "quarter")
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uri}}{uri path to the directory.}
+
+\item{\code{years}}{Get statement for specific year.}
+
+\item{\code{statement}}{quarter or annual.}
+
+\item{\code{period}}{quarter or annual.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+data.table of financial reports.
 }
 }
 \if{html}{\out{<hr>}}

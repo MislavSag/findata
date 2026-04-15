@@ -34,6 +34,12 @@ FMP = R6::R6Class(
     },
     
     # UTILS -------------------------------------------------------------------
+    #' @description Perform a GET request against an FMP endpoint.
+    #'
+    #' @param tag Endpoint path relative to `base_url`.
+    #' @param params Named query parameters passed to the request.
+    #'
+    #' @return Parsed response as a `data.table`.
     get = function(tag, params = list()) {
       # tag = "earnings-surprises-bulk"
       url = paste0(self$base_url, tag)
@@ -656,13 +662,13 @@ FMP = R6::R6Class(
     #'
     #' @return data.table with stock list data.
     get_stock_list = function() {
-      private$get("stock-list")
+      self$get("stock-list")
     },
     #' @description Get symbol changes.
     #'
     #' @return data.table with symbol changes data.
     get_symbol_changes = function() {
-      private$get("symbol-change")
+      self$get("symbol-change")
     },
 
     # COMPANY INFORMATION -----------------------------------------------------

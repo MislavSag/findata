@@ -42,6 +42,64 @@ MacroData = R6::R6Class(
     },
     
     #' @description
+    #' Retry helper for transient FRED server errors.
+    #'
+    #' @param expr Expression to evaluate.
+    #' @param max_tries Maximum number of attempts.
+    #' @param wait_seconds Base wait time between attempts.
+    #'
+    #' @return Result of `expr`.
+    fred_retry = function(expr, max_tries = 5L, wait_seconds = NULL) {
+      assert_numeric(max_tries, len = 1L, lower = 1L)
+      if (is.null(wait_seconds)) {
+        wait_seconds = max(2, self$delay)
+      }
+      assert_numeric(wait_seconds, len = 1L, lower = 0)
+      expr = substitute(expr)
+      env = parent.frame()
+      
+      attempt = 1L
+      repeat {
+        res = tryCatch(
+          list(ok = TRUE, value = eval(expr, envir = env)),
+          error = function(e) list(ok = FALSE, error = e)
+        )
+        
+        if (isTRUE(res$ok)) {
+          return(res$value)
+        }
+        
+        msg = conditionMessage(res$error)
+        msg_lower = tolower(msg)
+        status_code_ = tryCatch(res$error$response$status_code, error = function(e) NA_integer_)
+        if (length(status_code_) == 0L) {
+          status_code_ = NA_integer_
+        }
+        
+        is_server_error =
+          (!is.na(status_code_) && status_code_ %in% c(500L, 502L, 503L, 504L)) ||
+          grepl("\\b(500|502|503|504)\\b", msg) ||
+          grepl("internal server error|bad gateway|service unavailable|gateway timeout", msg_lower)
+        
+        if (!is_server_error || attempt >= max_tries) {
+          stop(res$error)
+        }
+        
+        sleep_for = wait_seconds * (2 ^ (attempt - 1L))
+        message(
+          sprintf(
+            "FRED server error on attempt %s/%s. Retrying in %.1f seconds.",
+            attempt,
+            max_tries,
+            sleep_for
+          )
+        )
+        Sys.sleep(sleep_for)
+        attempt = attempt + 1L
+      }
+    },
+    
+    #' @description
     #' Get FRED metadata.
     #'
     #' @param asset binance asset. Can be cm, um, option or spot
@@ -50,7 +108,7 @@ MacroData = R6::R6Class(
     get_fred_metadata = function(asset) {
       # get categories
       categories_id <-
-        read_html("https://fred.stlouisfed.org/categories/") |>
+        self$fred_retry(read_html("https://fred.stlouisfed.org/categories/")) |>
         html_elements("a") |>
         html_attr("href")
       categories_id <-
@@ -60,7 +118,9 @@ MacroData = R6::R6Class(
       categories_id = unique(categories_id)
       
       # get chinld categories
-      child_categories = lapply(categories_id, fredr_category_children)
+      child_categories = lapply(categories_id, function(id) {
+        self$fred_retry(fredr_category_children(id))
+      })
       child_categories_ids = rbindlist(child_categories, fill = TRUE)
       child_categories_ids = child_categories_ids$id
       child_categories_ids = unique(child_categories_ids)
@@ -69,22 +129,26 @@ MacroData = R6::R6Class(
       fred_meta_l = lapply(child_categories_ids, function(id) {
         print(id)
         # get first requetst for id
-        fred_meta_ <- fredr_category_series(
-          category_id = id,
-          limit = 1000L,
-          order_by = "last_updated",
-          offset = 0
+        fred_meta_ <- self$fred_retry(
+          fredr_category_series(
+            category_id = id,
+            limit = 1000L,
+            order_by = "last_updated",
+            offset = 0
+          )
         )
         Sys.sleep(self$delay)
         nrow_ = nrow(fred_meta_)
         n = 1
         while (nrow_ == 1000) {
           print(n)
-          fred_meta_n = fredr_category_series(
-            category_id = id,
-            limit = 1000L,
-            order_by = "last_updated",
-            offset = 1000 * n
+          fred_meta_n = self$fred_retry(
+            fredr_category_series(
+              category_id = id,
+              limit = 1000L,
+              order_by = "last_updated",
+              offset = 1000 * n
+            )
           )
           n = n + 1
           fred_meta_ = rbindlist(list(fred_meta_, fred_meta_n), fill = TRUE)

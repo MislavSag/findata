@@ -4,7 +4,7 @@
 \alias{Finam}
 \title{Finam Class}
 \description{
-Get data data from finam using Quanttools package.
+Get historical market data from Finam using rusquant.
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -29,7 +29,7 @@ Get data data from finam using Quanttools package.
 \if{html}{\out{<a id="method-Finam-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Finam-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new MacroData object.
+Create a new Finam object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Finam$new(path_to_dump, delay = 0.8)}\if{html}{\out{</div>}}
 }
@@ -44,32 +44,35 @@ Create a new MacroData object.
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A new `MacroData` object.
+A new `Finam` object.
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Finam-get_ticks"></a>}}
 \if{latex}{\out{\hypertarget{method-Finam-get_ticks}{}}}
 \subsection{Method \code{get_ticks()}}{
-Get tick data from finam source using QuantTools.
+Get tick data from finam source using rusquant.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Finam$get_ticks(
   symbol,
-  days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)
+  days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1),
+  market = NULL
 )}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{symbol}}{Start date}
+\item{\code{symbol}}{Stock symbol.}
 
-\item{\code{days}}{Days to scrap data for}
+\item{\code{days}}{Days to scrape.}
+
+\item{\code{market}}{Optional Finam market id for ambiguous symbols.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-Get investing com ea data.
+Invisible `NULL`. Tick files are written to disk.
 }
 }
 \if{html}{\out{<hr>}}

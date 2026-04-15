@@ -1,7 +1,7 @@
 #' @title Finam Class
 #'
 #' @description
-#' Get data data from finam using Quanttools package.
+#' Get historical market data from Finam using rusquant.
 #'
 #' @export
 Finam = R6::R6Class(
@@ -17,12 +17,12 @@ Finam = R6::R6Class(
     symbol_list = NULL,
     
     #' @description
-    #' Create a new MacroData object.
+    #' Create a new Finam object.
     #'
     #' @param path_to_dump Local path to save data to.
     #' @param delay Delay between requests.
     #'
-    #' @return A new `MacroData` object.
+    #' @return A new `Finam` object.
     initialize = function(path_to_dump, delay = 0.8) {
       # DEBUG
       # path_to_dump = "F:/temp"
@@ -47,13 +47,16 @@ Finam = R6::R6Class(
       self$symbol_list = symbols
     },
     
-    #' @description Get tick data from finam source using QuantTools.
+    #' @description Get tick data from finam source using rusquant.
     #'
-    #' @param symbol Start date
-    #' @param days Days to scrap data for
+    #' @param symbol Stock symbol.
+    #' @param days Days to scrape.
+    #' @param market Optional Finam market id for ambiguous symbols.
     #'
-    #' @return Get investing com ea data.
-    get_ticks = function(symbol, days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1)) {
+    #' @return Invisible `NULL`. Tick files are written to disk.
+    get_ticks = function(symbol,
+                         days = getBusinessDays(as.Date("2010-01-01"), Sys.Date() - 1),
+                         market = NULL) {
       # debug
       # library(qlcal)
       # library(lubridate)
@@ -63,7 +66,7 @@ Finam = R6::R6Class(
       # qlcal::setCalendar("UnitedStates/NYSE")
       # symbol <- "SPY"
       # days = getBusinessDays(as.Date("2007-01-01"), Sys.Date() - 1)
-      
+
       # set download timeout argument using options
       options(timeout = 120)
       
@@ -71,12 +74,8 @@ Finam = R6::R6Class(
       dir_path = file.path(self$path_to_dump, tolower(symbol))
       if (!dir.exists(dir_path)) {
         print("Create directory.")
-        dir.create(dir_path)
+        dir.create(dir_path, recursive = TRUE)
       }
-      
-      # Assign symbols list Finam to this object
-      # look at rusquant::getSymbols.Finam to see why
-      symbol_list_FINAM <<- finam$symbol_list
       
       # main loop
       lapply(days, function(d) {
@@ -96,43 +95,33 @@ Finam = R6::R6Class(
         Sys.sleep(self$delay)
         
         # get data
-        tries = 1
+        tries = 1L
+        tick_data = NULL
         repeat {
           tick_data <- tryCatch(
             rusquant::getSymbols.Finam(
               toupper(symbol),
               from = d,
               to = d,
-              period = "tick"
+              period = "tick",
+              market = market
             ),
             error = function(e)
               NULL
           )
           
           # test for errors
-          if (!is.null(tick_data) | tries > 2) {
+          if (!is.null(tick_data) || tries >= 3L) {
             break()
-          } else if (is.null(tick_data)) {
-            Sys.sleep(self$delay)
-            tick_data <- tryCatch(
-              rusquant::getSymbols.Finam(
-                toupper(symbol),
-                from = d,
-                to = d,
-                period = "tick"
-              ),
-              error = function(e)
-                NULL
-            )
           }
           
-          tries = tries + 1
+          tries = tries + 1L
           print(paste0("Repeat ", tries))
           Sys.sleep(self$delay)
         }
         
         # check if there is data
-        if (is.null(tick_data)) {
+        if (is.null(tick_data) || NROW(tick_data) == 0L) {
           print(paste0("There is no data for date ", d))
           return(NULL)
         }
@@ -149,6 +138,8 @@ Finam = R6::R6Class(
         
         return(NULL)
       })
+      
+      invisible(NULL)
     }
   )
 )

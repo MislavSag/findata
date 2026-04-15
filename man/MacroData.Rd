@@ -20,6 +20,7 @@ Peovide macroeconomics data from various sources:
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-MacroData-new}{\code{MacroData$new()}}
+\item \href{#method-MacroData-fred_retry}{\code{MacroData$fred_retry()}}
 \item \href{#method-MacroData-get_fred_metadata}{\code{MacroData$get_fred_metadata()}}
 \item \href{#method-MacroData-get_alfred}{\code{MacroData$get_alfred()}}
 \item \href{#method-MacroData-bulk_fred}{\code{MacroData$bulk_fred()}}
@@ -46,6 +47,30 @@ Create a new MacroData object.
 }
 \subsection{Returns}{
 A new `MacroData` object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-MacroData-fred_retry"></a>}}
+\if{latex}{\out{\hypertarget{method-MacroData-fred_retry}{}}}
+\subsection{Method \code{fred_retry()}}{
+Retry helper for transient FRED server errors.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{MacroData$fred_retry(expr, max_tries = 5L, wait_seconds = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{expr}}{Expression to evaluate.}
+
+\item{\code{max_tries}}{Maximum number of attempts.}
+
+\item{\code{wait_seconds}}{Base wait time between attempts.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Result of `expr`.
 }
 }
 \if{html}{\out{<hr>}}
