@@ -1,0 +1,5 @@
+factor,characteristic,direction,category,sector_neutral
+hml,book_to_market,high_minus_low,value,FALSE
+smb,market_cap,low_minus_high,size,FALSE
+rmw,operating_profitability,high_minus_low,profitability,FALSE
+cma,asset_growth,low_minus_high,investment,FALSE

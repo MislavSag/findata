@@ -63,6 +63,7 @@ Get data data from FMP Cloud.
 \item \href{#method-FMP-get_batch_trade}{\code{FMP$get_batch_trade()}}
 \item \href{#method-FMP-get_share_float_history}{\code{FMP$get_share_float_history()}}
 \item \href{#method-FMP-get_company_profile_bulk_all}{\code{FMP$get_company_profile_bulk_all()}}
+\item \href{#method-FMP-get_stock_rating_bulk}{\code{FMP$get_stock_rating_bulk()}}
 \item \href{#method-FMP-get_daily_bulk}{\code{FMP$get_daily_bulk()}}
 \item \href{#method-FMP-get_fi_statement_bulk}{\code{FMP$get_fi_statement_bulk()}}
 \item \href{#method-FMP-clone}{\code{FMP$clone()}}
@@ -962,6 +963,19 @@ data.table of all profiles.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-FMP-get_stock_rating_bulk"></a>}}
+\if{latex}{\out{\hypertarget{method-FMP-get_stock_rating_bulk}{}}}
+\subsection{Method \code{get_stock_rating_bulk()}}{
+Fetch Stock Rating Bulk.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{FMP$get_stock_rating_bulk()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+data.table of all stock ratings.
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-FMP-get_daily_bulk"></a>}}
 \if{latex}{\out{\hypertarget{method-FMP-get_daily_bulk}{}}}
 \subsection{Method \code{get_daily_bulk()}}{
@@ -992,8 +1006,8 @@ Get Financial Statements data
   years = 1999:(data.table::year(Sys.Date())),
   statement = c("income-statement-bulk", "balance-sheet-statement-bulk",
     "cash-flow-statement-bulk", "ratios-ttm-bulk", "key-metrics-ttm-bulk",
-    "financial-growth-bulk", "income-statement-growth-bulk",
-    "balance-sheet-statement-growth-bulk", "cash-flow-statement-growth-bulk"),
+    "income-statement-growth-bulk", "balance-sheet-statement-growth-bulk",
+    "cash-flow-statement-growth-bulk"),
   period = c("annual", "quarter")
 )}\if{html}{\out{</div>}}
 }
