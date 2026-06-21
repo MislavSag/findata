@@ -1,0 +1,258 @@
+---
+title: "EODHD fundamentals pipeline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{EODHD fundamentals pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+Ovaj vignette je podsjetnik za novi EODHD sloj u `findata`. Cilj je od raw
+EODHD fundamentals JSON fileova i daily adjusted price podataka dobiti lokalne
+panel tablice, fundamentalne indikatore i long-short faktor prinose bez
+look-ahead biasa.
+
+## Input folderi
+
+Pipeline ocekuje:
+
+- `fundamentals_dir`: folder s raw EODHD JSON fileovima, po mogucnosti jedan
+  file po simbolu, npr. `AAPL.US.json`
+- `prices_dir`: folder s daily price CSV/parquet fileovima
+- `output_dir`: lokalni folder u koji se pisu finalne parquet tablice
+
+Daily price fileovi trebaju imati barem:
+
+- `date`
+- adjusted close kolonu, npr. `adjusted_close`, `adj_close`, `adjClose` ili
+  slicno
+
+## Kreiranje pipeline objekta
+
+`EodhdFundamentals` je samo koordinator. On ne sadrzi svu logiku, nego poziva
+testabilne funkcije iz paketa i zapisuje output tablice.
+
+```{r}
+library(findata)
+
+eod <- EodhdFundamentals$new(
+  fundamentals_dir = "F:/fundamentals/fundamentals",
+  prices_dir = "F:/eodhd-prices",
+  output_dir = "data/eodhd"
+)
+```
+
+## Build all
+
+Najkraci nacin:
+
+```{r}
+eod$build_all(filter_common_us = TRUE)
+```
+
+Ovo izgradi i zapise:
+
+```text
+security_master.parquet
+quarterly_fundamentals.parquet
+daily_market_cap.parquet
+monthly_returns.parquet
+monthly_characteristics.parquet
+market_cap_outliers.csv
+```
+
+`market_cap_outliers.csv` je audit tablica. Outlieri se ne brisu automatski osim
+ako eksplicitno trazis cleaning.
+
+```{r}
+eod$build_all(
+  filter_common_us = TRUE,
+  clean_market_cap_outliers = FALSE
+)
+```
+
+## Korak po korak
+
+Ako zelis pregledati intermedijarne tablice:
+
+```{r}
+sm <- eod$build_security_master(filter_common_us = TRUE)
+qf <- eod$build_quarterly_fundamentals(security_master = sm)
+
+dmc <- eod$build_daily_market_cap(
+  quarterly_fundamentals = qf,
+  security_master = sm
+)
+
+mr <- eod$build_monthly_returns()
+
+chars <- eod$build_monthly_characteristics(
+  quarterly_fundamentals = qf,
+  daily_market_cap = dmc,
+  monthly_returns = mr,
+  security_master = sm
+)
+```
+
+## Finalne tablice
+
+Kasnije ih mozes ucitati bez ponovnog buildanja:
+
+```{r}
+sm <- read_security_master("data/eodhd")
+qf <- read_quarterly_fundamentals("data/eodhd")
+dmc <- read_daily_market_cap("data/eodhd")
+mr <- read_monthly_returns("data/eodhd")
+chars <- read_monthly_characteristics("data/eodhd")
+```
+
+`chars` je glavna tablica za factor engine. Ima jedan red po `symbol x month`,
+plus:
+
+- `ret`
+- `signal_date`
+- `fund_available_date`
+- `fiscal_date_ending`
+- `market_cap`
+- `sector`
+- `industry`
+- fundamentalne indikatore kao `book_to_market`, `gross_profitability`,
+  `roa`, `fcf_yield`, `accruals`, `asset_growth`, `piotroski_f_score`,
+  `qmj_score`, `cash_generation_score`
+
+## Look-ahead pravilo
+
+Za mjesecni return u mjesecu `t`, fundamentals podaci smiju biti dostupni samo
+do kraja mjeseca `t - 1`.
+
+Validacija:
+
+```{r}
+validate_no_lookahead(chars)
+```
+
+Pipeline staje ako postoji red gdje je:
+
+```r
+fund_available_date > signal_date
+```
+
+## Market cap
+
+Daily market cap se racuna kao:
+
+```r
+market_cap = adjusted_close * shares_outstanding
+```
+
+Broj dionica se rolla samo iz zadnjeg poznatog fundamentals zapisa na ili prije
+datuma cijene. Ako je source date u buducnosti, validacija mora pasti.
+
+```{r}
+validate_market_cap_coverage(dmc)
+```
+
+Outliere mozes auditirati:
+
+```{r}
+outliers <- flag_market_cap_outliers(dmc)
+outliers[market_cap_outlier == TRUE]
+```
+
+I tek onda eksplicitno ocistiti:
+
+```{r}
+dmc_clean <- clean_market_cap_outliers(dmc, outliers = outliers)
+```
+
+## Faktor prinosi
+
+Factor specs su tablica, ne hardkodirana logika:
+
+```{r}
+specs <- factor_zoo_specs()
+specs
+```
+
+Izracun cijelog factor zoo-a:
+
+```{r}
+factors <- build_factor_zoo(
+  characteristics = chars,
+  specs = specs,
+  start_date = "2006-01-01",
+  weighting = "value",
+  min_stocks_side = 10
+)
+
+validate_factor_returns(factors)
+```
+
+Sa summaryjem:
+
+```{r}
+summarize_factor_returns(factors)
+factor_correlation_matrix(factors, start_date = "2006-01-01")
+```
+
+## Jedan long-short faktor
+
+```{r}
+gross_profitability <- build_long_short_factor(
+  characteristics = chars,
+  characteristic = "gross_profitability",
+  direction = "high_minus_low",
+  breakpoint_universe = "NYSE",
+  breakpoints = c(0.3, 0.7),
+  weighting = "value",
+  min_stocks_side = 10,
+  start_date = "2006-01-01"
+)
+```
+
+## Sector-neutral faktor
+
+Pravilo za sector-neutral faktore:
+
+- rank se radi unutar `month x sector`
+- top 30 posto minus bottom 30 posto
+- value-weighted unutar sektora
+- equal-weight prosjek sektora
+
+```{r}
+cash_generation <- build_sector_neutral_factor(
+  characteristics = chars,
+  characteristic = "cash_generation_score",
+  direction = "high_minus_low",
+  weighting = "value",
+  min_stocks_side = 10,
+  start_date = "2006-01-01"
+)
+```
+
+## Tipican research flow
+
+Research skripte bi trebale samo citati output iz `findata` i raditi analizu.
+Primjer:
+
+```{r}
+chars <- read_monthly_characteristics("data/eodhd")
+
+factors <- build_factor_zoo(
+  characteristics = chars,
+  specs = factor_zoo_specs(),
+  start_date = "2006-01-01"
+)
+
+summary <- summarize_factor_returns(factors)
+cors <- factor_correlation_matrix(factors, start_date = "2006-01-01")
+```
+
